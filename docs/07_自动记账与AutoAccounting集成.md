@@ -136,7 +136,7 @@ flags = FLAG_ACTIVITY_NEW_TASK
 | 载荷模型 | 上游 `BillInfoModel`（字段映射见 `03` §18） |
 | 版本不匹配 | `v` 非当前支持版本 → 写 `CaptureLog` + **一律 Pending**，禁止按旧契约解析入账 |
 | 接收入口 | 无界面 Activity（`NoDisplay` / `noHistory` / `excludeFromRecents`），只做“取参 → 交给 `CaptureEventSource` → 立即 `finish()`” |
-| 禁止 | 在接收入口内解析、落库或做任何业务判断（业务处理放 Service / Worker / Repository，`04` §4/§4.1） |
+| 禁止 | 在接收入口内解析、落库或做任何业务判断（业务处理放 Service / Worker / Repository，`04` §4、`04` §9.1） |
 | 回执 | v0.1 不做回执：非 Xposed 模式无法确认对方是否真的入账；仅“拉起成功即标记”。若未来要回执，需进上游 Xposed 作用域并加 Hook（另立版本） |
 | 副作用 | 上游对象可能被就地修改（如手续费改写 `money`），**必须只读投影**，不得复用或回写上游对象 |
 
