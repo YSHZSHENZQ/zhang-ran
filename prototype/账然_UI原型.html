@@ -1,0 +1,3059 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>账然 · 记账原型 </title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    background: #0a0b10;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+    -webkit-font-smoothing: antialiased;
+    transition: background .5s ease;
+  }
+  body.light-mode {
+    background: linear-gradient(135deg, #eef3ff 0%, #f7f0ff 50%, #e8f6ff 100%);
+  }
+
+  .phone {
+    width: 375px; height: 812px;
+    background: #000;
+    border-radius: 46px;
+    padding: 11px;
+    box-shadow: 0 30px 70px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.07);
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    overflow: hidden;
+    position: relative;
+    display: flex; flex-direction: column;
+    transition: background .4s ease, color .4s ease;
+
+    --bg-1: #eef3ff; --bg-2: #f7f0ff; --bg-3: #e8f6ff; --bg-4: #ecfdf7;
+    --text: #1a2233;
+    --text-2: #475569;
+    --text-3: #94a3b8;
+    --glass-bg: rgba(255,255,255,0.55);
+    --glass-border: rgba(255,255,255,0.92);
+    --glass-shadow: 0 8px 32px rgba(79,70,229,0.10), inset 0 1px 0 rgba(255,255,255,0.75);
+    --accent-1: #4f46e5;
+    --accent-2: #06b6d4;
+    --accent-grad: linear-gradient(120deg, #4f46e5, #06b6d4);
+    --green: #10b981;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --divider: rgba(0,0,0,.05);
+    --glow-1: rgba(79,70,229,.32);
+    --glow-2: rgba(6,182,212,.28);
+    --glow-3: rgba(168,85,247,.22);
+    --card-top: linear-gradient(90deg, #4f46e5, #06b6d4, #10b981);
+    --row-bg: rgba(255,255,255,0.7);
+    --input-bg: rgba(255,255,255,0.7);
+    --overlay: rgba(10,14,20,.4);
+    --modal-bg: rgba(255,255,255,0.96);
+  }
+  .screen[data-theme="dark"] {
+    --bg-1: #070a12; --bg-2: #0c1322; --bg-3: #08141a; --bg-4: #08141a;
+    --text: #e6edf7;
+    --text-2: #7f8b9b;
+    --text-3: #4d6480;
+    --glass-bg: rgba(255,255,255,0.07);
+    --glass-border: rgba(255,255,255,0.11);
+    --glass-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+    --accent-1: #00f0ff;
+    --accent-2: #7c5cff;
+    --accent-grad: linear-gradient(120deg, #00f0ff, #7c5cff);
+    --green: #00ffb3;
+    --red: #ff6b81;
+    --amber: #ffb84d;
+    --divider: rgba(255,255,255,.06);
+    --glow-1: rgba(0,240,255,.42);
+    --glow-2: rgba(124,92,255,.40);
+    --glow-3: rgba(0,255,170,.22);
+    --card-top: none;
+    --row-bg: rgba(255,255,255,0.07);
+    --input-bg: rgba(255,255,255,0.08);
+    --overlay: rgba(0,0,0,.6);
+    --modal-bg: rgba(20,26,36,0.96);
+  }
+  .screen {
+    background: linear-gradient(165deg, var(--bg-1) 0%, var(--bg-2) 28%, var(--bg-3) 62%, var(--bg-4) 100%);
+    color: var(--text);
+  }
+
+  .glass {
+    backdrop-filter: blur(26px) saturate(1.4);
+    -webkit-backdrop-filter: blur(26px) saturate(1.4);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .glow {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    transition: background .5s ease;
+  }
+  .glow.g1 { width: 260px; height: 260px; top: -90px; left: -80px; background: radial-gradient(circle, var(--glow-1), transparent 68%); filter: blur(60px); }
+  .glow.g2 { width: 280px; height: 280px; top: 180px; right: -120px; background: radial-gradient(circle, var(--glow-2), transparent 68%); filter: blur(64px); }
+  .glow.g3 { width: 240px; height: 240px; bottom: -70px; left: 30px; background: radial-gradient(circle, var(--glow-3), transparent 70%); filter: blur(66px); }
+
+  .status-bar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 26px 0 32px;
+    font-size: 13px; font-weight: 600;
+    letter-spacing: .5px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+  .status-right { display: flex; align-items: center; gap: 5px; font-size: 11px; }
+
+  .page-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .page {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 90px;
+    opacity: 0;
+    transform: translateX(26px);
+    pointer-events: none;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  .page.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+  .page.detail-page { padding-bottom: 24px; }
+  .page::-webkit-scrollbar { display: none; }
+
+  .tab-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 78px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px 10px;
+    z-index: 10;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    backdrop-filter: blur(30px) saturate(1.6);
+    -webkit-backdrop-filter: blur(30px) saturate(1.6);
+    background: var(--glass-bg);
+    border-top: 1px solid var(--glass-border);
+    transition: transform .32s cubic-bezier(.4,0,.2,1);
+  }
+  .screen.detail-open .tab-bar { transform: translateY(100%); }
+
+  .tab {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
+    padding: 8px 0;
+    font-size: 10px;
+    color: var(--text-3);
+    cursor: pointer;
+    transition: color .2s;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  .tab.active { color: var(--accent-1); }
+  .tab svg { width: 22px; height: 22px; }
+
+  .tab-badge {
+    position: absolute;
+    top: 2px; left: 50%;
+    transform: translateX(2px);
+    min-width: 16px; height: 16px;
+    border-radius: 8px;
+    background: var(--red);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 2px 6px rgba(239,68,68,.4);
+  }
+
+  .app-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 4px 22px 16px;
+  }
+  .app-logo {
+    font-size: 22px; font-weight: 700; letter-spacing: 3px;
+    background: var(--accent-grad);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .app-sub { font-size: 9px; letter-spacing: 3.2px; margin-top: 6px; color: var(--text-3); }
+  .head-actions { display: flex; gap: 8px; align-items: center; }
+  .head-icon {
+    width: 34px; height: 34px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: var(--text-2);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s ease;
+    position: relative;
+  }
+  .head-icon:active { transform: scale(.92); }
+  .head-icon .dot {
+    position: absolute;
+    top: 7px; right: 7px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--amber);
+    box-shadow: 0 0 6px var(--amber);
+  }
+
+  .status-pill {
+    font-size: 10px;
+    padding: 5px 10px; border-radius: 20px;
+    display: flex; align-items: center; gap: 6px;
+    letter-spacing: .6px;
+    color: var(--accent-1);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+  }
+  .pill-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent-1);
+    box-shadow: 0 0 8px var(--accent-1);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .25; transform: scale(.7); }
+  }
+
+  .balance-card {
+    margin: 0 16px 18px;
+    padding: 22px 20px 18px;
+    border-radius: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .balance-card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; right: 0; height: 3px;
+    background: var(--card-top);
+  }
+  .card-label { font-size: 10.5px; letter-spacing: 2px; color: var(--text-3); position: relative; }
+  .card-amount {
+    font-size: 36px; font-weight: 700; letter-spacing: -1.6px;
+    margin: 9px 0 16px;
+    color: var(--text);
+    position: relative;
+  }
+  .card-amount small { font-size: 19px; font-weight: 600; opacity: .7; }
+  .card-stats { display: flex; gap: 24px; position: relative; }
+  .stat-k { font-size: 9.5px; letter-spacing: 1.2px; color: var(--text-3); }
+  .stat-v { font-size: 13.5px; font-weight: 700; margin-top: 5px; color: var(--text); }
+  .stat-v.green { color: var(--green); }
+  .stat-v.grad {
+    background: var(--accent-grad);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .section-label {
+    padding: 4px 22px 10px;
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--text-3);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--divider), transparent);
+  }
+
+  .tx-row {
+    display: flex; align-items: center; gap: 12px;
+    margin: 0 16px 8px;
+    padding: 11px 13px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: transform .15s ease, opacity .2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tx-row:active { transform: scale(.975); opacity: .85; }
+  .tx-icon {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .tx-info { flex: 1; min-width: 0; }
+  .tx-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .tx-meta { font-size: 10.5px; margin-top: 4px; color: var(--text-3); }
+  .tx-amt { font-size: 14px; font-weight: 700; letter-spacing: -.3px; color: var(--text); }
+  .tx-amt.in { color: var(--green); }
+
+  .page-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 4px 22px 16px;
+  }
+  .back-btn {
+    width: 34px; height: 34px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 400;
+    color: var(--text);
+    cursor: pointer;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s ease;
+  }
+  .back-btn:active { transform: scale(.92); }
+  .page-title { font-size: 17px; font-weight: 700; letter-spacing: .5px; color: var(--text); }
+  .page-head-right {
+    margin-left: auto; font-size: 12px;
+    color: var(--text-3);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 10px;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s ease;
+  }
+  .page-head-right:active { transform: scale(.94); }
+
+  .card {
+    margin: 0 16px 12px;
+    padding: 18px;
+    border-radius: 20px;
+  }
+  .card-head {
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--text-3);
+    margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-head-action {
+    font-size: 11px;
+    color: var(--accent-1);
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: .5px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .card-head-action:active { opacity: .6; }
+
+  .switch {
+    width: 42px; height: 24px; border-radius: 12px;
+    position: relative; flex-shrink: 0;
+    background: rgba(120,120,140,.22);
+    cursor: pointer;
+    transition: background .25s ease;
+  }
+  .switch::after {
+    content: '';
+    position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.22);
+    transition: transform .25s ease;
+  }
+  .switch.on { background: var(--accent-grad); }
+  .switch.on::after { transform: translateX(18px); }
+
+  .set-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    border-radius: 8px;
+    transition: opacity .15s ease;
+  }
+  .set-row + .set-row { border-top: 1px solid var(--divider); }
+  .set-row:active { opacity: .6; }
+  .set-icon {
+    width: 34px; height: 34px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .set-info { flex: 1; min-width: 0; }
+  .set-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .set-desc { font-size: 10.5px; margin-top: 3px; color: var(--text-3); }
+  .set-arrow { font-size: 14px; color: var(--text-3); }
+  .set-edit {
+    font-size: 11px;
+    color: var(--accent-1);
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .perm-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+  }
+  .perm-row + .perm-row { border-top: 1px solid var(--divider); }
+  .perm-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .perm-dot.ok { background: #10b981; box-shadow: 0 0 8px rgba(16,185,129,.5); }
+  .perm-dot.warn { background: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,.5); }
+  .perm-info { flex: 1; }
+  .perm-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .perm-desc { font-size: 10.5px; margin-top: 3px; color: var(--text-3); }
+  .perm-status { font-size: 11px; font-weight: 600; letter-spacing: .5px; }
+  .perm-status.ok { color: #10b981; }
+  .perm-status.warn { color: #f59e0b; }
+
+  .detail-hero {
+    text-align: center;
+    padding: 28px 18px 24px;
+  }
+  .detail-hero .tx-icon {
+    width: 56px; height: 56px;
+    border-radius: 18px;
+    font-size: 24px;
+    margin: 0 auto 16px;
+  }
+  .detail-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .detail-amount {
+    font-size: 32px; font-weight: 700; letter-spacing: -1.2px;
+    margin: 12px 0 8px;
+    color: var(--text);
+  }
+  .detail-amount.in { color: var(--green); }
+  .detail-date { font-size: 11px; color: var(--text-3); }
+  .detail-info-row {
+    display: flex; justify-content: space-between;
+    padding: 10px 0;
+    font-size: 13px;
+  }
+  .detail-info-row + .detail-info-row { border-top: 1px solid var(--divider); }
+  .detail-info-k { color: var(--text-3); }
+  .detail-info-v { color: var(--text); font-weight: 600; }
+  .detail-info-v.accent { color: var(--accent-1); }
+  .detail-note { font-size: 13px; line-height: 1.7; color: var(--text-2); }
+  .detail-actions { display: flex; gap: 12px; margin: 0 16px; }
+  .detail-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 16px;
+    text-align: center;
+    font-size: 13px; font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s ease;
+  }
+  .detail-btn:active { transform: scale(.96); }
+  .detail-btn.danger { color: var(--red); }
+
+  .stat-overview-amount {
+    font-size: 30px; font-weight: 700; letter-spacing: -1.4px;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+  .stat-overview-amount small { font-size: 16px; opacity: .7; }
+  .donut {
+    width: 104px; height: 104px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .screen[data-theme="light"] .donut {
+    background: conic-gradient(#4f46e5 0 42%, #06b6d4 42% 66%, #10b981 66% 86%, #f59e0b 86% 100%);
+  }
+  .screen[data-theme="dark"] .donut {
+    background: conic-gradient(#00f0ff 0 42%, #7c5cff 42% 66%, #00ffb3 66% 86%, #ff6b81 86% 100%);
+    box-shadow: 0 0 24px rgba(0,240,255,.25);
+  }
+  .donut-inner {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .screen[data-theme="light"] .donut-inner { background: rgba(255,255,255,.9); }
+  .screen[data-theme="dark"] .donut-inner { background: rgba(10,14,20,.88); }
+  .donut-k { font-size: 9px; color: var(--text-3); letter-spacing: 1px; }
+  .donut-v { font-size: 14px; font-weight: 700; margin-top: 2px; color: var(--text); }
+  .legend { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .legend-row i { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+  .legend-row span { color: var(--text-2); flex: 1; }
+  .legend-row b { color: var(--text); font-weight: 700; }
+  .chart {
+    display: flex; align-items: flex-end; gap: 8px;
+    height: 86px; padding-top: 6px;
+  }
+  .chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .chart-bar { width: 100%; border-radius: 6px 6px 3px 3px; }
+  .chart-day { font-size: 9px; color: var(--text-3); }
+
+  .amount-display {
+    text-align: right;
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    padding: 12px 4px;
+    color: var(--text);
+    min-height: 66px;
+    font-variant-numeric: tabular-nums;
+  }
+  .amount-display .currency { font-size: 22px; opacity: .5; margin-right: 6px; }
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 0 16px 12px;
+  }
+  .key {
+    height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .1s ease;
+  }
+  .key:active { transform: scale(.94); }
+  .key.fn { font-size: 15px; color: var(--text-2); }
+  .key.accent {
+    background: var(--accent-grad);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    padding: 0 16px 12px;
+  }
+  .cat-item {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 5px;
+    padding: 10px 4px;
+    border-radius: 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s ease, background .2s;
+  }
+  .cat-item:active { transform: scale(.94); }
+  .cat-item.selected {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+  }
+  .cat-emoji { font-size: 20px; }
+  .cat-name { font-size: 10px; color: var(--text-2); }
+  .cat-item.selected .cat-name { color: var(--accent-1); font-weight: 600; }
+
+  .pending-row {
+    margin: 0 16px 10px;
+    padding: 14px;
+    border-radius: 18px;
+  }
+  .pending-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .pending-icon {
+    width: 36px; height: 36px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .pending-info { flex: 1; }
+  .pending-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .pending-meta { font-size: 10px; color: var(--text-3); margin-top: 3px; }
+  .pending-amount { font-size: 15px; font-weight: 700; color: var(--text); }
+  .pending-raw {
+    font-size: 10.5px;
+    color: var(--text-3);
+    background: rgba(120,120,140,.08);
+    padding: 8px 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    line-height: 1.5;
+    font-family: 'SF Mono', ui-monospace, monospace;
+  }
+  .pending-actions { display: flex; gap: 8px; }
+  .pending-btn {
+    flex: 1;
+    padding: 9px;
+    border-radius: 11px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s ease;
+  }
+  .pending-btn:active { transform: scale(.96); }
+  .pending-btn.confirm { background: var(--accent-grad); color: #fff; }
+  .pending-btn.ignore { color: var(--text-3); }
+
+  .onboard-step {
+    display: flex; flex-direction: column;
+    align-items: center;
+    padding: 40px 32px;
+    text-align: center;
+    min-height: 560px;
+    justify-content: center;
+  }
+  .onboard-illu {
+    width: 120px; height: 120px;
+    border-radius: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px;
+    margin-bottom: 28px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  .onboard-title { font-size: 22px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+  .onboard-desc { font-size: 13px; line-height: 1.8; color: var(--text-2); margin-bottom: 32px; }
+  .onboard-dots { display: flex; gap: 6px; margin-bottom: 24px; }
+  .onboard-dots i {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-3); opacity: .4;
+    transition: all .3s;
+  }
+  .onboard-dots i.active {
+    width: 18px; border-radius: 3px;
+    background: var(--accent-1);
+    opacity: 1;
+  }
+  .onboard-btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: 16px;
+    background: var(--accent-grad);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s ease;
+    letter-spacing: .5px;
+  }
+  .onboard-btn:active { transform: scale(.97); }
+  .onboard-skip { margin-top: 16px; font-size: 12px; color: var(--text-3); cursor: pointer; }
+
+  .budget-bar {
+    height: 10px;
+    border-radius: 5px;
+    background: rgba(120,120,140,.15);
+    overflow: hidden;
+    margin: 8px 0 6px;
+  }
+  .budget-fill {
+    height: 100%;
+    border-radius: 5px;
+    background: var(--accent-grad);
+    transition: width .4s ease;
+  }
+  .budget-fill.warn { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+  .budget-fill.over { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+  .search-bar {
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 16px 14px;
+    padding: 12px 16px;
+    border-radius: 16px;
+  }
+  .search-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    color: var(--text);
+    font-family: inherit;
+  }
+  .search-bar input::placeholder { color: var(--text-3); }
+  .filter-chips {
+    display: flex; gap: 8px;
+    padding: 0 16px 14px;
+    overflow-x: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--text-2);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all .2s;
+  }
+  .chip.active {
+    background: var(--accent-grad);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center;
+    padding: 60px 32px;
+    text-align: center;
+  }
+  .empty-icon { font-size: 42px; margin-bottom: 16px; opacity: .35; }
+  .empty-text { font-size: 13px; color: var(--text-3); line-height: 1.7; }
+
+  .badge-amber {
+    display: inline-block;
+    font-size: 9px;
+    color: var(--amber);
+    background: rgba(245,158,11,.14);
+    padding: 3px 6px;
+    border-radius: 5px;
+    font-weight: 600;
+    margin-left: 6px;
+    vertical-align: 1px;
+  }
+  .badge-accent {
+    display: inline-block;
+    font-size: 9px;
+    color: var(--accent-1);
+    background: rgba(79,70,229,.12);
+    padding: 3px 6px;
+    border-radius: 5px;
+    font-weight: 600;
+    margin-left: 6px;
+    vertical-align: 1px;
+  }
+
+
+  /* ============  自动记账增强 ============ */
+  .auto-status-hero{margin:0 16px 14px;padding:18px;border-radius:20px;position:relative;overflow:hidden}
+  .auto-status-top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .status-orb{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--accent-grad);color:#fff;box-shadow:0 0 22px var(--glow-1)}
+  .auto-status-title{font-size:15px;font-weight:700;color:var(--text)}
+  .auto-status-sub{font-size:10.5px;color:var(--text-3);margin-top:4px}
+  .status-live{margin-left:auto;font-size:10px;color:var(--green);font-weight:700;padding:5px 9px;border-radius:10px;background:rgba(16,185,129,.1)}
+  .source-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .source-card{padding:13px;border-radius:15px;background:var(--row-bg);border:1px solid var(--glass-border);cursor:pointer}
+  .source-card:active{transform:scale(.98)}
+  .source-line{display:flex;align-items:center;justify-content:space-between}
+  .source-name{font-size:12.5px;font-weight:700;color:var(--text)}
+  .source-ok{font-size:9px;color:var(--green)}
+  .source-meta{font-size:9.5px;color:var(--text-3);margin-top:6px;line-height:1.5}
+  .metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .metric{padding:11px 8px;border-radius:13px;background:var(--row-bg);text-align:center}
+  .metric-v{font-size:17px;font-weight:700;color:var(--text)}
+  .metric-k{font-size:9px;color:var(--text-3);margin-top:4px}
+  .reason-badge{display:inline-flex;align-items:center;padding:4px 7px;border-radius:7px;font-size:9px;font-weight:700;color:var(--amber);background:rgba(245,158,11,.12);margin-top:5px}
+  .reason-badge.red{color:var(--red);background:rgba(239,68,68,.1)}
+  .reason-badge.green{color:var(--green);background:rgba(16,185,129,.1)}
+  .pending-edit{color:var(--accent-1)!important;background:var(--glass-bg);border:1px solid var(--glass-border)}
+  .compare-box{display:grid;grid-template-columns:1fr 28px 1fr;align-items:center;gap:8px}
+  .compare-card{padding:13px;border-radius:15px;background:var(--row-bg);border:1px solid var(--glass-border)}
+  .compare-title{font-size:9px;color:var(--text-3);margin-bottom:7px;letter-spacing:.5px}
+  .compare-name{font-size:12px;font-weight:700;color:var(--text)}
+  .compare-amt{font-size:15px;font-weight:700;color:var(--text);margin-top:5px}
+  .compare-meta{font-size:9.5px;color:var(--text-3);margin-top:4px;line-height:1.5}
+  .compare-arrow{text-align:center;color:var(--amber);font-size:17px}
+  .reason-list{display:flex;flex-direction:column;gap:8px}
+  .reason-item{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:12px;background:var(--row-bg);font-size:11px;color:var(--text-2)}
+  .reason-item b{margin-left:auto;color:var(--text);font-size:11px}
+  .evidence-block{padding:12px;border-radius:13px;background:rgba(120,120,140,.07);font-family:'SF Mono',ui-monospace,monospace;font-size:9.5px;line-height:1.7;color:var(--text-2);white-space:pre-wrap;word-break:break-all}
+  .confidence{display:flex;align-items:center;gap:10px}
+  .confidence-bar{height:7px;border-radius:4px;background:rgba(120,120,140,.15);overflow:hidden;flex:1}
+  .confidence-fill{height:100%;background:var(--accent-grad);border-radius:4px}
+  .pipeline{display:flex;align-items:center;gap:4px;overflow-x:auto;padding:2px 0 4px}
+  .pipeline::-webkit-scrollbar{display:none}
+  .pipeline-step{flex-shrink:0;padding:7px 9px;border-radius:9px;font-size:9px;color:var(--text-2);background:var(--row-bg);border:1px solid var(--glass-border)}
+  .pipeline-step.done{color:var(--green)}
+  .pipeline-step.current{color:var(--accent-1);font-weight:700;border-color:var(--accent-1)}
+  .pipeline-arrow{color:var(--text-3);font-size:10px}
+  .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .action-tile{padding:13px;border-radius:14px;background:var(--row-bg);border:1px solid var(--glass-border);cursor:pointer}
+  .action-tile:active{transform:scale(.98)}
+  .action-tile b{font-size:11.5px;color:var(--text)}
+  .action-tile span{display:block;font-size:9.5px;color:var(--text-3);margin-top:4px;line-height:1.4}
+  .rule-detail{padding:11px 0}
+  .rule-detail+.rule-detail{border-top:1px solid var(--divider)}
+  .rule-k{font-size:9px;color:var(--text-3);letter-spacing:1px}
+  .rule-v{font-size:12px;color:var(--text);font-weight:600;margin-top:4px;line-height:1.5}
+  .select-row{display:flex;gap:7px;overflow-x:auto;margin-bottom:14px}
+  .select-row::-webkit-scrollbar{display:none}
+  .select-pill{white-space:nowrap;padding:7px 11px;border-radius:10px;background:var(--row-bg);border:1px solid var(--glass-border);font-size:10px;color:var(--text-2)}
+  .select-pill.active{background:var(--accent-grad);color:#fff;border-color:transparent}
+  .info-callout{padding:12px 13px;border-radius:14px;background:rgba(79,70,229,.08);border:1px solid rgba(79,70,229,.12);font-size:10.5px;line-height:1.6;color:var(--text-2);margin-bottom:12px}
+
+  /* ============ 模态弹窗 ============ */
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--overlay);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease;
+    display: flex;
+    align-items: flex-end;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .modal-sheet {
+    width: 100%;
+    max-height: 78%;
+    background: var(--modal-bg);
+    backdrop-filter: blur(30px) saturate(1.6);
+    -webkit-backdrop-filter: blur(30px) saturate(1.6);
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    border-top: 1px solid var(--glass-border);
+    padding: 12px 20px 26px;
+    transform: translateY(100%);
+    transition: transform .32s cubic-bezier(.4,0,.2,1);
+    overflow-y: auto;
+    color: var(--text);
+  }
+  .modal-overlay.show .modal-sheet { transform: translateY(0); }
+  .modal-sheet::-webkit-scrollbar { display: none; }
+
+  .modal-handle {
+    width: 38px; height: 4px;
+    border-radius: 2px;
+    background: rgba(120,120,140,.3);
+    margin: 0 auto 18px;
+  }
+  .modal-title {
+    font-size: 17px; font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .modal-sub {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-bottom: 20px;
+  }
+  .modal-label {
+    font-size: 11px;
+    color: var(--text-3);
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .modal-input {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 13px;
+    background: var(--input-bg);
+    border: 1px solid var(--glass-border);
+    font-size: 14px;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color .2s;
+  }
+  .modal-input:focus { border-color: var(--accent-1); }
+
+  .modal-options {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 16px;
+  }
+  .modal-option {
+    padding: 9px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    background: var(--input-bg);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all .2s;
+  }
+  .modal-option.selected {
+    background: var(--accent-grad);
+    color: #fff;
+    font-weight: 600;
+    border-color: transparent;
+  }
+
+  .modal-actions {
+    display: flex; gap: 12px;
+    margin-top: 8px;
+  }
+  .modal-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 14px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s ease;
+  }
+  .modal-btn:active { transform: scale(.97); }
+  .modal-btn.primary { background: var(--accent-grad); color: #fff; }
+  .modal-btn.secondary { color: var(--text-2); }
+  .modal-btn.danger { background: linear-gradient(120deg, #ef4444, #dc2626); color: #fff; }
+
+  /* Toast */
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: 110px;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(20,26,36,.92);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 11px 20px;
+    border-radius: 14px;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease, transform .25s ease;
+    backdrop-filter: blur(20px);
+    white-space: nowrap;
+    box-shadow: 0 10px 30px rgba(0,0,0,.3);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .page.active .tx-row,
+  .page.active .balance-card,
+  .page.active .card,
+  .page.active .pending-row {
+    animation: fadeInUp .38s ease backwards;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="screen" id="screen" data-theme="light">
+
+    <div class="glow g1"></div>
+    <div class="glow g2"></div>
+    <div class="glow g3"></div>
+
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-right">5G ▮</div>
+    </div>
+
+    <div class="page-container">
+
+      <!-- ============ 首页 ============ -->
+      <div class="page active" data-page="home">
+        <div class="app-head">
+          <div>
+            <div class="app-logo">账然</div>
+            <div class="app-sub">AUTO LEDGER · </div>
+          </div>
+          <div class="head-actions">
+            <div class="head-icon glass" data-nav="search">🔍</div>
+            <div class="head-icon glass" data-nav="pending">
+              ⏳<span class="dot"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="balance-card glass">
+          <div class="card-label">本月支出</div>
+          <div class="card-amount mono">¥3,847<small>.20</small></div>
+          <div class="card-stats">
+            <div>
+              <div class="stat-k">INCOME</div>
+              <div class="stat-v green mono">+12,000</div>
+            </div>
+            <div>
+              <div class="stat-k">BALANCE</div>
+              <div class="stat-v grad mono">8,152.80</div>
+            </div>
+            <div>
+              <div class="stat-k">RECORDS</div>
+              <div class="stat-v mono">128</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-label">今天</div>
+
+        <div class="tx-row glass" data-tx="starbucks">
+          <div class="tx-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);">☕</div>
+          <div class="tx-info">
+            <div class="tx-name">星巴克咖啡</div>
+            <div class="tx-meta">餐饮 · 14:23 · 自动捕获</div>
+          </div>
+          <div class="tx-amt mono">-38.50</div>
+        </div>
+
+        <div class="tx-row glass" data-tx="jd">
+          <div class="tx-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);">🛍</div>
+          <div class="tx-info">
+            <div class="tx-name">京东购物</div>
+            <div class="tx-meta">数码 · 11:05 · 自动捕获</div>
+          </div>
+          <div class="tx-amt mono">-128.00</div>
+        </div>
+
+        <div class="tx-row glass" data-tx="metro">
+          <div class="tx-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);">🚇</div>
+          <div class="tx-info">
+            <div class="tx-name">地铁出行</div>
+            <div class="tx-meta">交通 · 08:15 · 自动捕获</div>
+          </div>
+          <div class="tx-amt mono">-6.00</div>
+        </div>
+
+        <div class="section-label">昨天</div>
+
+        <div class="tx-row glass" data-tx="salary">
+          <div class="tx-icon" style="background:linear-gradient(135deg,#e9e4ff,#d9d0ff);">💰</div>
+          <div class="tx-info">
+            <div class="tx-name">工资到账</div>
+            <div class="tx-meta">收入 · 09:00</div>
+          </div>
+          <div class="tx-amt in mono">+1,200.00</div>
+        </div>
+
+        <div class="tx-row glass" data-tx="meituan">
+          <div class="tx-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);">🍜</div>
+          <div class="tx-info">
+            <div class="tx-name">美团外卖</div>
+            <div class="tx-meta">餐饮 · 19:30 · 自动捕获</div>
+          </div>
+          <div class="tx-amt mono">-45.00</div>
+        </div>
+
+        <div class="tx-row glass" data-tx="yonghui">
+          <div class="tx-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);">🛒</div>
+          <div class="tx-info">
+            <div class="tx-name">永辉超市</div>
+            <div class="tx-meta">购物 · 17:12 · 自动捕获</div>
+          </div>
+          <div class="tx-amt mono">-86.40</div>
+        </div>
+      </div>
+
+
+      <!-- ============ 统计页 ============ -->
+      <div class="page" data-page="stats">
+        <div class="app-head">
+          <div>
+            <div class="app-logo">统计</div>
+            <div class="app-sub">2024 年 6 月</div>
+          </div>
+          <div class="status-pill"><span class="pill-dot"></span><span>本月</span></div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">MONTHLY OVERVIEW</div>
+          <div class="stat-overview-amount mono">¥3,847<small>.20</small></div>
+          <div class="card-stats">
+            <div>
+              <div class="stat-k">日均支出</div>
+              <div class="stat-v mono">¥128.24</div>
+            </div>
+            <div>
+              <div class="stat-k">最高单日</div>
+              <div class="stat-v mono">¥486.00</div>
+            </div>
+            <div>
+              <div class="stat-k">记账笔数</div>
+              <div class="stat-v mono">128</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card glass" style="display:flex;align-items:center;gap:18px;">
+          <div class="donut">
+            <div class="donut-inner">
+              <div class="donut-k">TOTAL</div>
+              <div class="donut-v mono">¥3.8k</div>
+            </div>
+          </div>
+          <div class="legend">
+            <div class="legend-row"><i style="background:#4f46e5;"></i><span>餐饮</span><b class="mono">42%</b></div>
+            <div class="legend-row"><i style="background:#06b6d4;"></i><span>购物</span><b class="mono">24%</b></div>
+            <div class="legend-row"><i style="background:#10b981;"></i><span>交通</span><b class="mono">20%</b></div>
+            <div class="legend-row"><i style="background:#f59e0b;"></i><span>其他</span><b class="mono">14%</b></div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">WEEKLY TREND</div>
+          <div class="chart">
+            <div class="chart-col"><div class="chart-bar" style="height:34px;background:linear-gradient(180deg,#c7d2fe,#a5b4fc);"></div><div class="chart-day">一</div></div>
+            <div class="chart-col"><div class="chart-bar" style="height:52px;background:linear-gradient(180deg,#a5b4fc,#818cf8);"></div><div class="chart-day">二</div></div>
+            <div class="chart-col"><div class="chart-bar" style="height:40px;background:linear-gradient(180deg,#c7d2fe,#a5b4fc);"></div><div class="chart-day">三</div></div>
+            <div class="chart-col"><div class="chart-bar" style="height:68px;background:linear-gradient(180deg,#818cf8,#6366f1);"></div><div class="chart-day">四</div></div>
+            <div class="chart-col"><div class="chart-bar" style="height:86px;background:linear-gradient(180deg,#4f46e5,#4338ca);"></div><div class="chart-day">五</div></div>
+            <div class="chart-col"><div class="chart-bar" style="height:46px;background:linear-gradient(180deg,#a5b4fc,#818cf8);"></div><div class="chart-day">六</div></div>
+            <div class="chart-col"><div class="chart-bar" style="height:26px;background:linear-gradient(180deg,#c7d2fe,#a5b4fc);"></div><div class="chart-day">日</div></div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ============ 记一笔页 ============ -->
+      <div class="page" data-page="add">
+        <div class="app-head">
+          <div>
+            <div class="app-logo">记一笔</div>
+            <div class="app-sub">MANUAL ENTRY</div>
+          </div>
+          <div class="status-pill" id="addTypeToggle" style="cursor:pointer;">
+            <span id="addTypeLabel">支出</span>
+          </div>
+        </div>
+
+        <div class="card glass" style="padding:16px 18px;">
+          <div class="amount-display mono" id="addAmount">
+            <span class="currency">¥</span>0.00
+          </div>
+        </div>
+
+        <div class="cat-grid" id="catGrid">
+          <div class="cat-item selected" data-cat="餐饮"><div class="cat-emoji">🍜</div><div class="cat-name">餐饮</div></div>
+          <div class="cat-item" data-cat="购物"><div class="cat-emoji">🛍</div><div class="cat-name">购物</div></div>
+          <div class="cat-item" data-cat="交通"><div class="cat-emoji">🚇</div><div class="cat-name">交通</div></div>
+          <div class="cat-item" data-cat="娱乐"><div class="cat-emoji">🎮</div><div class="cat-name">娱乐</div></div>
+          <div class="cat-item" data-cat="居住"><div class="cat-emoji">🏠</div><div class="cat-name">居住</div></div>
+          <div class="cat-item" data-cat="医疗"><div class="cat-emoji">💊</div><div class="cat-name">医疗</div></div>
+          <div class="cat-item" data-cat="教育"><div class="cat-emoji">📚</div><div class="cat-name">教育</div></div>
+          <div class="cat-item" data-cat="人情"><div class="cat-emoji">🎁</div><div class="cat-name">人情</div></div>
+          <div class="cat-item" data-cat="数码"><div class="cat-emoji">💻</div><div class="cat-name">数码</div></div>
+          <div class="cat-item" data-cat="其他"><div class="cat-emoji">📦</div><div class="cat-name">其他</div></div>
+        </div>
+
+        <div class="card glass" style="padding:12px 18px;">
+          <div class="set-row" style="padding:8px 0;" data-edit="account">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);font-size:13px;">💳</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">账户</div></div>
+            <div style="font-size:12px;color:var(--text-3);" id="addAccount">支付宝 ›</div>
+          </div>
+          <div class="set-row" style="padding:8px 0;" data-edit="time">
+            <div class="set-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);font-size:13px;">🕐</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">时间</div></div>
+            <div style="font-size:12px;color:var(--text-3);" id="addTime">现在 ›</div>
+          </div>
+          <div class="set-row" style="padding:8px 0;border-bottom:none;" data-edit="note">
+            <div class="set-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);font-size:13px;">📝</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">备注</div></div>
+            <div style="font-size:12px;color:var(--text-3);" id="addNote">添加 ›</div>
+          </div>
+        </div>
+
+        <div class="keypad">
+          <div class="key glass" data-key="1">1</div>
+          <div class="key glass" data-key="2">2</div>
+          <div class="key glass" data-key="3">3</div>
+          <div class="key glass fn" data-key="del">⌫</div>
+          <div class="key glass" data-key="4">4</div>
+          <div class="key glass" data-key="5">5</div>
+          <div class="key glass" data-key="6">6</div>
+          <div class="key glass fn" data-key="clear">C</div>
+          <div class="key glass" data-key="7">7</div>
+          <div class="key glass" data-key="8">8</div>
+          <div class="key glass" data-key="9">9</div>
+          <div class="key accent" data-key="save">保存</div>
+          <div class="key glass" data-key="0" style="grid-column:span 2;">0</div>
+          <div class="key glass" data-key=".">.</div>
+        </div>
+      </div>
+
+
+      <!-- ============ 预算页 ============ -->
+      <div class="page" data-page="budget">
+        <div class="app-head">
+          <div>
+            <div class="app-logo">预算</div>
+            <div class="app-sub">BUDGET</div>
+          </div>
+          <div class="page-head-right" style="font-size:12px;color:var(--text-3);">点击预算金额修改</div>
+        </div>
+
+        <div class="card glass" data-edit="totalBudget" style="cursor:pointer;">
+          <div class="card-head">月度总预算 <span class="card-head-action">点击修改</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;
+            <span class="mono" style="font-size:26px;font-weight:700;color:var(--text);">¥5,000</span>
+            <span style="font-size:12px;color:var(--text-3);">已用 ¥3,847.20</span>
+          </div>
+          <div class="budget-bar">
+            <div class="budget-fill" style="width:77%;"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);">剩余 ¥1,152.80 · 已用 77%</div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">
+            <span>分类预算</span>
+            <span class="card-head-action" data-edit="addCategoryBudget">添加</span>
+          </div>
+
+          <div style="margin-bottom:14px;" data-edit="budget-food">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;">
+              <span style="color:var(--text-2);">🍜 餐饮</span>
+              <span style="color:var(--text);font-weight:600;" class="mono">¥1,620 / ¥2,000</span>
+            </div>
+            <div class="budget-bar"><div class="budget-fill" style="width:81%;"></div></div>
+          </div>
+
+          <div style="margin-bottom:14px;" data-edit="budget-shop">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;">
+              <span style="color:var(--text-2);">🛍 购物</span>
+              <span style="color:var(--text);font-weight:600;" class="mono">¥1,260 / ¥1,500</span>
+            </div>
+            <div class="budget-bar"><div class="budget-fill warn" style="width:84%;"></div></div>
+          </div>
+
+          <div style="margin-bottom:14px;" data-edit="budget-traffic">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;">
+              <span style="color:var(--text-2);">🚇 交通</span>
+              <span style="color:var(--text);font-weight:600;" class="mono">¥280 / ¥500</span>
+            </div>
+            <div class="budget-bar"><div class="budget-fill" style="width:56%;"></div></div>
+          </div>
+
+          <div data-edit="budget-fun">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;">
+              <span style="color:var(--text-2);">🎮 娱乐</span>
+              <span style="color:var(--text);font-weight:600;" class="mono">¥520 / ¥500</span>
+            </div>
+            <div class="budget-bar"><div class="budget-fill over" style="width:100%;"></div></div>
+            <div style="font-size:10.5px;color:var(--red);margin-top:4px;">已超支 ¥20</div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ============ 设置页 ============ -->
+      <div class="page" data-page="settings">
+        <div class="app-head">
+          <div>
+            <div class="app-logo">我的</div>
+            <div class="app-sub">SETTINGS</div>
+          </div>
+          <div class="status-pill"><span class="pill-dot"></span><span>已连接</span></div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">权限状态</div>
+          <div class="perm-row" data-nav="onboard">
+            <div class="perm-dot ok"></div>
+            <div class="perm-info">
+              <div class="perm-name">通知监听服务</div>
+              <div class="perm-desc">监听微信 / 支付宝支付通知</div>
+            </div>
+            <div class="perm-status ok">已授权</div>
+          </div>
+          <div class="perm-row" data-nav="onboard">
+            <div class="perm-dot ok"></div>
+            <div class="perm-info">
+              <div class="perm-name">无障碍服务</div>
+              <div class="perm-desc">页面文本识别兜底</div>
+            </div>
+            <div class="perm-status ok">已授权</div>
+          </div>
+          <div class="perm-row" data-nav="onboard">
+            <div class="perm-dot warn"></div>
+            <div class="perm-info">
+              <div class="perm-name">电池优化</div>
+              <div class="perm-desc">建议项；核心监听不依赖长期前台服务</div>
+            </div>
+            <div class="perm-status warn">待设置</div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">自动记账</div>
+          <div class="set-row" data-nav="autoLedger">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);">⚡</div>
+            <div class="set-info"><div class="set-name">自动记账状态</div><div class="set-desc">微信 / 支付宝 · 118 笔已自动入账</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">记账偏好</div>
+          <div class="set-row">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);">⚡</div>
+            <div class="set-info"><div class="set-name">自动记账</div><div class="set-desc">支付后自动记录</div></div>
+            <div class="switch on" data-toggle></div>
+          </div>
+          <div class="set-row">
+            <div class="set-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);">🔔</div>
+            <div class="set-info"><div class="set-name">记账提醒</div><div class="set-desc">记录成功时通知</div></div>
+            <div class="switch" data-toggle></div>
+          </div>
+          <div class="set-row" data-nav="pending">
+            <div class="set-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);">⏳</div>
+            <div class="set-info"><div class="set-name">待确认记录</div><div class="set-desc">3 笔待处理</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">数据管理</div>
+          <div class="set-row" data-nav="categories">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);">🏷</div>
+            <div class="set-info"><div class="set-name">分类管理</div><div class="set-desc">自定义分类与图标</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-nav="accounts">
+            <div class="set-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);">💳</div>
+            <div class="set-info"><div class="set-name">账户管理</div><div class="set-desc">支付宝、微信、银行卡</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-nav="budget">
+            <div class="set-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);">🎯</div>
+            <div class="set-info"><div class="set-name">预算管理</div><div class="set-desc">月度总预算与分类预算</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-nav="rules">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e9e4ff,#d9d0ff);">⚙</div>
+            <div class="set-info"><div class="set-name">解析规则</div><div class="set-desc">微信 / 支付宝匹配规则</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-nav="backup">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);">☁</div>
+            <div class="set-info"><div class="set-name">数据备份与恢复</div><div class="set-desc">本地备份 / 恢复</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-nav="logs">
+            <div class="set-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);">📋</div>
+            <div class="set-info"><div class="set-name">捕获日志</div><div class="set-desc">查看原始通知与解析结果</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">外观</div>
+          <div class="set-row">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e9e4ff,#d9d0ff);">🌙</div>
+            <div class="set-info"><div class="set-name">暗色主题</div><div class="set-desc">切换霓虹玻璃风格</div></div>
+            <div class="switch" id="themeSwitch"></div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">其他</div>
+          <div class="set-row" data-nav="about">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);">ℹ</div>
+            <div class="set-info"><div class="set-name">关于账然</div><div class="set-desc">开源协议</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ============ 详情页 ============ -->
+      <div class="page detail-page" data-page="detail">
+        <div class="page-head">
+          <div class="back-btn glass" data-back>‹</div>
+          <div class="page-title">交易详情</div>
+          <div class="page-head-right" style="font-size:11px;color:var(--text-3);">点击字段可修改</div>
+        </div>
+
+        <div class="card glass detail-hero">
+          <div class="tx-icon" id="detailIcon">☕</div>
+          <div class="detail-name" id="detailName">星巴克咖啡</div>
+          <div class="detail-amount mono" id="detailAmount">-38.50</div>
+          <div class="detail-date" id="detailDate">2024年6月28日 14:23</div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">交易信息</div>
+          <div class="detail-info-row" data-edit="detailCategory">
+            <span class="detail-info-k">分类</span>
+            <span class="detail-info-v" id="detailCategory">餐饮</span>
+          </div>
+          <div class="detail-info-row" data-edit="detailMethod">
+            <span class="detail-info-k">支付方式</span>
+            <span class="detail-info-v" id="detailMethod">支付宝</span>
+          </div>
+          <div class="detail-info-row">
+            <span class="detail-info-k">来源</span>
+            <span class="detail-info-v accent" id="detailSource">自动捕获 · 通知监听</span>
+          </div>
+          <div class="detail-info-row"><span class="detail-info-k">解析规则</span><span class="detail-info-v accent" id="detailRule">alipay-payment-success-v3</span></div>
+          <div class="detail-info-row"><span class="detail-info-k">Parser Version</span><span class="detail-info-v" id="detailParser">1.3.0</span></div>
+          <div class="detail-info-row"><span class="detail-info-k">置信度</span><span class="detail-info-v" id="detailConfidence">96%</span></div>
+          <div class="detail-info-row"><span class="detail-info-k">交易状态</span><span class="detail-info-v" id="detailState">CONFIRMED</span></div>
+          <div class="detail-info-row">
+            <span class="detail-info-k">交易单号</span>
+            <span class="detail-info-v mono">20240628...8823</span>
+          </div>
+        </div>
+
+        <div class="card glass" data-edit="detailNote">
+          <div class="card-head">备注</div>
+          <div class="detail-note" id="detailNote">和同事下午茶，美式咖啡 ×2</div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">自动解析证据 <span class="card-head-action" data-action="viewRawCapture">查看原始捕获</span></div>
+          <div class="evidence-block" id="detailEvidence">sourcePackage: com.eg.android.AlipayGphone
+captureMethod: NotificationListenerService
+captureId: cap_20240628_142301_7f2
+transactionId: masked_tx_9a31
+matchedKeywords: 付款成功, 支付成功</div>
+        </div>
+
+        <div class="detail-actions">
+          <div class="detail-btn glass danger" data-edit="detailDelete">删除记录</div>
+        </div>
+      </div>
+
+
+      <!-- ============ 待确认队列页  ============ -->
+      <div class="page detail-page" data-page="pending">
+        <div class="page-head">
+          <div class="back-btn glass" data-back>‹</div>
+          <div class="page-title">待确认记录</div>
+          <div class="page-head-right" id="pendingCountLabel">3 笔</div>
+        </div>
+        <div class="info-callout">自动记账不会猜测不确定的数据。以下记录因为识别、分类或去重存在不确定性，需要你确认或修正后才会进入正式账单。</div>
+
+        <div class="pending-row glass" data-pending-row>
+          <div class="pending-head">
+            <div class="pending-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);">🛍</div>
+            <div class="pending-info"><div class="pending-name">未知商户</div><div class="pending-meta">微信支付 · 今天 15:42 · 52.00 元</div><div class="reason-badge">UNKNOWN_MERCHANT</div></div>
+            <div class="pending-amount mono">-52.00</div>
+          </div>
+          <div class="pending-raw">微信支付收款方：个体户王**，金额 52.00 元</div>
+          <div class="pending-actions">
+            <div class="pending-btn confirm pending-edit" data-pending-edit="merchant">编辑后入账</div>
+            <div class="pending-btn glass ignore" data-pending-ignore>忽略</div>
+          </div>
+        </div>
+
+        <div class="pending-row glass" data-pending-row>
+          <div class="pending-head">
+            <div class="pending-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);">❓</div>
+            <div class="pending-info"><div class="pending-name">疑似重复</div><div class="pending-meta">支付宝 · 今天 11:08 · 128.00 元</div><div class="reason-badge red">POSSIBLE_DUPLICATE</div></div>
+            <div class="pending-amount mono">-128.00</div>
+          </div>
+          <div class="pending-raw">与「京东购物 · ¥128.00 · 11:05」金额相同，时间相差 3 分钟</div>
+          <div class="pending-actions">
+            <div class="pending-btn confirm pending-edit" data-pending-duplicate>查看重复</div>
+            <div class="pending-btn glass ignore" data-pending-ignore>忽略</div>
+          </div>
+        </div>
+
+        <div class="pending-row glass" data-pending-row>
+          <div class="pending-head">
+            <div class="pending-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);">🚇</div>
+            <div class="pending-info"><div class="pending-name">地铁出行</div><div class="pending-meta">支付宝 · 今天 08:18 · 6.00 元</div><div class="reason-badge">CATEGORY_UNCERTAIN</div></div>
+            <div class="pending-amount mono">-6.00</div>
+          </div>
+          <div class="pending-raw">金额已识别，但分类未匹配，建议归入「交通」</div>
+          <div class="pending-actions">
+            <div class="pending-btn confirm pending-edit" data-pending-edit="category">编辑后入账</div>
+            <div class="pending-btn glass ignore" data-pending-ignore>忽略</div>
+          </div>
+        </div>
+        <div id="pendingEmpty" class="empty-state" style="display:none;"><div class="empty-icon">✓</div><div class="empty-text">所有记录已处理完毕</div></div>
+      </div>
+
+      <!-- ============ 自动记账状态页  ============ -->
+      <div class="page detail-page" data-page="autoLedger">
+        <div class="page-head"><div class="back-btn glass" data-back>‹</div><div class="page-title">自动记账</div><div class="page-head-right">正常</div></div>
+        <div class="auto-status-hero glass">
+          <div class="auto-status-top"><div class="status-orb">⚡</div><div><div class="auto-status-title">自动记账正常运行</div><div class="auto-status-sub">核心链路：通知监听 → 解析 → 去重 → 入账</div></div><div class="status-live">● LIVE</div></div>
+          <div class="source-grid">
+            <div class="source-card" data-nav="onboard"><div class="source-line"><span class="source-name">微信支付</span><span class="source-ok">✓ 已连接</span></div><div class="source-meta">最近捕获 2 分钟前<br>本月自动入账 42 笔</div></div>
+            <div class="source-card" data-nav="onboard"><div class="source-line"><span class="source-name">支付宝</span><span class="source-ok">✓ 已连接</span></div><div class="source-meta">最近捕获 5 分钟前<br>本月自动入账 76 笔</div></div>
+          </div>
+          <div class="metric-grid"><div class="metric"><div class="metric-v">118</div><div class="metric-k">自动入账</div></div><div class="metric"><div class="metric-v">6</div><div class="metric-k">待确认</div></div><div class="metric"><div class="metric-v">3</div><div class="metric-k">疑似重复</div></div></div>
+        </div>
+        <div class="card glass"><div class="card-head">辅助能力</div>
+          <div class="perm-row"><div class="perm-dot warn"></div><div class="perm-info"><div class="perm-name">无障碍服务</div><div class="perm-desc">用于特殊页面的可见文本兜底，不读取“隐藏通知”</div></div><div class="perm-status warn">未启用</div></div>
+          <div class="perm-row"><div class="perm-dot warn"></div><div class="perm-info"><div class="perm-name">OCR</div><div class="perm-desc">用于复杂支付页面文字识别</div></div><div class="perm-status warn">未启用</div></div>
+          <div class="perm-row"><div class="perm-dot warn"></div><div class="perm-info"><div class="perm-name">AI 解析</div><div class="perm-desc">默认关闭；启用后由用户控制是否发送数据</div></div><div class="perm-status warn">未启用</div></div>
+        </div>
+        <div class="card glass"><div class="card-head">最近状态</div><div class="reason-list"><div class="reason-item">✓ 微信支付通知已捕获<b>2分钟前</b></div><div class="reason-item">✓ 支付宝通知已入账<b>5分钟前</b></div><div class="reason-item">⚠ 3 笔记录等待去重确认<b>待处理</b></div></div></div>
+        <div class="card glass"><div class="card-head">快捷入口</div><div class="action-grid"><div class="action-tile" data-action="testAuto"><b>🧪 测试自动记账</b><span>检查通知捕获、Parser 与入账链路</span></div><div class="action-tile" data-nav="logs"><b>📋 捕获日志</b><span>查看原始通知与解析结果</span></div><div class="action-tile" data-nav="rules"><b>⚙ 解析规则</b><span>管理规则、优先级和版本</span></div><div class="action-tile" data-nav="pending"><b>⏳ 待确认</b><span>还有 3 笔需要处理</span></div></div></div>
+      </div>
+
+      <!-- ============ Pending 编辑页  ============ -->
+      <div class="page detail-page" data-page="pendingEdit">
+        <div class="page-head"><div class="back-btn glass" data-back>‹</div><div class="page-title">编辑后入账</div><div class="page-head-right">Pending</div></div>
+        <div class="card glass"><div class="card-head">解析结果 · 可修改</div>
+          <label class="modal-label">商户 / 收款方</label><input class="modal-input" value="个体户王**" id="pendingMerchantInput">
+          <label class="modal-label">金额</label><input class="modal-input mono" value="52.00" id="pendingAmountInput">
+          <label class="modal-label">交易类型</label><div class="modal-options" id="pendingTypeOptions"><div class="modal-option selected" data-value="支出">支出</div><div class="modal-option" data-value="收入">收入</div><div class="modal-option" data-value="转账">转账</div><div class="modal-option" data-value="退款">退款</div></div>
+          <label class="modal-label">分类</label><div class="modal-options" id="pendingCategoryOptions"><div class="modal-option selected" data-value="其他">其他</div><div class="modal-option" data-value="餐饮">餐饮</div><div class="modal-option" data-value="购物">购物</div><div class="modal-option" data-value="交通">交通</div></div>
+          <label class="modal-label">账户</label><div class="modal-options" id="pendingAccountOptions"><div class="modal-option selected" data-value="微信支付">微信支付</div><div class="modal-option" data-value="支付宝">支付宝</div><div class="modal-option" data-value="现金">现金</div></div>
+          <label class="modal-label">交易时间</label><input class="modal-input" value="2024-06-28 15:42" id="pendingTimeInput">
+          <label class="modal-label">备注</label><input class="modal-input" placeholder="可选">
+        </div>
+        <div class="card glass"><div class="card-head">原始捕获</div><div class="evidence-block">微信支付收款方：个体户王**，金额 52.00 元
+sourcePackage: com.tencent.mm
+captureMethod: NotificationListenerService
+captureId: cap_20240628_154203_a91</div></div>
+        <div class="card glass"><div class="card-head">解析信息</div><div class="rule-detail"><div class="rule-k">PENDING REASON</div><div class="rule-v"><span class="reason-badge">UNKNOWN_MERCHANT</span></div></div><div class="rule-detail"><div class="rule-k">RULE ID</div><div class="rule-v">wechat-payment-success-v3</div></div><div class="rule-detail"><div class="rule-k">PARSER VERSION</div><div class="rule-v">1.3.0</div></div></div>
+        <div class="detail-actions"><div class="detail-btn glass" data-back>取消</div><div class="detail-btn glass" data-action="confirmPendingEdit" style="color:var(--accent-1);">保存并入账</div></div>
+      </div>
+
+      <!-- ============ 疑似重复页  ============ -->
+      <div class="page detail-page" data-page="duplicateReview">
+        <div class="page-head"><div class="back-btn glass" data-back>‹</div><div class="page-title">疑似重复</div><div class="page-head-right">需确认</div></div>
+        <div class="info-callout">系统只把“可能重复”的记录送入 Pending，不会因为金额相同就自动删除交易。</div>
+        <div class="card glass"><div class="card-head">交易对比</div><div class="compare-box"><div class="compare-card"><div class="compare-title">已有记录</div><div class="compare-name">京东购物</div><div class="compare-amt mono">-¥128.00</div><div class="compare-meta">微信支付<br>11:05 · transactionId 已存在</div></div><div class="compare-arrow">↔</div><div class="compare-card"><div class="compare-title">新捕获</div><div class="compare-name">京东商城</div><div class="compare-amt mono">-¥128.00</div><div class="compare-meta">支付宝<br>11:08 · captureId cap_a82</div></div></div></div>
+        <div class="card glass"><div class="card-head">相似原因</div><div class="reason-list"><div class="reason-item">金额相同<b>¥128.00</b></div><div class="reason-item">时间接近<b>3 分钟</b></div><div class="reason-item">商户相似<b>京东</b></div><div class="reason-item">交易单号<b>不同</b></div></div></div>
+        <div class="card glass"><div class="card-head">去重结果</div><div class="pipeline"><div class="pipeline-step done">Capture</div><div class="pipeline-arrow">›</div><div class="pipeline-step done">Parse</div><div class="pipeline-arrow">›</div><div class="pipeline-step done">Normalize</div><div class="pipeline-arrow">›</div><div class="pipeline-step current">Dedup</div><div class="pipeline-arrow">›</div><div class="pipeline-step">Pending</div></div></div>
+        <div class="detail-actions"><div class="detail-btn glass" data-action="sameTransaction" style="color:var(--amber);">这是同一笔</div><div class="detail-btn glass" data-action="differentTransaction" style="color:var(--accent-1);">这是两笔不同交易</div></div>
+      </div>
+
+      <!-- ============ 权限引导页 ============ -->
+      <div class="page detail-page" data-page="onboard">
+        <div class="onboard-step">
+          <div class="onboard-illu" id="onboardIllu">🔔</div>
+          <div class="onboard-title" id="onboardTitle">开启通知监听</div>
+          <div class="onboard-desc" id="onboardDesc">
+            账然需要读取微信 / 支付宝的支付通知，才能自动记录每一笔消费。所有数据仅在本地处理，不会上传。
+          </div>
+          <div class="onboard-dots" id="onboardDots">
+            <i class="active"></i><i></i><i></i>
+          </div>
+          <div class="onboard-btn" id="onboardBtn">前往授权</div>
+          <div class="onboard-skip" data-back>稍后再说</div>
+        </div>
+      </div>
+
+
+      <!-- ============ 分类管理页 ============ -->
+      <div class="page detail-page" data-page="categories">
+        <div class="page-head">
+          <div class="back-btn glass" data-back>‹</div>
+          <div class="page-title">分类管理</div>
+          <div class="page-head-right" data-edit="addCategory">添加</div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">支出分类 <span class="card-head-action">点击分类可编辑</span></div>
+          <div class="cat-grid" style="padding:0;">
+            <div class="cat-item selected" data-edit="cat-food"><div class="cat-emoji">🍜</div><div class="cat-name">餐饮</div></div>
+            <div class="cat-item" data-edit="cat-shop"><div class="cat-emoji">🛍</div><div class="cat-name">购物</div></div>
+            <div class="cat-item" data-edit="cat-traffic"><div class="cat-emoji">🚇</div><div class="cat-name">交通</div></div>
+            <div class="cat-item" data-edit="cat-fun"><div class="cat-emoji">🎮</div><div class="cat-name">娱乐</div></div>
+            <div class="cat-item" data-edit="cat-home"><div class="cat-emoji">🏠</div><div class="cat-name">居住</div></div>
+            <div class="cat-item" data-edit="cat-medical"><div class="cat-emoji">💊</div><div class="cat-name">医疗</div></div>
+            <div class="cat-item" data-edit="cat-edu"><div class="cat-emoji">📚</div><div class="cat-name">教育</div></div>
+            <div class="cat-item" data-edit="cat-gift"><div class="cat-emoji">🎁</div><div class="cat-name">人情</div></div>
+            <div class="cat-item" data-edit="cat-digital"><div class="cat-emoji">💻</div><div class="cat-name">数码</div></div>
+            <div class="cat-item" data-edit="cat-other"><div class="cat-emoji">📦</div><div class="cat-name">其他</div></div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">收入分类</div>
+          <div class="cat-grid" style="padding:0;">
+            <div class="cat-item" data-edit="cat-salary"><div class="cat-emoji">💰</div><div class="cat-name">工资</div></div>
+            <div class="cat-item" data-edit="cat-bonus"><div class="cat-emoji">🎁</div><div class="cat-name">奖金</div></div>
+            <div class="cat-item" data-edit="cat-invest"><div class="cat-emoji">📈</div><div class="cat-name">理财</div></div>
+            <div class="cat-item" data-edit="cat-redpacket"><div class="cat-emoji">🧧</div><div class="cat-name">红包</div></div>
+            <div class="cat-item" data-edit="cat-income-other"><div class="cat-emoji">➕</div><div class="cat-name">其他</div></div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">
+            <span>自动分类规则</span>
+            <span class="card-head-action" data-edit="addRule">添加</span>
+          </div>
+          <div class="set-row" data-edit="rule-starbucks">
+            <div class="set-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);font-size:13px;">☕</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">星巴克 → 餐饮</div><div class="set-desc">商户名包含「星巴克」</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="rule-jd">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);font-size:13px;">🛍</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">京东 → 购物</div><div class="set-desc">商户名包含「京东」</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="rule-metro">
+            <div class="set-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);font-size:13px;">🚇</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">地铁 → 交通</div><div class="set-desc">商户名包含「地铁」</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ============ 账户管理页 ============ -->
+      <div class="page detail-page" data-page="accounts">
+        <div class="page-head">
+          <div class="back-btn glass" data-back>‹</div>
+          <div class="page-title">账户管理</div>
+          <div class="page-head-right" data-edit="addAccount">添加</div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">支付账户</div>
+          <div class="set-row" data-edit="account-alipay">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);">💳</div>
+            <div class="set-info"><div class="set-name">支付宝</div><div class="set-desc">默认账户 · 本月支出 ¥2,146</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="account-wechat">
+            <div class="set-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);">💚</div>
+            <div class="set-info"><div class="set-name">微信支付</div><div class="set-desc">本月支出 ¥1,428</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="account-cmb">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e9e4ff,#d9d0ff);">🏦</div>
+            <div class="set-info"><div class="set-name">招商银行储蓄卡</div><div class="set-desc">尾号 8823 · 本月支出 ¥273</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="account-cash">
+            <div class="set-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);">💵</div>
+            <div class="set-info"><div class="set-name">现金</div><div class="set-desc">手动记录</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">信用卡</div>
+          <div class="set-row" data-edit="account-credit">
+            <div class="set-icon" style="background:linear-gradient(135deg,#fde8e8,#fbd5d5);">💳</div>
+            <div class="set-info"><div class="set-name">招商银行信用卡</div><div class="set-desc">尾号 6621 · 还款日 每月 15 日</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ============ 解析规则页 ============ -->
+      <div class="page detail-page" data-page="rules">
+        <div class="page-head">
+          <div class="back-btn glass" data-back>‹</div>
+          <div class="page-title">解析规则</div>
+          <div class="page-head-right" data-edit="addRule">添加</div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">微信支付</div>
+          <div class="set-row" data-edit="rule-wechat-pay">
+            <div class="set-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);font-size:13px;">✓</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">支付成功</div><div class="set-desc">匹配关键词「支付成功」「已付款」</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="rule-wechat-receive">
+            <div class="set-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);font-size:13px;">✓</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">收款到账</div><div class="set-desc">匹配关键词「收款」「已到账」</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">支付宝</div>
+          <div class="set-row" data-edit="rule-alipay-pay">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);font-size:13px;">✓</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">付款成功</div><div class="set-desc">匹配关键词「付款成功」「支付成功」</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="rule-alipay-balance">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);font-size:13px;">✓</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">余额变动</div><div class="set-desc">匹配关键词「余额」「支出」</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">规则测试</div>
+          <div style="font-size:12px;color:var(--text-3);margin-bottom:10px;">粘贴一条通知文本，测试能否正确解析</div>
+          <div style="padding:12px;border-radius:12px;background:var(--input-bg);font-size:12px;color:var(--text-2);line-height:1.6;font-family:monospace;">
+            微信支付：支付成功 ¥38.50，收款方 星巴克咖啡
+          </div>
+          <div style="margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(16,185,129,.1);font-size:11.5px;color:var(--green);">
+            ✓ 解析成功：金额 38.50 · 商户 星巴克咖啡
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ============ 数据备份页 ============ -->
+      <div class="page detail-page" data-page="backup">
+        <div class="page-head">
+          <div class="back-btn glass" data-back>‹</div>
+          <div class="page-title">数据备份与恢复</div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">本地备份</div>
+          <div class="set-row" data-edit="exportBackup">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);">📤</div>
+            <div class="set-info"><div class="set-name">导出备份文件</div><div class="set-desc">保存到本地目录</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="importBackup">
+            <div class="set-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);">📥</div>
+            <div class="set-info"><div class="set-name">从备份恢复</div><div class="set-desc">选择备份文件导入</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row">
+            <div class="set-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);">🔄</div>
+            <div class="set-info"><div class="set-name">自动备份</div><div class="set-desc">每周自动备份到本地</div></div>
+            <div class="switch on" data-toggle></div>
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">最近备份</div>
+          <div class="set-row" data-edit="backup-1">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e9e4ff,#d9d0ff);font-size:13px;">📦</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">zhangran_20240628.db</div><div class="set-desc">2024-06-28 22:00 · 2.4 MB</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="backup-2">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e9e4ff,#d9d0ff);font-size:13px;">📦</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">zhangran_20240621.db</div><div class="set-desc">2024-06-21 22:00 · 2.2 MB</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+
+        <div class="card glass" style="border-color:rgba(239,68,68,.3);">
+          <div class="card-head" style="color:var(--red);">危险操作</div>
+          <div class="set-row" data-edit="clearData">
+            <div class="set-icon" style="background:linear-gradient(135deg,#fde8e8,#fbd5d5);">🗑</div>
+            <div class="set-info"><div class="set-name" style="color:var(--red);">清空所有数据</div><div class="set-desc">不可恢复，请先备份</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ============ 捕获日志页 ============ -->
+      <div class="page detail-page" data-page="logs">
+        <div class="page-head">
+          <div class="back-btn glass" data-back>‹</div>
+          <div class="page-title">捕获日志</div>
+          <div class="page-head-right" data-edit="clearLogs">清空</div>
+        </div>
+
+        <div style="padding:0 22px 14px;font-size:12px;color:var(--text-3);line-height:1.6;">
+          最近捕获的原始通知与解析结果，用于排查自动记账失效问题
+        </div>
+
+        <div class="card glass" style="padding:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;color:var(--text-3);" class="mono">15:42:08</span>
+            <span class="badge-amber">待确认</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-2);line-height:1.6;font-family:monospace;">
+            微信支付：收款方 个体户王**，金额 52.00 元
+          </div>
+        </div>
+
+        <div class="card glass" style="padding:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;color:var(--text-3);" class="mono">14:23:15</span>
+            <span class="badge-accent">已入账</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-2);line-height:1.6;font-family:monospace;">
+            支付宝：付款成功 ¥38.50，收款方 星巴克咖啡
+          </div>
+          <div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(16,185,129,.1);font-size:10.5px;color:var(--green);">
+            → 金额 38.50 · 商户 星巴克咖啡 · 分类 餐饮
+          </div>
+        </div>
+
+        <div class="card glass" style="padding:14px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;color:var(--text-3);" class="mono">11:08:42</span>
+            <span class="badge-amber">待确认</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-2);line-height:1.6;font-family:monospace;">
+            支付宝：付款成功 ¥128.00，商户 京东商城
+          </div>
+        </div>
+
+        <div class="card glass" style="padding:14px;opacity:.5;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;color:var(--text-3);" class="mono">11:05:30</span>
+            <span style="font-size:10px;color:var(--text-3);">已忽略 · 重复</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--text-2);line-height:1.6;font-family:monospace;">
+            微信支付：支付成功 ¥128.00，商户 京东商城
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ============ 搜索页 ============ -->
+      <div class="page detail-page" data-page="search">
+        <div class="page-head">
+          <div class="back-btn glass" data-back>‹</div>
+          <div class="page-title">搜索</div>
+        </div>
+
+        <div class="search-bar glass">
+          <span style="color:var(--text-3);font-size:15px;">🔍</span>
+          <input type="text" placeholder="搜索商户、备注、金额…" id="searchInput" autocomplete="off">
+        </div>
+
+        <div class="filter-chips">
+          <div class="chip active">全部</div>
+          <div class="chip">餐饮</div>
+          <div class="chip">购物</div>
+          <div class="chip">交通</div>
+          <div class="chip">收入</div>
+          <div class="chip">支付宝</div>
+          <div class="chip">微信</div>
+        </div>
+
+        <div class="section-label">最近搜索</div>
+
+        <div class="tx-row glass" data-tx="starbucks">
+          <div class="tx-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);">☕</div>
+          <div class="tx-info"><div class="tx-name">星巴克咖啡</div><div class="tx-meta">餐饮 · 今天 14:23</div></div>
+          <div class="tx-amt mono">-38.50</div>
+        </div>
+
+        <div class="tx-row glass" data-tx="jd">
+          <div class="tx-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);">🛍</div>
+          <div class="tx-info"><div class="tx-name">京东购物</div><div class="tx-meta">数码 · 今天 11:05</div></div>
+          <div class="tx-amt mono">-128.00</div>
+        </div>
+
+        <div class="tx-row glass" data-tx="meituan">
+          <div class="tx-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);">🍜</div>
+          <div class="tx-info"><div class="tx-name">美团外卖</div><div class="tx-meta">餐饮 · 昨天 19:30</div></div>
+          <div class="tx-amt mono">-45.00</div>
+        </div>
+      </div>
+
+
+      <!-- ============ 关于页 ============ -->
+      <div class="page detail-page" data-page="about">
+        <div class="page-head">
+          <div class="back-btn glass" data-back>‹</div>
+          <div class="page-title">关于账然</div>
+        </div>
+
+        <div class="card glass" style="text-align:center;padding:32px 18px 26px;">
+          <div style="width:72px;height:72px;border-radius:22px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;font-size:32px;background:var(--glass-bg);border:1px solid var(--glass-border);">
+            📒
+          </div>
+          <div style="font-size:20px;font-weight:700;letter-spacing:3px;background:var(--accent-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;">
+            账然
+          </div>
+          <div style="font-size:11px;color:var(--text-3);letter-spacing:1px;">版本 1.0.0</div>
+          <div style="font-size:12px;color:var(--text-2);margin-top:16px;line-height:1.7;">
+            不主动，不打扰<br>账目自然清晰
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">隐私承诺</div>
+          <div style="font-size:12.5px;color:var(--text-2);line-height:1.9;">
+            · 所有数据仅存储在本地<br>
+            · 不申请 INTERNET 权限<br>
+            · 不收集、不上传任何信息<br>
+            · 无障碍服务只读取可见文本
+          </div>
+        </div>
+
+        <div class="card glass">
+          <div class="card-head">信息</div>
+          <div class="set-row" data-edit="license">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e5eeff,#d4e3ff);font-size:13px;">📄</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">开源协议</div><div class="set-desc">MIT License</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="github">
+            <div class="set-icon" style="background:linear-gradient(135deg,#dcfce9,#c3f5dc);font-size:13px;">🔗</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">GitHub 仓库</div><div class="set-desc">查看源码与提交 Issue</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="feedback">
+            <div class="set-icon" style="background:linear-gradient(135deg,#fff1e0,#ffe1c4);font-size:13px;">✉</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">反馈与建议</div><div class="set-desc">发送邮件</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+          <div class="set-row" data-edit="checkUpdate">
+            <div class="set-icon" style="background:linear-gradient(135deg,#e9e4ff,#d9d0ff);font-size:13px;">🔄</div>
+            <div class="set-info"><div class="set-name" style="font-size:12.5px;">检查更新</div><div class="set-desc">当前已是最新版本</div></div>
+            <div class="set-arrow">›</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ============ 标签栏 ============ -->
+    <div class="tab-bar" id="tabBar">
+      <div class="tab active" data-target="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>首页</span>
+      </div>
+      <div class="tab" data-target="stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        <span>统计</span>
+      </div>
+      <div class="tab" data-target="add">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>记一笔</span>
+      </div>
+      <div class="tab" data-target="budget">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+        <span>预算</span>
+      </div>
+      <div class="tab" data-target="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span>我的</span>
+      </div>
+    </div>
+
+    <!-- ============ 模态弹窗容器 ============ -->
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet" id="modalSheet"></div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+  </div>
+</div>
+
+
+<script>
+/* ================================================================
+   数据
+   ================================================================ */
+const txData = {
+  starbucks: { merchant:'星巴克咖啡', icon:'☕', iconBg:'linear-gradient(135deg,#fff1e0,#ffe1c4)', amount:'-38.50', date:'2024年6月28日 14:23', category:'餐饮', method:'支付宝', source:'自动捕获 · 通知监听', note:'和同事下午茶，美式咖啡 ×2', isIncome:false },
+  jd:        { merchant:'京东购物', icon:'🛍', iconBg:'linear-gradient(135deg,#e5eeff,#d4e3ff)', amount:'-128.00', date:'2024年6月28日 11:05', category:'数码', method:'微信支付', source:'自动捕获 · 通知监听', note:'USB-C 数据线', isIncome:false },
+  metro:     { merchant:'地铁出行', icon:'🚇', iconBg:'linear-gradient(135deg,#dcfce9,#c3f5dc)', amount:'-6.00', date:'2024年6月28日 08:15', category:'交通', method:'支付宝', source:'自动捕获 · 通知监听', note:'早高峰通勤', isIncome:false },
+  salary:    { merchant:'工资到账', icon:'💰', iconBg:'linear-gradient(135deg,#e9e4ff,#d9d0ff)', amount:'+1,200.00', date:'2024年6月27日 09:00', category:'收入', method:'银行卡', source:'手动录入', note:'项目奖金', isIncome:true },
+  meituan:   { merchant:'美团外卖', icon:'🍜', iconBg:'linear-gradient(135deg,#fff1e0,#ffe1c4)', amount:'-45.00', date:'2024年6月27日 19:30', category:'餐饮', method:'微信支付', source:'自动捕获 · 通知监听', note:'晚餐 · 麻辣烫', isIncome:false },
+  yonghui:   { merchant:'永辉超市', icon:'🛒', iconBg:'linear-gradient(135deg,#dcfce9,#c3f5dc)', amount:'-86.40', date:'2024年6月27日 17:12', category:'购物', method:'支付宝', source:'自动捕获 · 通知监听', note:'周末采购', isIncome:false }
+};
+
+const categories = ['餐饮','购物','交通','娱乐','居住','医疗','教育','人情','数码','其他'];
+const incomeCategories = ['工资','奖金','理财','红包','其他'];
+const accounts = ['支付宝','微信支付','招商银行储蓄卡','现金'];
+const methods = ['支付宝','微信支付','银行卡','现金'];
+
+
+/* ================================================================
+   导航
+   ================================================================ */
+const screen = document.getElementById('screen');
+let history = ['home'];
+
+function goTo(page, pushHistory = true) {
+  if (page === 'add') resetAddForm();
+
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.toggle('active', p.dataset.page === page);
+  });
+
+  const fullPage = ['detail','pending','pendingEdit','duplicateReview','autoLedger','onboard','categories','accounts','rules','backup','logs','search','about'].includes(page);
+  screen.classList.toggle('detail-open', fullPage);
+
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.target === page);
+  });
+
+  const activePage = document.querySelector('.page.active');
+  if (activePage) activePage.scrollTop = 0;
+
+  if (pushHistory && history[history.length - 1] !== page) {
+    history.push(page);
+  }
+}
+
+function goBack() {
+  history.pop();
+  const prev = history[history.length - 1] || 'home';
+  goTo(prev, false);
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    history = ['home'];
+    goTo(tab.dataset.target, false);
+  });
+});
+
+document.querySelectorAll('[data-nav]').forEach(el => {
+  el.addEventListener('click', () => goTo(el.dataset.nav));
+});
+
+document.querySelectorAll('[data-back]').forEach(btn => {
+  btn.addEventListener('click', goBack);
+});
+
+
+/* ================================================================
+   交易行 → 详情
+   ================================================================ */
+document.querySelectorAll('[data-tx]').forEach(row => {
+  row.addEventListener('click', () => openDetail(row.dataset.tx));
+});
+
+let currentTx = null;
+
+function openDetail(txId) {
+  const tx = txData[txId];
+  if (!tx) return;
+  currentTx = tx;
+
+  const iconEl = document.getElementById('detailIcon');
+  iconEl.textContent = tx.icon;
+  iconEl.style.background = tx.iconBg;
+
+  document.getElementById('detailName').textContent = tx.merchant;
+
+  const amountEl = document.getElementById('detailAmount');
+  amountEl.textContent = tx.amount;
+  amountEl.classList.toggle('in', tx.isIncome);
+
+  document.getElementById('detailDate').textContent = tx.date;
+  document.getElementById('detailCategory').textContent = tx.category;
+  document.getElementById('detailMethod').textContent = tx.method;
+  document.getElementById('detailSource').textContent = tx.source;
+  document.getElementById('detailNote').textContent = tx.note;
+
+  goTo('detail');
+}
+
+
+/* ================================================================
+   开关
+   ================================================================ */
+document.querySelectorAll('[data-toggle]').forEach(sw => {
+  sw.addEventListener('click', e => {
+    e.stopPropagation();
+    sw.classList.toggle('on');
+  });
+});
+
+
+/* ================================================================
+   主题切换
+   ================================================================ */
+const themeSwitch = document.getElementById('themeSwitch');
+themeSwitch.addEventListener('click', () => {
+  const next = screen.dataset.theme === 'light' ? 'dark' : 'light';
+  screen.dataset.theme = next;
+  themeSwitch.classList.toggle('on', next === 'dark');
+  document.body.classList.toggle('light-mode', next === 'light');
+});
+
+
+/* ================================================================
+   手动记账 — 键盘
+   ================================================================ */
+let addValue = '0';
+let addType = 'expense'; // expense | income
+const addAmountEl = document.getElementById('addAmount');
+const addTypeLabel = document.getElementById('addTypeLabel');
+
+function renderAddAmount() {
+  const num = addValue === '' ? '0' : addValue;
+  const parts = num.split('.');
+  const intPart = parts[0] === '' ? '0' : parts[0];
+  const decPart = parts[1] !== undefined ? '.' + parts[1] : '.00';
+  addAmountEl.innerHTML = `<span class="currency">¥</span>${intPart}${decPart === '.' ? '.' : decPart}`;
+}
+
+function resetAddForm() {
+  customCategoryTarget = null;
+  addValue = '0';
+  addType = 'expense';
+  addTypeLabel.textContent = '支出';
+  renderAddAmount();
+  document.querySelectorAll('#catGrid .cat-item').forEach((c, i) => {
+    c.classList.toggle('selected', i === 0);
+  });
+  document.getElementById('addAccount').textContent = '支付宝 ›';
+  document.getElementById('addTime').textContent = '现在 ›';
+  document.getElementById('addNote').textContent = '添加 ›';
+}
+
+document.getElementById('addTypeToggle').addEventListener('click', () => {
+  addType = addType === 'expense' ? 'income' : 'expense';
+  addTypeLabel.textContent = addType === 'expense' ? '支出' : '收入';
+
+  // 切换分类网格
+  const grid = document.getElementById('catGrid');
+  const list = addType === 'expense' ? categories : incomeCategories;
+  const emojis = addType === 'expense'
+    ? ['🍜','🛍','🚇','🎮','🏠','💊','📚','🎁','💻','📦']
+    : ['💰','🎁','📈','🧧','➕'];
+
+  grid.innerHTML = list.map((c, i) => `
+    <div class="cat-item ${i===0?'selected':''}" data-cat="${c}">
+      <div class="cat-emoji">${emojis[i]}</div>
+      <div class="cat-name">${c}</div>
+    </div>
+  `).join('');
+
+  bindAddCategoryItems();
+});
+
+document.querySelectorAll('.key').forEach(key => {
+  key.addEventListener('click', () => {
+    const k = key.dataset.key;
+    if (k === 'del') {
+      addValue = addValue.length <= 1 ? '0' : addValue.slice(0, -1);
+    } else if (k === 'clear') {
+      addValue = '0';
+    } else if (k === 'save') {
+      if (addValue === '0' || addValue === '') {
+        showToast('请输入金额');
+        return;
+      }
+      showToast(`已记录 ${addType === 'expense' ? '支出' : '收入'} ¥${addValue}`);
+      history = ['home'];
+      goTo('home', false);
+      return;
+    } else if (k === '.') {
+      if (!addValue.includes('.')) addValue += '.';
+    } else {
+      addValue = addValue === '0' ? k : addValue + k;
+    }
+    renderAddAmount();
+  });
+});
+
+// 分类选择：普通分类直接选中；“其他”允许当场自定义名称
+let customCategoryTarget = null;
+function bindAddCategoryItems() {
+  document.querySelectorAll('#catGrid .cat-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (item.dataset.cat === '其他') {
+        customCategoryTarget = item;
+        openModal(`
+          <div class="modal-title">自定义分类</div>
+          <div class="modal-sub">“其他”可以改成更具体的分类名称，例如「宠物」「旅行」「咖啡」</div>
+          <label class="modal-label">分类名称</label>
+          <input class="modal-input" id="modalCustomCategoryName" placeholder="请输入分类名称" maxlength="20" autocomplete="off">
+          <div class="modal-actions">
+            <div class="modal-btn secondary" data-modal-close>取消</div>
+            <div class="modal-btn primary" data-modal-confirm="customCategory">使用此名称</div>
+          </div>
+        `);
+        setTimeout(() => document.getElementById('modalCustomCategoryName')?.focus(), 120);
+        return;
+      }
+      document.querySelectorAll('#catGrid .cat-item').forEach(c => c.classList.remove('selected'));
+      item.classList.add('selected');
+    });
+  });
+}
+bindAddCategoryItems();
+
+
+/* ================================================================
+   待确认 / 自动记账 
+   ================================================================ */
+let pendingCount = 3;
+function refreshPendingCount(){
+  const el=document.getElementById('pendingCountLabel');
+  if(el) el.textContent=pendingCount+' 笔';
+  const empty=document.getElementById('pendingEmpty');
+  if(empty && pendingCount<=0) empty.style.display='flex';
+}
+
+document.addEventListener('click', e => {
+  const edit=e.target.closest('[data-pending-edit]');
+  if(edit){ goTo('pendingEdit'); return; }
+  const dup=e.target.closest('[data-pending-duplicate]');
+  if(dup){ goTo('duplicateReview'); return; }
+  const ignore=e.target.closest('[data-pending-ignore]');
+  if(ignore){
+    const row=ignore.closest('[data-pending-row]');
+    if(!row) return;
+    row.style.transition='opacity .25s, transform .25s'; row.style.opacity='0'; row.style.transform='translateX(40px)';
+    setTimeout(()=>{row.remove();pendingCount--;refreshPendingCount();showToast('已忽略，不进入统计');},260);
+  }
+});
+
+function handleV02Action(action){
+  switch(action){
+    case 'confirmPendingEdit':
+      pendingCount=Math.max(0,pendingCount-1); refreshPendingCount(); history=['home']; goTo('home',false); showToast('已修正并入账'); break;
+    case 'sameTransaction':
+      pendingCount=Math.max(0,pendingCount-1); refreshPendingCount(); goTo('pending',false); showToast('已标记为同一笔，保留原记录'); break;
+    case 'differentTransaction':
+      goTo('pendingEdit'); showToast('请确认新交易信息'); break;
+    case 'testAuto':
+      openModal(`<div class="modal-title">测试自动记账</div><div class="modal-sub">模拟一条支付宝付款通知，检查完整处理链路。</div><div class="card glass" style="margin:0 0 14px;padding:13px;"><div class="pipeline"><div class="pipeline-step done">Capture</div><div class="pipeline-arrow">›</div><div class="pipeline-step done">Parse</div><div class="pipeline-arrow">›</div><div class="pipeline-step done">Normalize</div><div class="pipeline-arrow">›</div><div class="pipeline-step done">Dedup</div><div class="pipeline-arrow">›</div><div class="pipeline-step current">Pending</div></div><div style="font-size:11px;color:var(--text-2);margin-top:10px;line-height:1.6;">测试结果：通知已捕获，规则命中，金额与交易方向已识别；当前示例进入 Pending，等待用户确认。</div></div><div class="modal-actions"><div class="modal-btn secondary" data-modal-close>关闭</div><div class="modal-btn primary" data-modal-confirm="testAutoDone">查看 Pending</div></div>`);
+      break;
+    case 'viewRawCapture':
+      openModal(`<div class="modal-title">原始捕获</div><div class="modal-sub">仅展示必要字段，敏感内容已脱敏</div><div class="evidence-block">package: com.eg.android.AlipayGphone\ntitle: 支付宝\ntext: 付款成功，星巴克咖啡，¥38.50\npostTime: 2024-06-28 14:23:01\nkey: masked_notification_key</div><div class="modal-actions"><div class="modal-btn primary" data-modal-close>关闭</div></div>`);
+      break;
+  }
+}
+
+document.addEventListener('click',e=>{const a=e.target.closest('[data-action]');if(a)handleV02Action(a.dataset.action);});
+
+/* ================================================================
+   权限引导
+   ================================================================ */
+const onboardSteps = [
+  { icon:'🔔', title:'开启通知监听', desc:'账然需要读取微信 / 支付宝的支付通知，才能自动记录交易。核心 MVP 在本地完成解析与入账，不需要联网。', btn:'前往授权' },
+  { icon:'👁', title:'开启无障碍服务', desc:'用于特殊支付页面的可见文本兜底。不读取“隐藏通知”，不模拟点击，不注入手势。此能力为可选增强。', btn:'前往授权' },
+  { icon:'🔋', title:'电池优化（可选）', desc:'部分设备可能需要额外设置电池优化，但核心通知监听不依赖长期前台服务。你可以稍后处理。', btn:'完成设置' }
+];
+let onboardIndex = 0;
+
+document.getElementById('onboardBtn').addEventListener('click', () => {
+  if (onboardIndex < onboardSteps.length - 1) {
+    onboardIndex++;
+    renderOnboard();
+  } else {
+    showToast('权限设置完成');
+    goBack();
+  }
+});
+
+function renderOnboard() {
+  const step = onboardSteps[onboardIndex];
+  document.getElementById('onboardIllu').textContent = step.icon;
+  document.getElementById('onboardTitle').textContent = step.title;
+  document.getElementById('onboardDesc').textContent = step.desc;
+  document.getElementById('onboardBtn').textContent = step.btn;
+  document.querySelectorAll('#onboardDots i').forEach((d, i) => {
+    d.classList.toggle('active', i === onboardIndex);
+  });
+}
+
+
+/* ================================================================
+   搜索筛选
+   ================================================================ */
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  });
+});
+
+
+/* ================================================================
+   Toast
+   ================================================================ */
+let toastTimer;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+
+/* ================================================================
+   模态弹窗系统
+   ================================================================ */
+const modalOverlay = document.getElementById('modalOverlay');
+const modalSheet = document.getElementById('modalSheet');
+
+function openModal(html) {
+  modalSheet.innerHTML = `<div class="modal-handle"></div>${html}`;
+  modalOverlay.classList.add('show');
+}
+
+function closeModal() {
+  modalOverlay.classList.remove('show');
+}
+
+modalOverlay.addEventListener('click', e => {
+  if (e.target === modalOverlay) closeModal();
+});
+
+
+/* ================================================================
+   编辑处理 — 统一映射
+   ================================================================ */
+const editHandlers = {
+
+  /* ---------- 手动记账页 ---------- */
+  account: () => {
+    openModal(`
+      <div class="modal-title">选择账户</div>
+      <div class="modal-sub">这笔交易从哪个账户支出</div>
+      <div class="modal-options" id="modalAccountOptions">
+        ${accounts.map((a, i) => `<div class="modal-option ${i===0?'selected':''}" data-value="${a}">${a}</div>`).join('')}
+      </div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="account">确定</div>
+      </div>
+    `);
+  },
+
+  time: () => {
+    openModal(`
+      <div class="modal-title">选择时间</div>
+      <div class="modal-sub">这笔交易发生的时间</div>
+      <div class="modal-options" id="modalTimeOptions">
+        <div class="modal-option selected" data-value="现在">现在</div>
+        <div class="modal-option" data-value="今天上午">今天上午</div>
+        <div class="modal-option" data-value="今天下午">今天下午</div>
+        <div class="modal-option" data-value="昨天晚上">昨天晚上</div>
+        <div class="modal-option" data-value="自定义">自定义…</div>
+      </div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="time">确定</div>
+      </div>
+    `);
+  },
+
+  note: () => {
+    openModal(`
+      <div class="modal-title">添加备注</div>
+      <div class="modal-sub">记录这笔交易的细节</div>
+      <input class="modal-input" id="modalNoteInput" placeholder="例如：和同事下午茶" autocomplete="off">
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="note">保存</div>
+      </div>
+    `);
+    setTimeout(() => document.getElementById('modalNoteInput').focus(), 300);
+  },
+
+  /* ---------- 预算页 ---------- */
+  totalBudget: () => {
+    openModal(`
+      <div class="modal-title">编辑月度总预算</div>
+      <div class="modal-sub">设置每月的支出上限</div>
+      <label class="modal-label">预算金额</label>
+      <input class="modal-input mono" id="modalBudgetInput" type="number" value="5000" placeholder="5000">
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="totalBudget">保存</div>
+      </div>
+    `);
+  },
+
+  addCategoryBudget: () => {
+    openModal(`
+      <div class="modal-title">添加分类预算</div>
+      <div class="modal-sub">为某个分类设置支出上限</div>
+      <label class="modal-label">选择分类</label>
+      <div class="modal-options" id="modalCategoryOptions">
+        ${categories.map((c, i) => `<div class="modal-option ${i===0?'selected':''}" data-value="${c}">${c}</div>`).join('')}
+      </div>
+      <label class="modal-label">预算金额</label>
+      <input class="modal-input mono" id="modalCatBudgetInput" type="number" placeholder="1000">
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="addCategoryBudget">添加</div>
+      </div>
+    `);
+  },
+
+  'budget-food': () => editCategoryBudget('餐饮', 2000),
+  'budget-shop': () => editCategoryBudget('购物', 1500),
+  'budget-traffic': () => editCategoryBudget('交通', 500),
+  'budget-fun': () => editCategoryBudget('娱乐', 500),
+
+  /* ---------- 详情页 ---------- */
+  detail: () => {
+    openModal(`
+      <div class="modal-title">编辑交易</div>
+      <div class="modal-sub">修改 ${currentTx?.merchant || ''} 的信息</div>
+      <label class="modal-label">金额</label>
+      <input class="modal-input mono" id="modalAmountInput" type="text" value="${currentTx?.amount.replace(/[+\-]/g, '') || ''}">
+      <label class="modal-label">商户名称</label>
+      <input class="modal-input" id="modalMerchantInput" type="text" value="${currentTx?.merchant || ''}">
+      <label class="modal-label">备注</label>
+      <input class="modal-input" id="modalNoteInput" type="text" value="${currentTx?.note || ''}">
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="detailSave">保存</div>
+      </div>
+    `);
+  },
+
+  detailCategory: () => {
+    openModal(`
+      <div class="modal-title">修改分类</div>
+      <div class="modal-sub">选择正确的分类</div>
+      <div class="modal-options" id="modalCategoryOptions">
+        ${categories.map((c, i) => `<div class="modal-option ${currentTx?.category===c?'selected':''}" data-value="${c}">${c}</div>`).join('')}
+      </div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="detailCategory">保存</div>
+      </div>
+    `);
+  },
+
+  detailMethod: () => {
+    openModal(`
+      <div class="modal-title">修改支付方式</div>
+      <div class="modal-sub">这笔交易通过什么方式支付</div>
+      <div class="modal-options" id="modalMethodOptions">
+        ${methods.map(m => `<div class="modal-option ${currentTx?.method===m?'selected':''}" data-value="${m}">${m}</div>`).join('')}
+      </div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="detailMethod">保存</div>
+      </div>
+    `);
+  },
+
+  detailNote: () => {
+    openModal(`
+      <div class="modal-title">编辑备注</div>
+      <textarea class="modal-input" id="modalNoteTextarea" rows="4" placeholder="添加备注…">${currentTx?.note || ''}</textarea>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="detailNote">保存</div>
+      </div>
+    `);
+    setTimeout(() => document.getElementById('modalNoteTextarea')?.focus(), 300);
+  },
+
+  detailDelete: () => {
+    openModal(`
+      <div class="modal-title">删除这笔交易？</div>
+      <div class="modal-sub">删除后无法恢复，请谨慎操作</div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn danger" data-modal-confirm="detailDelete">确认删除</div>
+      </div>
+    `);
+  },
+
+  /* ---------- 分类管理 ---------- */
+  addCategory: () => {
+    openModal(`
+      <div class="modal-title">添加分类</div>
+      <div class="modal-sub">创建一个新的记账分类</div>
+      <label class="modal-label">分类名称</label>
+      <input class="modal-input" id="modalCatName" placeholder="例如：宠物">
+      <label class="modal-label">选择图标</label>
+      <div class="modal-options" id="modalEmojiOptions">
+        <div class="modal-option selected" data-value="🐾">🐾</div>
+        <div class="modal-option" data-value="🎵">🎵</div>
+        <div class="modal-option" data-value="✈️">✈️</div>
+        <div class="modal-option" data-value="🏋️">🏋️</div>
+        <div class="modal-option" data-value="🎨">🎨</div>
+        <div class="modal-option" data-value="🍺">🍺</div>
+      </div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="addCategory">添加</div>
+      </div>
+    `);
+  },
+
+  'cat-food': () => editCategory('餐饮','🍜'),
+  'cat-shop': () => editCategory('购物','🛍'),
+  'cat-traffic': () => editCategory('交通','🚇'),
+  'cat-fun': () => editCategory('娱乐','🎮'),
+  'cat-home': () => editCategory('居住','🏠'),
+  'cat-medical': () => editCategory('医疗','💊'),
+  'cat-edu': () => editCategory('教育','📚'),
+  'cat-gift': () => editCategory('人情','🎁'),
+  'cat-digital': () => editCategory('数码','💻'),
+  'cat-other': () => editCategory('其他','📦'),
+  'cat-salary': () => editCategory('工资','💰'),
+  'cat-bonus': () => editCategory('奖金','🎁'),
+  'cat-invest': () => editCategory('理财','📈'),
+  'cat-redpacket': () => editCategory('红包','🧧'),
+  'cat-income-other': () => editCategory('其他','➕'),
+
+  addRule: () => {
+    openModal(`
+      <div class="modal-title">添加自动分类规则</div>
+      <div class="modal-sub">商户名包含关键词时自动归类</div>
+      <label class="modal-label">关键词</label>
+      <input class="modal-input" id="modalRuleKeyword" placeholder="例如：肯德基">
+      <label class="modal-label">归入分类</label>
+      <div class="modal-options" id="modalCategoryOptions">
+        ${categories.map((c, i) => `<div class="modal-option ${i===0?'selected':''}" data-value="${c}">${c}</div>`).join('')}
+      </div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="addRule">添加</div>
+      </div>
+    `);
+  },
+
+  'rule-starbucks': () => editRule('星巴克','餐饮'),
+  'rule-jd': () => editRule('京东','购物'),
+  'rule-metro': () => editRule('地铁','交通'),
+
+  /* ---------- 账户管理 ---------- */
+  addAccount: () => {
+    openModal(`
+      <div class="modal-title">添加账户</div>
+      <div class="modal-sub">新增一个支付或储蓄账户</div>
+      <label class="modal-label">账户名称</label>
+      <input class="modal-input" id="modalAccountName" placeholder="例如：工商银行储蓄卡">
+      <label class="modal-label">账户类型</label>
+      <div class="modal-options" id="modalAccountTypeOptions">
+        <div class="modal-option selected" data-value="储蓄卡">储蓄卡</div>
+        <div class="modal-option" data-value="信用卡">信用卡</div>
+        <div class="modal-option" data-value="第三方支付">第三方支付</div>
+        <div class="modal-option" data-value="现金">现金</div>
+      </div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="addAccount">添加</div>
+      </div>
+    `);
+  },
+
+  'account-alipay': () => editAccount('支付宝','默认账户 · 本月支出 ¥2,146'),
+  'account-wechat': () => editAccount('微信支付','本月支出 ¥1,428'),
+  'account-cmb': () => editAccount('招商银行储蓄卡','尾号 8823 · 本月支出 ¥273'),
+  'account-cash': () => editAccount('现金','手动记录'),
+  'account-credit': () => editAccount('招商银行信用卡','尾号 6621 · 还款日 每月 15 日'),
+
+  /* ---------- 解析规则 ---------- */
+  'rule-wechat-pay': () => editParseRule('微信支付 · 支付成功',['支付成功','已付款']),
+  'rule-wechat-receive': () => editParseRule('微信支付 · 收款到账',['收款','已到账']),
+  'rule-alipay-pay': () => editParseRule('支付宝 · 付款成功',['付款成功','支付成功']),
+  'rule-alipay-balance': () => editParseRule('支付宝 · 余额变动',['余额','支出']),
+
+  /* ---------- 数据备份 ---------- */
+  exportBackup: () => {
+    openModal(`
+      <div class="modal-title">导出备份文件</div>
+      <div class="modal-sub">将当前数据保存为本地文件</div>
+      <label class="modal-label">文件名</label>
+      <input class="modal-input mono" id="modalBackupName" value="zhangran-backup-v1-20240628.zip">
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="exportBackup">导出</div>
+      </div>
+    `);
+  },
+
+  importBackup: () => {
+    openModal(`
+      <div class="modal-title">从备份恢复</div>
+      <div class="modal-sub">选择要恢复的备份文件</div>
+      <div class="modal-options">
+        <div class="modal-option selected" data-value="b1">zhangran-backup-v1-20240628.zip · 2.4 MB</div>
+        <div class="modal-option" data-value="b2">zhangran-backup-v1-20240621.zip · 2.2 MB</div>
+      </div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="importBackup">恢复</div>
+      </div>
+    `);
+  },
+
+  'backup-1': () => backupActions('zhangran_20240628.db','2024-06-28 22:00 · 2.4 MB'),
+  'backup-2': () => backupActions('zhangran_20240621.db','2024-06-21 22:00 · 2.2 MB'),
+
+  clearData: () => {
+    openModal(`
+      <div class="modal-title" style="color:var(--red);">清空所有数据？</div>
+      <div class="modal-sub">此操作不可恢复，请确保已备份重要数据</div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn danger" data-modal-confirm="clearData">确认清空</div>
+      </div>
+    `);
+  },
+
+  /* ---------- 日志 ---------- */
+  clearLogs: () => {
+    openModal(`
+      <div class="modal-title">清空捕获日志？</div>
+      <div class="modal-sub">日志仅用于排查问题，清空不影响记账数据</div>
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn danger" data-modal-confirm="clearLogs">确认清空</div>
+      </div>
+    `);
+  },
+
+  /* ---------- 关于 ---------- */
+  license: () => showToast('MIT License'),
+  github: () => showToast('正在打开 GitHub…'),
+  feedback: () => showToast('正在打开邮件…'),
+  checkUpdate: () => showToast('已是最新版本'),
+};
+
+
+/* ================================================================
+   编辑辅助函数
+   ================================================================ */
+function editCategoryBudget(name, budget) {
+  openModal(`
+    <div class="modal-title">编辑 ${name} 预算</div>
+    <div class="modal-sub">当前预算 ¥${budget.toLocaleString()}</div>
+    <label class="modal-label">新的预算金额</label>
+    <input class="modal-input mono" id="modalCatBudgetInput" type="number" value="${budget}">
+    <div class="modal-actions">
+      <div class="modal-btn secondary" data-modal-close>取消</div>
+      <div class="modal-btn primary" data-modal-confirm="editCatBudget" data-cat="${name}">保存</div>
+    </div>
+  `);
+}
+
+function editCategory(name, emoji) {
+  openModal(`
+    <div class="modal-title">编辑分类</div>
+    <div class="modal-sub">修改「${name}」的名称或图标</div>
+    <label class="modal-label">分类名称</label>
+    <input class="modal-input" id="modalCatName" value="${name}">
+    <label class="modal-label">选择图标</label>
+    <div class="modal-options" id="modalEmojiOptions">
+      <div class="modal-option selected" data-value="${emoji}">${emoji}</div>
+      <div class="modal-option" data-value="🎵">🎵</div>
+      <div class="modal-option" data-value="✈️">✈️</div>
+      <div class="modal-option" data-value="🏋️">🏋️</div>
+      <div class="modal-option" data-value="🎨">🎨</div>
+      <div class="modal-option" data-value="🍺">🍺</div>
+    </div>
+    <div class="modal-actions">
+      <div class="modal-btn secondary" data-modal-close>取消</div>
+      <div class="modal-btn primary" data-modal-confirm="editCategory">保存</div>
+    </div>
+    <div class="modal-actions" style="margin-top:8px;">
+      <div class="modal-btn danger" data-modal-confirm="deleteCategory">删除分类</div>
+    </div>
+  `);
+}
+
+function editRule(keyword, category) {
+  openModal(`
+    <div class="modal-title">编辑自动分类规则</div>
+    <div class="modal-sub">商户名包含「${keyword}」时归入「${category}」</div>
+    <label class="modal-label">关键词</label>
+    <input class="modal-input" id="modalRuleKeyword" value="${keyword}">
+    <label class="modal-label">归入分类</label>
+    <div class="modal-options" id="modalCategoryOptions">
+      ${categories.map(c => `<div class="modal-option ${c===category?'selected':''}" data-value="${c}">${c}</div>`).join('')}
+    </div>
+    <div class="modal-actions">
+      <div class="modal-btn secondary" data-modal-close>取消</div>
+      <div class="modal-btn primary" data-modal-confirm="editRule">保存</div>
+    </div>
+    <div class="modal-actions" style="margin-top:8px;">
+      <div class="modal-btn danger" data-modal-confirm="deleteRule">删除规则</div>
+    </div>
+  `);
+}
+
+function editAccount(name, desc) {
+  openModal(`
+    <div class="modal-title">编辑账户</div>
+    <div class="modal-sub">${name} · ${desc}</div>
+    <label class="modal-label">账户名称</label>
+    <input class="modal-input" id="modalAccountName" value="${name}">
+    <label class="modal-label">账户类型</label>
+    <div class="modal-options" id="modalAccountTypeOptions">
+      <div class="modal-option selected" data-value="储蓄卡">储蓄卡</div>
+      <div class="modal-option" data-value="信用卡">信用卡</div>
+      <div class="modal-option" data-value="第三方支付">第三方支付</div>
+      <div class="modal-option" data-value="现金">现金</div>
+    </div>
+    <div class="modal-actions">
+      <div class="modal-btn secondary" data-modal-close>取消</div>
+      <div class="modal-btn primary" data-modal-confirm="editAccount">保存</div>
+    </div>
+    <div class="modal-actions" style="margin-top:8px;">
+      <div class="modal-btn danger" data-modal-confirm="deleteAccount">删除账户</div>
+    </div>
+  `);
+}
+
+function editParseRule(title, keywords) {
+  openModal(`
+    <div class="modal-title">编辑解析规则</div>
+    <div class="modal-sub">${title}</div>
+    <label class="modal-label">匹配关键词（逗号分隔）</label>
+    <input class="modal-input" id="modalKeywords" value="${keywords.join(', ')}">
+    <div class="modal-actions">
+      <div class="modal-btn secondary" data-modal-close>取消</div>
+      <div class="modal-btn primary" data-modal-confirm="editParseRule">保存</div>
+    </div>
+  `);
+}
+
+function backupActions(name, desc) {
+  openModal(`
+    <div class="modal-title">${name}</div>
+    <div class="modal-sub">${desc}</div>
+    <label class="modal-label">恢复方式</label>
+    <div class="modal-options" id="restoreModeOptions"><div class="modal-option selected" data-value="merge">合并到当前数据</div><div class="modal-option" data-value="replace">覆盖当前数据</div><div class="modal-option" data-value="settings">仅恢复设置</div></div>
+    <div class="modal-actions">
+      <div class="modal-btn secondary" data-modal-close>取消</div>
+      <div class="modal-btn primary" data-modal-confirm="restoreBackup">继续</div>
+    </div>
+    <div class="modal-actions" style="margin-top:8px;">
+      <div class="modal-btn danger" data-modal-confirm="deleteBackup">删除此备份</div>
+    </div>
+  `);
+}
+
+
+/* ================================================================
+   编辑入口绑定
+   ================================================================ */
+document.querySelectorAll('[data-edit]').forEach(el => {
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    const key = el.dataset.edit;
+    if (editHandlers[key]) {
+      editHandlers[key]();
+    } else {
+      showToast('功能演示：' + key);
+    }
+  });
+});
+
+
+/* ================================================================
+   模态选项选择 & 确认
+   ================================================================ */
+document.addEventListener('click', e => {
+  const categoryOption = e.target.closest('#pendingCategoryOptions .modal-option');
+  if (categoryOption && categoryOption.dataset.value === '其他') {
+    e.stopPropagation();
+    customCategoryTarget = categoryOption;
+    openModal(`
+      <div class="modal-title">自定义分类</div>
+      <div class="modal-sub">这笔记录不想归入“其他”？可以直接输入具体分类。</div>
+      <label class="modal-label">分类名称</label>
+      <input class="modal-input" id="modalCustomCategoryName" placeholder="例如：宠物" maxlength="20" autocomplete="off">
+      <div class="modal-actions">
+        <div class="modal-btn secondary" data-modal-close>取消</div>
+        <div class="modal-btn primary" data-modal-confirm="customPendingCategory">使用此名称</div>
+      </div>
+    `);
+    setTimeout(() => document.getElementById('modalCustomCategoryName')?.focus(), 120);
+    return;
+  }
+
+  // 关闭
+  if (e.target.hasAttribute('data-modal-close') || e.target.closest('[data-modal-close]')) {
+    closeModal();
+    return;
+  }
+
+  // 选项选择
+  const option = e.target.closest('.modal-option');
+  if (option && !option.closest('.modal-actions')) {
+    const group = option.parentElement;
+    group.querySelectorAll('.modal-option').forEach(o => o.classList.remove('selected'));
+    option.classList.add('selected');
+    return;
+  }
+
+  // 确认
+  const confirmBtn = e.target.closest('[data-modal-confirm]');
+  if (confirmBtn) {
+    const action = confirmBtn.dataset.modalConfirm;
+    handleModalConfirm(action, confirmBtn);
+  }
+});
+
+
+/* ================================================================
+   确认处理
+   ================================================================ */
+function handleModalConfirm(action, btn) {
+  const selected = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const sel = el.querySelector('.modal-option.selected');
+    return sel ? sel.dataset.value : null;
+  };
+
+  switch (action) {
+
+    case 'testAutoDone':
+      closeModal(); goTo('pending'); showToast('已进入待确认队列'); break;
+
+    case 'account': {
+      const v = selected('modalAccountOptions');
+      if (v) document.getElementById('addAccount').textContent = v + ' ›';
+      closeModal();
+      showToast('账户已更新');
+      break;
+    }
+
+    case 'time': {
+      const v = selected('modalTimeOptions');
+      if (v) document.getElementById('addTime').textContent = v + ' ›';
+      closeModal();
+      showToast('时间已更新');
+      break;
+    }
+
+    case 'note': {
+      const v = document.getElementById('modalNoteInput')?.value;
+      if (v) document.getElementById('addNote').textContent = v + ' ›';
+      closeModal();
+      showToast('备注已保存');
+      break;
+    }
+
+    case 'customPendingCategory': {
+      const name = document.getElementById('modalCustomCategoryName')?.value?.trim();
+      if (!name) { showToast('请输入分类名称'); return; }
+      closeModal();
+      showToast(`待确认记录分类已设为「${name}」`);
+      customCategoryTarget = null;
+      break;
+    }
+
+    case 'customCategory': {
+      const name = document.getElementById('modalCustomCategoryName')?.value?.trim();
+      if (!name) { showToast('请输入分类名称'); return; }
+      if (customCategoryTarget) {
+        document.querySelectorAll('#catGrid .cat-item').forEach(c => c.classList.remove('selected'));
+        customCategoryTarget.classList.add('selected');
+        customCategoryTarget.dataset.cat = name;
+        customCategoryTarget.querySelector('.cat-name').textContent = name;
+      }
+      closeModal();
+      showToast(`已使用自定义分类「${name}」`);
+      customCategoryTarget = null;
+      break;
+    }
+
+    case 'totalBudget': {
+      const v = document.getElementById('modalBudgetInput')?.value;
+      closeModal();
+      showToast(`月度预算已设为 ¥${v}`);
+      break;
+    }
+
+    case 'addCategoryBudget': {
+      const cat = selected('modalCategoryOptions');
+      const v = document.getElementById('modalCatBudgetInput')?.value;
+      closeModal();
+      showToast(`${cat} 预算已设为 ¥${v}`);
+      break;
+    }
+
+    case 'editCatBudget': {
+      const cat = btn.dataset.cat;
+      const v = document.getElementById('modalCatBudgetInput')?.value;
+      closeModal();
+      showToast(`${cat} 预算已更新为 ¥${v}`);
+      break;
+    }
+
+    case 'detailSave': {
+      const amount = document.getElementById('modalAmountInput')?.value;
+      const merchant = document.getElementById('modalMerchantInput')?.value;
+      const note = document.getElementById('modalNoteInput')?.value;
+      if (merchant) document.getElementById('detailName').textContent = merchant;
+      if (note) document.getElementById('detailNote').textContent = note;
+      if (amount) {
+        const prefix = currentTx?.isIncome ? '+' : '-';
+        document.getElementById('detailAmount').textContent = prefix + amount;
+      }
+      closeModal();
+      showToast('交易已更新');
+      break;
+    }
+
+    case 'detailCategory': {
+      const v = selected('modalCategoryOptions');
+      if (v) document.getElementById('detailCategory').textContent = v;
+      closeModal();
+      showToast('分类已更新为「' + v + '」');
+      break;
+    }
+
+    case 'detailMethod': {
+      const v = selected('modalMethodOptions');
+      if (v) document.getElementById('detailMethod').textContent = v;
+      closeModal();
+      showToast('支付方式已更新为「' + v + '」');
+      break;
+    }
+
+    case 'detailNote': {
+      const v = document.getElementById('modalNoteTextarea')?.value;
+      if (v) document.getElementById('detailNote').textContent = v;
+      closeModal();
+      showToast('备注已保存');
+      break;
+    }
+
+    case 'detailDelete': {
+      closeModal();
+      showToast('交易已删除');
+      setTimeout(() => goBack(), 400);
+      break;
+    }
+
+    case 'addCategory': {
+      const name = document.getElementById('modalCatName')?.value;
+      const emoji = selected('modalEmojiOptions') || '📦';
+      closeModal();
+      showToast(`已添加分类「${emoji} ${name}」`);
+      break;
+    }
+
+    case 'editCategory': {
+      const name = document.getElementById('modalCatName')?.value;
+      closeModal();
+      showToast(`分类已更新为「${name}」`);
+      break;
+    }
+
+    case 'deleteCategory': {
+      closeModal();
+      showToast('分类已删除，原有记录归入「其他」');
+      break;
+    }
+
+    case 'addRule': {
+      const kw = document.getElementById('modalRuleKeyword')?.value;
+      const cat = selected('modalCategoryOptions');
+      closeModal();
+      showToast(`规则已添加：包含「${kw}」→ ${cat}`);
+      break;
+    }
+
+    case 'editRule': {
+      const kw = document.getElementById('modalRuleKeyword')?.value;
+      const cat = selected('modalCategoryOptions');
+      closeModal();
+      showToast(`规则已更新：包含「${kw}」→ ${cat}`);
+      break;
+    }
+
+    case 'deleteRule': {
+      closeModal();
+      showToast('规则已删除');
+      break;
+    }
+
+    case 'addAccount': {
+      const name = document.getElementById('modalAccountName')?.value;
+      const type = selected('modalAccountTypeOptions');
+      closeModal();
+      showToast(`已添加账户「${name}」（${type}）`);
+      break;
+    }
+
+    case 'editAccount': {
+      const name = document.getElementById('modalAccountName')?.value;
+      closeModal();
+      showToast(`账户已更新为「${name}」`);
+      break;
+    }
+
+    case 'deleteAccount': {
+      closeModal();
+      showToast('账户已删除，原有记录保留');
+      break;
+    }
+
+    case 'editParseRule': {
+      const kw = document.getElementById('modalKeywords')?.value;
+      closeModal();
+      showToast('解析规则已保存');
+      break;
+    }
+
+    case 'exportBackup': {
+      const name = document.getElementById('modalBackupName')?.value;
+      closeModal();
+      showToast(`已导出 ${name}`);
+      break;
+    }
+
+    case 'importBackup': {
+      closeModal();
+      showToast('正在从备份恢复…');
+      break;
+    }
+
+    case 'restoreBackup': {
+      closeModal();
+      showToast('正在从备份恢复…');
+      break;
+    }
+
+    case 'deleteBackup': {
+      closeModal();
+      showToast('备份已删除');
+      break;
+    }
+
+    case 'clearData': {
+      closeModal();
+      showToast('所有数据已清空');
+      break;
+    }
+
+    case 'clearLogs': {
+      closeModal();
+      showToast('日志已清空');
+      break;
+    }
+
+    default:
+      closeModal();
+  }
+}
+
+
+/* ================================================================
+   初始化
+   ================================================================ */
+document.body.classList.add('light-mode');
+renderAddAmount();
+renderOnboard();
+</script>
+
+</body>
+</html>

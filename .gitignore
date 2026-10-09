@@ -1,0 +1,21 @@
+# DSH 沙箱环境诊断产物（非项目内容）
+_acl-reports/
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# Android 构建产物（编码开始后生效）
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+
+# IDE
+.idea/
+*.iml
