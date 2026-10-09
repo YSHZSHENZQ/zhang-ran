@@ -35,7 +35,7 @@
 ```text
 AutoAccounting → 直接写账然 Room
 AutoAccounting → 决定 Pending / Confirmed
-账然 → 改写上游源码
+账然 → 改写上游既有逻辑（识别 / Room / UI / Hook）
 账然 → 自建第二套采集实现
 ```
 
@@ -54,6 +54,21 @@ Pending / Confirmed / Duplicate / ClearlyInvalid
       ↓
 Repository → Room
 ```
+
+### 2.1 受控上游补丁（唯一允许改上游的方式）
+
+上游的宿主适配器列表是**硬编码**的（`AppAdapterManager.adapterList()`，无 SPI / 反射 / 配置文件扩展点），因此“让上游把账单发给账然”必须打一个**纯增量补丁**。这是 §1 前提下唯一的例外，边界如下：
+
+| 项 | 规定 |
+|---|---|
+| 允许 | 新增一个实现 `IAppAdapter` 的适配器文件；在 `adapterList()` 追加**一行**注册 |
+| 禁止 | 修改上游任何既有逻辑：识别引擎、Room、UI、Hook、权限、其他适配器 |
+| 放置 | 独立仓 / 独立分支，不混入上游主线提交历史 |
+| 锚定 | 必须记录基线 commit；升级走 §22，升级时 rebase 该最小 diff |
+| 许可 | 补丁仓同为 GPL-3.0；仅自用，不得分发（见 §20） |
+| 回归 | 补丁变更后必须重跑 `08` §17 的上游集成用例与 §16 fixture |
+
+若上游未来提供可扩展点（SPI / 配置），必须优先改用扩展点并删除补丁。
 
 ## 3. 职责划分（宿主接入面）
 
@@ -84,7 +99,6 @@ Repository → Room
 5. **失败隔离**：上游异常不得影响账然数据库与 UI。
 
 ### 3.3 账然 `autoaccounting/`（Adapter）
-
 负责：
 
 - 转换上游输出为统一候选
@@ -105,6 +119,26 @@ Repository → Room
 - **Decision（唯一决定 Pending / Confirmed / Duplicate / ClearlyInvalid 的地方）**
 - 用户修改保护（FieldEdit）
 - Transaction
+
+### 3.5 宿主接入协议（上游 → 账然，v1）
+
+上游对宿主的**唯一出站通道**是隐式 Intent + 自定义 URI scheme（四个既有宿主实现写法一致）。账然按此契约接收：
+
+```text
+Intent(ACTION_VIEW, "zhangran://capture?v=1&payload=<Base64URL(Gson JSON)>")
+flags = FLAG_ACTIVITY_NEW_TASK
+```
+
+| 项 | 规定 |
+|---|---|
+| scheme / host | `zhangran://capture`（必须 `exported=true` + `BROWSABLE`，否则上游 `startActivityIfResolvable` 静默失败） |
+| 载荷 | 整包 JSON + `v` 版本号，避免参数爆炸与逐字段演进 |
+| 载荷模型 | 上游 `BillInfoModel`（字段映射见 `03` §18） |
+| 版本不匹配 | `v` 非当前支持版本 → 写 `CaptureLog` + **一律 Pending**，禁止按旧契约解析入账 |
+| 接收入口 | 无界面 Activity（`NoDisplay` / `noHistory` / `excludeFromRecents`），只做“取参 → 交给 `CaptureEventSource` → 立即 `finish()`” |
+| 禁止 | 在接收入口内解析、落库或做任何业务判断（业务处理放 Service / Worker / Repository，`04` §4/§4.1） |
+| 回执 | v0.1 不做回执：非 Xposed 模式无法确认对方是否真的入账；仅“拉起成功即标记”。若未来要回执，需进上游 Xposed 作用域并加 Hook（另立版本） |
+| 副作用 | 上游对象可能被就地修改（如手续费改写 `money`），**必须只读投影**，不得复用或回写上游对象 |
 
 ## 4. 接入接口
 
@@ -243,19 +277,34 @@ Decision（账然 Domain，唯一决定状态的地方）
 
 ## 9. 权限矩阵（按工作模式）
 
-| 工作模式 | 必需 | 可选 / 建议 |
+**表内权限全部属于上游模块（独立应用），账然自身 APK 不申请这些权限。**
+
+| 工作模式 | 上游必需 | 可选 / 建议（上游） |
 |---|---|---|
 | LSPosed 模式 | Root + LSPosed 安装、上游模块启用 | 电池优化豁免（建议） |
-| OCR 模式 | 无障碍服务 **或** Shizuku + 截图能力；通知权限（通知渠道） | 短信权限（若使用短信渠道）；电池优化豁免（建议） |
-| 短信模式（可选） | 短信读取权限 | — |
+| OCR 模式 | 上游的无障碍服务 **或** Shizuku + 截图能力 | 上游的通知权限（通知渠道）、短信权限（若使用短信渠道）；电池优化豁免（建议） |
+| 短信模式（可选） | 上游的短信读取权限 | — |
 | 手工模式 | 无 | — |
 
 规则：
 
-- OnboardScreen 只展示当前模式对应的步骤（见 `06` §4.11）。
+- OnboardScreen 只展示当前模式对应的步骤（见 `06` §4.11）；引导的**对象是上游模块**，不是账然自己。
 - 权限被撤销后：自动记账状态必须显式变为不可用并提示；已捕获未处理的 Pending 保留不变。
 - 不得把“通知监听权限”写成 LSPosed 模式的必需项：该模式下通知来自 Hook。
 - 电池优化豁免不是必需项，不得作为阻断条件。
+- **账然的 AndroidManifest 不得出现 `BIND_NOTIFICATION_LISTENER_SERVICE`、无障碍、短信接收等采集相关声明**（上游已具备，重复声明即违反 §1 前提）；账然也不申请 `INTERNET`（见 `02` §18）。
+
+### 9.1 账然自身不需要的权限（对照清单）
+
+| 权限 / 能力 | 归属 | 账然是否需要 |
+|---|---|---|
+| 通知监听（NLS） | 上游 | 否 |
+| 无障碍服务 | 上游 | 否 |
+| 短信接收 | 上游 | 否 |
+| 持续前台服务（FGS） | 上游 | 否（且 `AGENTS.md` §10 禁止作为默认保活方案） |
+| INTERNET | 上游（其遥测 / 云更新） | 否（`02` §18） |
+| QUERY_ALL_PACKAGES | 上游 | 否 |
+| 电池优化豁免 | 用户设置 | 仅引导，不阻断 |
 
 ## 10. 无障碍
 
@@ -420,6 +469,18 @@ AutoAccounting 出错：
 - “疑似失效”是状态提示，不得自动创建 Pending 记录，也不得自动关闭自动记账。
 - 首次安装 / 首次开启后的 24 小时内不触发提示（避免误报）。
 
+### 19.1 必须能被健康度发现的失效模式
+
+| 失效模式 | 现象 | 检测方式 |
+|---|---|---|
+| Hook 静默失效 | 上游仍显示正常，但零捕获 | §19 的连续无事件判定 |
+| 上游升级后补丁丢失 | 上游恢复了原始宿主列表，账然收不到任何事件 | 同上 + 升级时 §22 第 2 步 |
+| scheme 接收失败 | 上游 `startActivityIfResolvable` 静默失败（账然未安装 scheme 变更） | 同上 + `08` §17 的拉通用例 |
+| 契约版本变化 | 收到事件但 `v` 不匹配 | 收到即写 `CaptureLog` 并一律 Pending（§3.5），不静默丢弃 |
+| 上游被卸载 / 禁用 | 模块状态检测失败 | 状态上报（§3.2） |
+
+原则：宁可显示“疑似失效”，也不要静默表现为“运行正常”。
+
 ## 20. License 与使用纪律
 
 事实：AutoAccounting 上游仓库声明 GPL-3.0。
@@ -431,10 +492,10 @@ AutoAccounting 出错：
 
 必须遵守的纪律：
 
-1. 不改写上游核心逻辑，只做 Adapter 与宿主接入。
+1. 只做 Adapter 与宿主接入；**唯一允许的上游改动是 §2.1 的受控增量补丁**（新增适配器文件 + 一行注册），禁止修改上游既有逻辑。
 2. 锁定上游版本或 commit；升级走 §22 流程。
-3. 保留上游 LICENSE 与版权声明。
-4. 不对外分发构建产物。
+3. 保留上游 LICENSE 与版权声明；补丁仓同为 GPL-3.0。
+4. 不对外分发构建产物（含补丁仓）。
 5. 若未来要公开分发、闭源分发或商业化：必须先重新做许可证合规评估，或重做采集层（自建采集）。
 
 不要在文档中写“API 隔离就一定不受 GPL 影响”——这是错误的绝对结论。
@@ -443,10 +504,11 @@ AutoAccounting 出错：
 
 ### 第一阶段：宿主接入
 
+- 落地宿主接入协议（§3.5）：`zhangran://capture?v=1` 接收入口 + 版本校验
 - 落地 `capture/`（事件接收、落库、Envelope / 原始结果）
 - 落地 `autoaccounting/` Adapter（转换 + 证据 + 来源映射）
-- 接入上游模块的启用检测与状态上报
-- 打通 `Notification → Envelope → Candidate → Normalize → Confidence → Decision(Pending) → Pending 列表可见` 的竖切
+- 落地 §2.1 的受控上游补丁（新增适配器 + 一行注册）+ 上游启用检测与状态上报
+- 打通 `上游出站 → 接收入口 → Candidate → Normalize → Confidence → Decision(Pending) → Pending 列表可见` 的竖切
 
 不要一开始改造全部 AutoAccounting。
 
@@ -470,13 +532,15 @@ AutoAccounting 出错：
 上游模块升级时：
 
 1. 不允许直接覆盖账然 Domain。
-2. Adapter 单独验证（含来源映射与时间/金额转换）。
-3. 运行识别 fixture（见 `08` §16）。
-4. 验证 TransactionCandidate。
-5. 验证 Dedup。
-6. 验证 Decision 与 Pending。
-7. 验证采集健康度与权限矩阵未变化。
-8. 最后进入正式版本。
+2. **先 rebase §2.1 的受控补丁**，确认上游是否已提供可扩展点（若有则改用扩展点并删除补丁）。
+3. Adapter 单独验证（含来源映射与时间/金额转换）。
+4. 运行识别 fixture（见 `08` §16）。
+5. 验证 TransactionCandidate。
+6. 验证 Dedup。
+7. 验证 Decision 与 Pending。
+8. 重跑 `08` §17 的上游集成用例（含出站契约与版本参数）。
+9. 验证采集健康度与权限矩阵未变化。
+10. 最后进入正式版本。
 
 ## 23. DoD
 
@@ -497,4 +561,6 @@ AutoAccounting 出错：
 - 捕获失败有日志（FAILED）
 - 外部引擎失败不破坏账务数据
 - 采集静默失效可检测（§19）
-- 不改写上游源码，上游版本已锁定
+- 上游改动仅限 §2.1 的受控补丁，上游版本与补丁基线 commit 已锁定
+- 宿主接入协议符合 §3.5（scheme / `v` 版本 / 无界面接收入口 / 不写业务库）
+- 账然自身 Manifest 无 NLS / 无障碍 / 短信 / INTERNET 声明（§9.1）
