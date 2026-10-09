@@ -1,6 +1,9 @@
 # DSH 沙箱环境诊断产物（非项目内容）
 _acl-reports/
 
+# 上游参考项目：仅本地克隆用于接入分析，不作为本项目提交对象
+AutoAccounting/
+
 # 编辑器 / 系统
 .DS_Store
 Thumbs.db
