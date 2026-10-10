@@ -25,6 +25,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -42,88 +43,93 @@ class MigrationTest {
         ZhangRanDatabase::class.java,
     )
 
-    // ---------- A7 / A9：以 v1 schema 建库并通过校验 ----------
+    // ---------- A7 / A9：以历史版本 v1 schema 建库并通过校验 ----------
 
     @Test
     fun `用 v1 schema 建库并通过 MigrationTestHelper 校验`() {
         // createDatabase 内部以 1.json 为对照建库：
         // 若实体与导出 schema 不一致（字段/索引/约束漂移），这里会直接失败。
+        // 注意：这里用**字面量 1** 表达历史版本，不能用会随版本推进而漂移的 VERSION。
+        val db = helper.createDatabase(testDbName, V1)
+        assertNotNull("v1 库应可建立", db)
+        db.close()
+    }
+
+    @Test
+    fun `用当前版本 schema 建库并通过校验`() {
+        // 以当前版本（v2）的 2.json 为对照建库，验证实体与 2.json 一致
         val db = helper.createDatabase(testDbName, ZhangRanDatabase.VERSION)
         val tables = queryTableNames(db)
         assertTrue(
-            "五张核心表都应存在，实际=$tables",
-            tables.containsAll(
-                listOf("transactions", "categories", "accounts", "budgets", "field_edits"),
-            ),
+            "v2 应包含全部九张表，实际=$tables",
+            tables.containsAll(V1_TABLES) && tables.containsAll(V2_TABLES),
         )
         db.close()
     }
 
-    // ---------- A9：空 v1→v2 迁移可执行，且不改动 schema ----------
+    // ---------- A3 / A9：真实 v1→v2 迁移 ----------
 
     @Test
-    fun `空迁移可执行且迁移后 schema 与 v1 完全一致`() {
-        // 1) 建 v1 库（以 1.json 校验）
-        helper.createDatabase(testDbName, ZhangRanDatabase.VERSION).close()
+    fun `真实迁移到 v2 后新旧表并存且数据保留`() {
+        // 1) 建 v1 库（以 1.json 校验）并写入一行 v1 数据
+        val v1Db = helper.createDatabase(testDbName, V1)
+        v1Db.execSQL(
+            "INSERT INTO categories (id, name, type, icon, sortOrder, enabled, systemDefined, " +
+                "createdAt, updatedAt) VALUES ('c1','餐饮','EXPENSE','ic',0,1,0,1,1)",
+        )
+        v1Db.close()
 
-        // 2) 执行空迁移（RunMigrations 语义：执行迁移 DDL）
-        val migrated = openAndApplyEmptyMigration()
-        // 空迁移不产生任何 DDL → 表集合与 v1 相同
-        val tablesAfterEmptyMigration = queryTableNames(migrated)
-        migrated.close()
-
-        // 3) 以 1.json 再做一次完整 schema 校验：空迁移后必须仍与 v1 一致
-        val validated = helper.runMigrationsAndValidate(
+        // 2) 执行真实迁移并以 2.json 校验目标 schema
+        val migrated = helper.runMigrationsAndValidate(
             testDbName,
             ZhangRanDatabase.VERSION,
             true,
+            ZhangRanDatabase.MIGRATION_1_2,
         )
-        assertEquals(
-            "空迁移后表集合必须与 v1 一致",
-            tablesAfterEmptyMigration,
-            queryTableNames(validated),
-        )
-        validated.close()
+        val tables = queryTableNames(migrated)
+
+        // A4：v1 五张表必须完整保留
+        assertTrue("迁移后 v1 表应完整保留，实际=$tables", tables.containsAll(V1_TABLES))
+        // v2 新增四张表
+        assertTrue("迁移后应新增 v2 四张表，实际=$tables", tables.containsAll(V2_TABLES))
+
+        // A4：既有数据必须保留
+        migrated.query("SELECT name FROM categories WHERE id = 'c1'").use { cursor ->
+            assertTrue("v1 数据应保留", cursor.moveToFirst())
+            assertEquals("餐饮", cursor.getString(0))
+        }
+        migrated.close()
     }
 
     // ---------- 迁移对象本身 ----------
 
     @Test
     fun `迁移注册表与数据库版本一致`() {
-        assertEquals(1, ZhangRanDatabase.VERSION)
+        assertEquals(2, ZhangRanDatabase.VERSION)
         assertEquals(1, ZhangRanDatabase.ALL_MIGRATIONS.size)
         assertEquals(1, ZhangRanDatabase.MIGRATION_1_2.startVersion)
         assertEquals(2, ZhangRanDatabase.MIGRATION_1_2.endVersion)
     }
 
     @Test
-    fun `MIGRATION_1_2 可被真实执行且为无操作`() {
-        helper.createDatabase(testDbName, ZhangRanDatabase.VERSION).close()
+    fun `MIGRATION_1_2 会创建 v2 全部新表`() {
+        helper.createDatabase(testDbName, V1).close()
+        // 必须显式传入迁移：MigrationTestHelper 不会自动使用应用到 RoomDatabase 的迁移
         val db = helper.runMigrationsAndValidate(
             testDbName,
             ZhangRanDatabase.VERSION,
             true,
+            ZhangRanDatabase.MIGRATION_1_2,
         )
-        val before = queryTableNames(db)
-        // 直接执行迁移对象：空迁移不得抛异常、不得改动任何表
+        // 直接再执行一次迁移对象：DDL 全部使用 IF NOT EXISTS，应幂等且不破坏既有表
         ZhangRanDatabase.MIGRATION_1_2.migrate(db)
-        assertEquals("空迁移不得改动表结构", before, queryTableNames(db))
+        val tables = queryTableNames(db)
+        assertTrue("v1 表应仍在，实际=$tables", tables.containsAll(V1_TABLES))
+        assertTrue("v2 表应已建，实际=$tables", tables.containsAll(V2_TABLES))
         db.close()
     }
 
     // ---------- 辅助 ----------
-
-    /**
-     * 取一个可用连接用于执行迁移 DDL。
-     *
-     * 说明：`runMigrationsAndValidate` 在目标版本 == 当前版本时不需要任何迁移即可通过，
-     * 因此这里传 v1 只为了拿到连接；真正的迁移语句由调用方显式执行。
-     */
-    private fun openAndApplyEmptyMigration(): SupportSQLiteDatabase {
-        val db = helper.runMigrationsAndValidate(testDbName, ZhangRanDatabase.VERSION, true)
-        ZhangRanDatabase.MIGRATION_1_2.migrate(db)
-        return db
-    }
 
     /** 读取 sqlite_master 中的用户表名（排除 Room 内部表）。 */
     private fun queryTableNames(db: SupportSQLiteDatabase): Set<String> {
@@ -137,5 +143,17 @@ class MigrationTest {
             }
         }
         return names
+    }
+
+    private companion object {
+        /** v1（T2a）版本号：历史版本必须用**字面量**，不得用会漂移的 `VERSION`。 */
+        const val V1 = 1
+
+        /** v1 的五张表。 */
+        val V1_TABLES = setOf("transactions", "categories", "accounts", "budgets", "field_edits")
+
+        /** v2（T2b）新增的四张表。 */
+        val V2_TABLES =
+            setOf("capture_evidence", "parsing_rules", "capture_logs", "duplicate_decisions")
     }
 }

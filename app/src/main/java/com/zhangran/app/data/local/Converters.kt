@@ -16,9 +16,13 @@ import androidx.room.TypeConverter
 import com.zhangran.app.domain.model.AccountType
 import com.zhangran.app.domain.model.BudgetPeriod
 import com.zhangran.app.domain.model.BudgetScope
+import com.zhangran.app.domain.model.CaptureLogStatus
 import com.zhangran.app.domain.model.CaptureSource
 import com.zhangran.app.domain.model.CategoryType
 import com.zhangran.app.domain.model.Currency
+import com.zhangran.app.domain.model.DecisionActor
+import com.zhangran.app.domain.model.DuplicateVerdict
+import com.zhangran.app.domain.model.MatchMode
 import com.zhangran.app.domain.model.PaymentChannel
 import com.zhangran.app.domain.model.TransactionState
 import com.zhangran.app.domain.model.TransactionType
@@ -116,5 +120,45 @@ class Converters {
     @TypeConverter
     fun toBudgetPeriod(value: String?): BudgetPeriod? = value?.let {
         runCatching { BudgetPeriod.valueOf(it) }.getOrNull()
+    }
+
+    // ---------- MatchMode ----------
+
+    @TypeConverter
+    fun fromMatchMode(value: MatchMode?): String? = value?.name
+
+    @TypeConverter
+    fun toMatchMode(value: String?): MatchMode? = value?.let {
+        runCatching { MatchMode.valueOf(it) }.getOrNull()
+    }
+
+    // ---------- CaptureLogStatus ----------
+
+    @TypeConverter
+    fun fromCaptureLogStatus(value: CaptureLogStatus?): String? = value?.name
+
+    @TypeConverter
+    fun toCaptureLogStatus(value: String?): CaptureLogStatus? = value?.let {
+        runCatching { CaptureLogStatus.valueOf(it) }.getOrNull()
+    }
+
+    // ---------- DuplicateVerdict ----------
+
+    @TypeConverter
+    fun fromDuplicateVerdict(value: DuplicateVerdict?): String? = value?.name
+
+    @TypeConverter
+    fun toDuplicateVerdict(value: String?): DuplicateVerdict? = value?.let {
+        runCatching { DuplicateVerdict.valueOf(it) }.getOrNull()
+    }
+
+    // ---------- DecisionActor ----------
+
+    @TypeConverter
+    fun fromDecisionActor(value: DecisionActor?): String? = value?.name
+
+    @TypeConverter
+    fun toDecisionActor(value: String?): DecisionActor? = value?.let {
+        runCatching { DecisionActor.valueOf(it) }.getOrNull()
     }
 }

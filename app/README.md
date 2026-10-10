@@ -64,18 +64,31 @@ app/                                ← Gradle 工程根
     │   │   │   ├── components/     # 可复用组件（当前仅包说明，待后续任务）
     │   │   │   └── screen/         # 18 个占位页面 + PlaceholderScreen
     │   │   ├── domain/             # 领域层：service/Money、service/TransactionTime（T3）+ 包说明
-    │   │   ├── data/               # 数据层（当前仅包说明，待 T2a）
-    │   │   ├── capture/            # 上游接收入口（T4）：契约 + 事件 + 编排 + 无界面 Activity
+    │   │   ├── data/               # 数据层：Room v2（9 张表 + 4 个迁移相关测试）
+    │   │   ├── capture/            # 上游接收入口（T4）+ CaptureSubmitter（应用级作用域，T2b）
     │   │   ├── autoaccounting/     # 上游结果 Adapter：CaptureSourceMapper（T3）
-    │   │   ├── backup/  common/    # 当前仅包说明
-    │   │   └── log/                # CaptureLogSink 接口 + InMemory 实现（T4；Room 实现待 T2b）
+    │   │   ├── backup/  common/    # 包说明；common 含 RuleListCodec（JSON 数组编解码，T2b）
+    │   │   └── log/                # CaptureLogSink 接口 + RoomCaptureLogSink（T2b 已打开落库）
     │   └── res/values/             # strings.xml / themes.xml（最小资源，无 token）
     ├── debug/AndroidManifest.xml   # 移除依赖带入的 exported=true 组件（PreviewActivity / ProfileInstallReceiver）
-    ├── test/java/com/zhangran/app/           # JVM 单测 92 项（BuildConfig / 路由 / token / 金额 / 时间 / 来源映射 / 契约 / 采集编排）
-    └── androidTest/java/com/zhangran/app/    # 真机/模拟器冒烟：18 页面 × 明暗主题（36 项）
+    ├── schemas/                    # Room 导出 schema：1.json（v1）/ 2.json（v2），均入库
+    ├── test/java/com/zhangran/app/           # JVM 单测 108 项
+    └── androidTest/java/com/zhangran/app/    # 设备测试 78 项（Compose 冒烟 / CRUD / 约束 / 迁移 / 规则 / 日志落库）
 ```
 
-## 上游接收入口（T4 已落地）
+## 数据库（Room）现状
+
+| 版本 | 表 | 说明 |
+|---|---|---|
+| v1（T2a） | `transactions`、`categories`、`accounts`、`budgets`、`field_edits` | 首次产出 `schemas/…/1.json` |
+| v2（T2b） | + `capture_evidence`、`parsing_rules`、`capture_logs`、`duplicate_decisions` | 真实 `MIGRATION_1_2`（含新表与索引），产出 `2.json` |
+
+- **禁止** `fallbackToDestructiveMigration`；字段任何变化都必须配迁移。
+- 迁移 DDL 必须与 Room 生成的 schema 逐字一致；`MigrationTestHelper` 需显式传入迁移对象。
+- 枚举一律以 `name` 存为 TEXT（`data/local/Converters.kt`）；金额一律 `Long`（最小单位）。
+- 可空列上的唯一性（`isDefault`、总预算同月唯一）由**应用层事务**保证，不靠库级唯一索引。
+
+## 上游接收入口（T4 + T2b）
 
 契约（`docs/07` §3.5）：
 
@@ -84,10 +97,13 @@ Intent(ACTION_VIEW, "zhangran://capture?v=1&payload=<Base64URL(JSON)>")
 ```
 
 - 入口：`capture/CaptureEntryActivity` —— **`exported=true` + `BROWSABLE`**（否则上游 `startActivityIfResolvable` 会静默失败），`Theme.NoDisplay` + `noHistory` + `excludeFromRecents`。
-- 入口内只做：取 `Intent` 原始字符串 → 交给 `CaptureEventSource` → 立即 `finish()`。**不做**解码/解析/落库/业务判断。
+- 入口内只做：取 `Intent` 原始字符串 → 交给 `CaptureSubmitter` → 立即 `finish()`。**不做**解码/解析/落库/业务判断。
 - 版本 `v` 缺失、非法或不为 `1` → 记日志 + 建议 `UNSUPPORTED_NOTIFICATION`，**不解析载荷**。
-- 本任务落库走 `log/CaptureLogSink` 接口（当前为 logcat 实现，`TODO(T2b)` 换 Room）。
+- 挂载 T4 的 `CaptureLogRecord` 与表字段的对应关系、以及 `payloadVersion` / `status` 的映射。
+- 提交必须走**应用级作用域**（`CaptureSubmitter`，`SupervisorJob + Dispatchers.Default`）：`finish()` 会取消 `lifecycleScope`，若用 Activity 作用域提交，Room 落库的挂起点会被取消且 `runCatching` 捕不到 `CancellationException` → 事件静默丢失（见 `docs/09` §7）。
+- 落库走 `log/RoomCaptureLogSink`：事件落 `capture_logs` + `capture_evidence`，两者经 `evidenceId` 关联；**只写日志与证据，不写 Transaction**。
 - **未新增任何权限**（入站 scheme 不需要权限），权限清单仍只有依赖带入的那条非危险签名权限。
+- 已知待补（后续 Adapter 任务）：`capture_logs.captureSource` 目前固定 `NOTIFICATION`（宿主契约未携带来源）、`channel` / `parserRuleId` / `transactionId` 暂空，待上游 `app`/`channel` 映射确认后回填。
 
 设备侧手工验证：
 
@@ -95,6 +111,9 @@ Intent(ACTION_VIEW, "zhangran://capture?v=1&payload=<Base64URL(JSON)>")
 adb shell am start -a android.intent.action.VIEW -d 'zhangran://capture?v=1&payload=eyJhIjoxfQ'
 adb logcat -s ZhangRanCapture
 ```
+
+> 注意：AVD 上**没有** `sqlite3` 命令，`run-as` 无法直接查库；"数据是否真的落库"由设备测试
+> `RoomCaptureLogSinkTest` 断言（真实 Room 库 + 逐列核对），这是可回归的证据来源。
 
 ## 构建基线（T1a / T1b 落地值）
 
@@ -111,11 +130,12 @@ adb logcat -s ZhangRanCapture
 
 ## 尚未创建（属后续任务）
 
-- **T1b 已完成**：包结构、设计 token、导航骨架与 18 个占位页面。
-- **T3 已完成**：`domain/service/Money`、`domain/service/TransactionTime`、`autoaccounting/CaptureSourceMapper`。
-- **T4 已完成**：`zhangran://capture` 接收入口（见上节）。
-- **T2a（Room 基础与第一批实体）**：待 P-004（`CaptureSource` 枚举落点）确认后开工。
-- **T2b**：其余实体与 DAO、迁移到 v2、`capture_logs`/`duplicate_decisions`（后者待 P-002/P-003 确认）。
+- **T1b**：包结构、设计 token、导航骨架与 18 个占位页面 — 已完成。
+- **T3**：`domain/service/Money`、`domain/service/TransactionTime`、`autoaccounting/CaptureSourceMapper` — 已完成。
+- **T4**：`zhangran://capture` 接收入口 — 已完成。
+- **T2a**：Room v1（5 张表）+ 首次 schema 导出 — 已完成。
+- **T2b**：Room v2（+4 张表）、真实 `MIGRATION_1_2`、Room 落库、应用级提交作用域 — 已完成。
+- **后续**：Repository 层、Normalize / Confidence / Dedup / Decision、Adapter（上游字段映射）、UI 真实页面（M2/M3）、备份与恢复。
 
 ## 约束（不变）
 

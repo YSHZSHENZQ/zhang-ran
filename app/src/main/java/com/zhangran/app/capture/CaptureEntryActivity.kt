@@ -6,7 +6,7 @@
  * ```text
  * Intent 到达
  *   → 读取 data + extras（不做解析）
- *   → 交给 CaptureEventSource
+ *   → 交给 CaptureSubmitter（应用级作用域）
  *   → finish()
  * ```
  *
@@ -17,16 +17,19 @@
  * - 写库 / 访问 DAO / Repository
  * - 导航（本 Activity 不进入导航图，也不是 Compose 页面）
  *
- * 本类只有 3 个动作：取 `Intent` 原始字符串 → 转交事件源 → 立即 `finish()`。
+ * **提交必须走应用级作用域**（`T2b` §4.5.1）：`finish()` 会触发 `lifecycleScope` 取消，
+ * 若用 Activity 作用域提交，Room 落库的挂起点会被取消，而 `runCatching` 捕不到
+ * `CancellationException` → 事件静默丢失。因此这里只调用非挂起的
+ * [CaptureSubmitter.submit]，由应用级作用域负责跑完。
+ *
+ * 本类只有 3 个动作：取 `Intent` 原始字符串 → 转交提交器 → 立即 `finish()`。
  */
 package com.zhangran.app.capture
 
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -34,6 +37,9 @@ class CaptureEntryActivity : ComponentActivity() {
 
     @Inject
     lateinit var eventSource: CaptureEventSource
+
+    @Inject
+    lateinit var submitter: CaptureSubmitter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,11 +50,8 @@ class CaptureEntryActivity : ComponentActivity() {
                 rawUri = intent?.dataString,
                 sourcePackage = intent?.`package`,
             )
-            // 后台提交，不等待结果（v0.1 不做回执，docs/07 §3.5）
-            lifecycleScope.launch {
-                runCatching { eventSource.submit(event) }
-                    .onFailure { e -> Log.w(TAG, "提交采集事件失败：${e.javaClass.simpleName}") }
-            }
+            // 交给应用级作用域提交：finish() 后仍会完成（T2b §4.5.1）
+            submitter.submit(event)
         }.onFailure { t ->
             Log.w(TAG, "接收入口处理异常：${t.javaClass.simpleName}")
         }

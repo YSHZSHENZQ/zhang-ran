@@ -3,22 +3,25 @@
  *
  * 依据 `docs/04` §3（`capture/`、`log/` 的职责）与 §6（存储归属）。
  *
- * 本任务（T4）的取舍（任务书 §4.5）：
- * - `CaptureLogSink` 用 [InMemoryCaptureLogSink]（写 logcat，**不落库**）；
- * - Room 实现将在 T2b 提供并替换本绑定。
+ * T2b 变更：
+ * - `CaptureLogSink` 由临时 logcat 实现换为 **Room 实现**（[RoomCaptureLogSink]），
+ *   事件真正落 `capture_logs` + `capture_evidence`（`07` §3.2）；
+ * - 新增 [CaptureSubmitter]：把提交迁到**应用级作用域**（`T2b` §4.5.1）。
  *
- * 注意：本绑定**不**把任何 Repository / DAO 暴露给上游（`docs/04` §8 禁止项）。
+ * 注意：本绑定**不**把任何 Repository 暴露给上游（`docs/04` §8 禁止项）。
  */
 package com.zhangran.app.capture
 
+import com.zhangran.app.di.ApplicationScope
 import com.zhangran.app.log.CaptureLogSink
-import com.zhangran.app.log.InMemoryCaptureLogSink
+import com.zhangran.app.log.RoomCaptureLogSink
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -28,6 +31,11 @@ abstract class CaptureModule {
     @Binds
     @Singleton
     abstract fun bindCaptureEventSource(impl: CaptureProcessor): CaptureEventSource
+
+    /** 日志写入口：Room 实现（T2b 打开落库）。 */
+    @Binds
+    @Singleton
+    abstract fun bindCaptureLogSink(impl: RoomCaptureLogSink): CaptureLogSink
 
     companion object {
         /**
@@ -41,13 +49,15 @@ abstract class CaptureModule {
             CaptureProcessor(logSink = logSink)
 
         /**
-         * 日志写入口：本任务用 logcat 实现（TODO(T2b) 换 Room 实现）。
+         * 提供应用级提交器（`T2b` §4.5.1）。
          *
-         * 用 `@Provides` 而不是 `@Binds`：该实现有构造参数（内存保留上限），
-         * 显式构造比加 `@Inject constructor` 更清楚（后者会让上限无法配置）。
+         * 用 `@Provides` 而非 `@Binds`：需要注入 `@ApplicationScope` 限定的作用域参数。
          */
         @Provides
         @Singleton
-        fun provideCaptureLogSink(): CaptureLogSink = InMemoryCaptureLogSink()
+        fun provideCaptureSubmitter(
+            eventSource: CaptureEventSource,
+            @ApplicationScope scope: CoroutineScope,
+        ): CaptureSubmitter = CaptureSubmitter(eventSource = eventSource, scope = scope)
     }
 }

@@ -16,8 +16,12 @@ import android.content.Context
 import androidx.room.Room
 import com.zhangran.app.data.local.dao.AccountDao
 import com.zhangran.app.data.local.dao.BudgetDao
+import com.zhangran.app.data.local.dao.CaptureEvidenceDao
+import com.zhangran.app.data.local.dao.CaptureLogDao
 import com.zhangran.app.data.local.dao.CategoryDao
+import com.zhangran.app.data.local.dao.DuplicateDecisionDao
 import com.zhangran.app.data.local.dao.FieldEditDao
+import com.zhangran.app.data.local.dao.ParsingRuleDao
 import com.zhangran.app.data.local.dao.TransactionDao
 import dagger.Module
 import dagger.Provides
@@ -57,4 +61,22 @@ object DatabaseModule {
 
     @Provides
     fun provideFieldEditDao(database: ZhangRanDatabase): FieldEditDao = database.fieldEditDao()
+
+    // ---- T2b 新增（v2 四张表）----
+
+    @Provides
+    fun provideCaptureEvidenceDao(database: ZhangRanDatabase): CaptureEvidenceDao =
+        database.captureEvidenceDao()
+
+    @Provides
+    fun provideParsingRuleDao(database: ZhangRanDatabase): ParsingRuleDao =
+        database.parsingRuleDao()
+
+    @Provides
+    fun provideCaptureLogDao(database: ZhangRanDatabase): CaptureLogDao =
+        database.captureLogDao()
+
+    @Provides
+    fun provideDuplicateDecisionDao(database: ZhangRanDatabase): DuplicateDecisionDao =
+        database.duplicateDecisionDao()
 }
