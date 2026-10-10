@@ -22,6 +22,8 @@ Thumbs.db
 # 也会误伤 app/schemas/ 之外的同名路径（任务书 T1a §7 R1、§6 A6）。
 .gradle/
 /**/build/
+# Kotlin 编译器的会话/增量缓存（构建期临时产物，不属于交付物）
+**/.kotlin/
 local.properties
 *.apk
 *.aab
