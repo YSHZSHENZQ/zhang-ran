@@ -6,6 +6,7 @@
  */
 package com.zhangran.app.autoaccounting
 
+import com.zhangran.app.domain.model.CaptureSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

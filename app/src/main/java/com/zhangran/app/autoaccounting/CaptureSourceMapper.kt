@@ -13,42 +13,15 @@
  *   （`docs/07` §5、任务书 T3 §7 R1）。
  * - 本文件不访问 DAO / Room / UI（`docs/03` §15、`docs/04` §20）。
  */
+/*
+ * 迁移说明（T2a，一次性搬迁，依据 `docs/04` §3「枚举与领域值对象的落点纪律」）：
+ * `CaptureSource` 枚举原定义在本文件，现迁至 `domain/model/Enums.kt`。
+ * 原因：`data/local/entity` 需要该枚举，而实体**不得依赖 Adapter 层**；且枚举必须是 SSOT 单点。
+ * 本文件的映射表与映射逻辑未做任何改动，只是改为引用领域枚举。
+ */
 package com.zhangran.app.autoaccounting
 
-/**
- * 采集来源（SSOT：`docs/07` §5）。**枚举值与顺序不得新增或改动。**
- *
- * `priority` 为多来源命中时的可信度排序（**数值越小越可信**）：
- * 用户手工 > 系统通知 > 上游 Hook 的应用内账单数据 > 短信 > 无障碍页面文本 > AI > OCR 截图识别。
- */
-enum class CaptureSource(val priority: Int) {
-    /** 用户手工记账。 */
-    MANUAL(0),
-
-    /** 通知（含上游 Hook 系统通知、通知渠道）。 */
-    NOTIFICATION(1),
-
-    /** 上游 Hook 拿到的应用内账单数据。 */
-    HOOK(2),
-
-    /** 短信广播解析。 */
-    SMS(3),
-
-    /** 无障碍读取页面可见文本。 */
-    ACCESSIBILITY(4),
-
-    /** AI 辅助识别（在上游产生）。 */
-    AI(5),
-
-    /** Shizuku / 截图 + OCR 识别。 */
-    OCR(6),
-    ;
-
-    companion object {
-        /** 按可信度排序（可信在前）。 */
-        val byPriority: List<CaptureSource> = entries.sortedBy { it.priority }
-    }
-}
+import com.zhangran.app.domain.model.CaptureSource
 
 /**
  * 单个来源的匹配结果。
