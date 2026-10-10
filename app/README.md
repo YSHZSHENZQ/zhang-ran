@@ -63,15 +63,37 @@ app/                                ← Gradle 工程根
     │   │   │   ├── navigation/     # Destinations（18 路由）+ ZhangRanNavHost（5 项底栏）
     │   │   │   ├── components/     # 可复用组件（当前仅包说明，待后续任务）
     │   │   │   └── screen/         # 18 个占位页面 + PlaceholderScreen
-    │   │   ├── domain/             # 领域层（当前仅包说明，待后续任务）
-    │   │   ├── data/               # 数据层（当前仅包说明，待 T2）
-    │   │   ├── capture/            # 上游事件接收（当前仅包说明，待 T4）
-    │   │   ├── autoaccounting/     # 上游结果 Adapter（当前仅包说明）
-    │   │   ├── backup/  log/  common/   # 当前仅包说明
+    │   │   ├── domain/             # 领域层：service/Money、service/TransactionTime（T3）+ 包说明
+    │   │   ├── data/               # 数据层（当前仅包说明，待 T2a）
+    │   │   ├── capture/            # 上游接收入口（T4）：契约 + 事件 + 编排 + 无界面 Activity
+    │   │   ├── autoaccounting/     # 上游结果 Adapter：CaptureSourceMapper（T3）
+    │   │   ├── backup/  common/    # 当前仅包说明
+    │   │   └── log/                # CaptureLogSink 接口 + InMemory 实现（T4；Room 实现待 T2b）
     │   └── res/values/             # strings.xml / themes.xml（最小资源，无 token）
     ├── debug/AndroidManifest.xml   # 移除依赖带入的 exported=true 组件（PreviewActivity / ProfileInstallReceiver）
-    ├── test/java/com/zhangran/app/           # JVM 单测：BuildConfig / 路由 / token 完整性（17 项）
+    ├── test/java/com/zhangran/app/           # JVM 单测 92 项（BuildConfig / 路由 / token / 金额 / 时间 / 来源映射 / 契约 / 采集编排）
     └── androidTest/java/com/zhangran/app/    # 真机/模拟器冒烟：18 页面 × 明暗主题（36 项）
+```
+
+## 上游接收入口（T4 已落地）
+
+契约（`docs/07` §3.5）：
+
+```text
+Intent(ACTION_VIEW, "zhangran://capture?v=1&payload=<Base64URL(JSON)>")
+```
+
+- 入口：`capture/CaptureEntryActivity` —— **`exported=true` + `BROWSABLE`**（否则上游 `startActivityIfResolvable` 会静默失败），`Theme.NoDisplay` + `noHistory` + `excludeFromRecents`。
+- 入口内只做：取 `Intent` 原始字符串 → 交给 `CaptureEventSource` → 立即 `finish()`。**不做**解码/解析/落库/业务判断。
+- 版本 `v` 缺失、非法或不为 `1` → 记日志 + 建议 `UNSUPPORTED_NOTIFICATION`，**不解析载荷**。
+- 本任务落库走 `log/CaptureLogSink` 接口（当前为 logcat 实现，`TODO(T2b)` 换 Room）。
+- **未新增任何权限**（入站 scheme 不需要权限），权限清单仍只有依赖带入的那条非危险签名权限。
+
+设备侧手工验证：
+
+```bash
+adb shell am start -a android.intent.action.VIEW -d 'zhangran://capture?v=1&payload=eyJhIjoxfQ'
+adb logcat -s ZhangRanCapture
 ```
 
 ## 构建基线（T1a / T1b 落地值）
@@ -89,9 +111,11 @@ app/                                ← Gradle 工程根
 
 ## 尚未创建（属后续任务）
 
-- **T1b 已完成**：包结构、设计 token、导航骨架与 18 个占位页面均已落地（见上方目录树）。
-- **T2**：Room 实体与 DAO（届时首次产出 `schemas/**.json`）；`domain/`、`data/` 的真实实现。
-- **T4**：`zhangran://capture` 上游接收入口。
+- **T1b 已完成**：包结构、设计 token、导航骨架与 18 个占位页面。
+- **T3 已完成**：`domain/service/Money`、`domain/service/TransactionTime`、`autoaccounting/CaptureSourceMapper`。
+- **T4 已完成**：`zhangran://capture` 接收入口（见上节）。
+- **T2a（Room 基础与第一批实体）**：待 P-004（`CaptureSource` 枚举落点）确认后开工。
+- **T2b**：其余实体与 DAO、迁移到 v2、`capture_logs`/`duplicate_decisions`（后者待 P-002/P-003 确认）。
 
 ## 约束（不变）
 
