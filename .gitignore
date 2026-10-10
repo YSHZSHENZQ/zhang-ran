@@ -2,7 +2,11 @@
 _acl-reports/
 
 # 上游参考项目：仅本地克隆用于接入分析，不作为本项目提交对象
-AutoAccounting/
+# 注意：必须写成 /AutoAccounting/（前导斜杠锚定仓库根）。
+# 裸 AutoAccounting/ 会匹配**任意层级**的同名目录，从而误伤
+# app/src/main/java/com/zhangran/app/autoaccounting/（包名小写同名），
+# 且被误伤的文件在 git status 里**完全不显示**（连 ?? 都没有），只会静默漏提交。
+/AutoAccounting/
 
 # 本地分析/执行文档：不作为本项目提交对象
 review/
