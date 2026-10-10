@@ -102,6 +102,9 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // Navigation Compose（T1b 追加：单 Activity + 导航骨架）
+    implementation(libs.androidx.navigation.compose)
+
     // Hilt（本任务必须打通）
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
@@ -113,4 +116,18 @@ dependencies {
 
     // 单元测试
     testImplementation(libs.junit)
+
+    // instrumentation 测试（T1b：18 页面渲染冒烟）
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+
+    // ui-test-manifest 必须是 **debugImplementation**（进目标 App 的 debug 变体），
+    // 它提供 createComposeRule() 所需的宿主 androidx.activity.ComponentActivity 声明。
+    // 两个实测坑：
+    // - 放 androidTestImplementation → 该 Activity 落到测试 APK 进程，报
+    //   “Intent in process com.zhangran.app resolved to different process com.zhangran.app.test”；
+    // - 若声明确实缺失，测试会在取 Activity 阶段永久阻塞（无任何测试日志、AM 从不启动 Activity）。
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

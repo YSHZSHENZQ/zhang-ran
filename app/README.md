@@ -21,6 +21,19 @@ cd app
   - IDE：Android Studio 的 Gradle JDK 设为其自带 JBR
 - **工程内不再硬编码 `org.gradle.java.home`**（硬编码会让换机器 / CI 直接失败）。Java 21 的意图由 `build.gradle.kts` 的 `java { toolchain { languageVersion = 21 } }` 声明，用于 IDE / 工具链解析与明确报错。
 
+**真机 / 模拟器验证**
+
+```bash
+cd app
+./gradlew connectedDebugAndroidTest          # 需要一台已连接且空闲的设备
+```
+
+前置（否则会出现“每个用例 60s 超时”或“根本没开始跑”，详见 `docs/09` §5）：
+
+1. **使用 AVD（推荐）**：本机 `Medium_Phone_API_36` 已验证可跑通全部 36 个用例。
+2. 若用小米 / HyperOS 真机：需在设备上开启「USB 安装」并登录小米账号授权，否则 ADB 安装会被拒（`INSTALL_FAILED_USER_RESTRICTED`），且该限制**无法用技术绕过**。
+3. 跑之前：关闭设备动画（`window/transition/animator_duration_scale` 置 0）、确保设备空闲（前台为桌面、无触摸）、并清理上次残留（`am force-stop com.zhangran.app`）。
+
 其他约束：
 
 - 版本唯一来源：`gradle/libs.versions.toml`（构建脚本禁止出现字面版本号）。
@@ -44,13 +57,24 @@ app/                                ← Gradle 工程根
     │   ├── AndroidManifest.xml     # 零采集类权限与 INTERNET（docs/07 §9.1）
     │   ├── java/com/zhangran/app/
     │   │   ├── ZhangRanApp.kt      # @HiltAndroidApp 应用类
-    │   │   └── MainActivity.kt     # 单 Activity，仅显示“账然”文本
+    │   │   ├── MainActivity.kt     # 单 Activity：主题 + 导航骨架
+    │   │   ├── ui/
+    │   │   │   ├── theme/          # 设计 token（Color/Typography/Dimens/Shape/Theme）
+    │   │   │   ├── navigation/     # Destinations（18 路由）+ ZhangRanNavHost（5 项底栏）
+    │   │   │   ├── components/     # 可复用组件（当前仅包说明，待后续任务）
+    │   │   │   └── screen/         # 18 个占位页面 + PlaceholderScreen
+    │   │   ├── domain/             # 领域层（当前仅包说明，待后续任务）
+    │   │   ├── data/               # 数据层（当前仅包说明，待 T2）
+    │   │   ├── capture/            # 上游事件接收（当前仅包说明，待 T4）
+    │   │   ├── autoaccounting/     # 上游结果 Adapter（当前仅包说明）
+    │   │   ├── backup/  log/  common/   # 当前仅包说明
     │   └── res/values/             # strings.xml / themes.xml（最小资源，无 token）
     ├── debug/AndroidManifest.xml   # 移除依赖带入的 exported=true 组件（PreviewActivity / ProfileInstallReceiver）
-    └── test/java/com/zhangran/app/BuildConfigTest.kt
+    ├── test/java/com/zhangran/app/           # JVM 单测：BuildConfig / 路由 / token 完整性（17 项）
+    └── androidTest/java/com/zhangran/app/    # 真机/模拟器冒烟：18 页面 × 明暗主题（36 项）
 ```
 
-## 构建基线（T1a 落地值）
+## 构建基线（T1a / T1b 落地值）
 
 | 项 | 值 |
 |---|---|
@@ -65,12 +89,14 @@ app/                                ← Gradle 工程根
 
 ## 尚未创建（属后续任务）
 
-- **T1b**：包结构（`ui/theme`、`ui/components`、`ui/navigation`、`ui/screen/…`、`domain/`、`data/`、`capture/`、`autoaccounting/`、`backup/`、`log/`、`common/`）、设计 token、导航骨架与 18 个占位页面。包结构的详细指导见 T1b 任务书。
-- **T2**：Room 实体与 DAO（届时首次产出 `schemas/**.json`）。
+- **T1b 已完成**：包结构、设计 token、导航骨架与 18 个占位页面均已落地（见上方目录树）。
+- **T2**：Room 实体与 DAO（届时首次产出 `schemas/**.json`）；`domain/`、`data/` 的真实实现。
+- **T4**：`zhangran://capture` 上游接收入口。
 
 ## 约束（不变）
 
 - 版本唯一来源为 `gradle/libs.versions.toml`，构建脚本不得出现字面版本号。
 - `applicationId` 固定为 `com.zhangran.app`；版本号规则见任务书 §4.1.1（人工置 `1.0.0`，Agent 不得自行判定完成）。
 - 账然自身不申请任何采集类权限与 `INTERNET`（采集能力来自上游独立应用）。
-- 界面不得出现字面颜色/尺寸（token 属 T1b，依据 `docs/05` §3–§6）。
+- 界面不得出现字面颜色/尺寸：颜色只能来自 `ui/theme/Color.kt`，尺寸只能来自 `ui/theme/Dimens.kt`（依据 `docs/05` §3–§6）。
+- 骨架期的 token 取值为**占位值**，已用 `TODO(视觉)` 标注，待按 `docs/05` 与原型 CSS 变量确定。
