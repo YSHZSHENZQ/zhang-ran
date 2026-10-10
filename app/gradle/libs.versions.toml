@@ -69,8 +69,9 @@ androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref =
 junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
+# 注意：AGP 9.0 起内建 Kotlin，**不要**定义/应用 org.jetbrains.kotlin.android
+# （应用会直接报错）。Kotlin 版本仅由 Compose 编译器插件引用（见 kotlin 版本项）。
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

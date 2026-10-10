@@ -45,7 +45,9 @@ android {
     }
 
     compileOptions {
-        // Java 21：与 gradle.properties 的 org.gradle.java.home 及 Kotlin jvmTarget 一致
+        // Java 21。注意：这里必须显式声明，不能只依赖下面的 java { toolchain }——
+        // Hilt 生成的 Java 编译任务（hiltJavaCompile*）不跟随 toolchain 属性，会用构建期
+        // JVM 编译；因此**构建期 JVM 必须是 JDK 21+**（见 app/README.md 的“构建前置”）。
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
@@ -67,6 +69,17 @@ kotlin {
     compilerOptions {
         // 与 compileOptions 保持一致（统一 JDK 21）
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
+// Java 21 由 Gradle Toolchain 声明，而不是在 gradle.properties 硬编码本机 JDK 路径
+// （硬编码会让换机器 / CI 直接失败）。
+// 注意（T1a 实测结论）：Hilt 生成的 Java 编译任务不跟随 toolchain，因此**构建期 JVM
+// 仍必须是 JDK 21+**；此声明保证 IDE/工具链解析与编译级版本一致，并在 JVM 版本不足时
+// 给出明确报错，而不是静默降级。
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 

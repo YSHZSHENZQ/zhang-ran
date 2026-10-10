@@ -12,8 +12,18 @@ cd app
 ./gradlew assembleDebug testDebugUnitTest        # Windows: .\gradlew.bat assembleDebug testDebugUnitTest
 ```
 
+**构建前置（重要）**
+
+- **构建期 JVM 必须是 JDK 21+**。原因：Hilt 生成的 Java 编译任务（`hiltJavaCompile*`）不跟随 Gradle toolchain，直接用构建期 JVM 编译，JDK 17 会报 `release 21 不受支持`。
+- 本机可用的 JDK 21：Android Studio 自带 JBR（`C:\Program Files\Android\Android Studio\jbr`）。把它设为构建期 JVM 的方式（任选其一）：
+  - 临时：`$env:JAVA_HOME = 'C:\Program Files\Android\Android Studio\jbr'`（Windows PowerShell）
+  - 持久：把 `JAVA_HOME` 指向任一 JDK 21+ 安装
+  - IDE：Android Studio 的 Gradle JDK 设为其自带 JBR
+- **工程内不再硬编码 `org.gradle.java.home`**（硬编码会让换机器 / CI 直接失败）。Java 21 的意图由 `build.gradle.kts` 的 `java { toolchain { languageVersion = 21 } }` 声明，用于 IDE / 工具链解析与明确报错。
+
+其他约束：
+
 - 版本唯一来源：`gradle/libs.versions.toml`（构建脚本禁止出现字面版本号）。
-- JVM：JDK 21，由 `gradle.properties` 的 `org.gradle.java.home` 指定。
 - `applicationId` 固定 `com.zhangran.app`；`versionName` `0.1.0` / `versionCode` `1`（同样定义在版本目录）。
 
 ## 目录
@@ -47,7 +57,7 @@ app/                                ← Gradle 工程根
 | AGP / Gradle | 9.4.1 / 9.8.1 |
 | Kotlin | AGP 9 内建（**不使用** `org.jetbrains.kotlin.android`）；Compose 编译器插件 2.3.21 |
 | KSP / Hilt / Room | 2.3.12 / 2.60.1 / 2.8.4 |
-| JDK | 21 |
+| JDK | 21（**构建期 JVM 必须 21+**，见上） |
 | `compileSdk` / `targetSdk` / `minSdk` | **37** / 36 / 31 |
 | Compose BOM | 2026.09.00 |
 

@@ -70,6 +70,7 @@ v0.1 **采集层复用 AutoAccounting 的模块化核心**，账然不另行自�
   - 工程内：`settings.gradle.kts`、`build.gradle.kts`、`gradle.properties`、`gradlew(.bat)`、`gradle/libs.versions.toml`（唯一版本来源）
   - 源码：`app/src/main/java/com/zhangran/app/`（包结构见 `docs/04` §3，由 T1b 落地）
   - 构建命令：`cd app && ./gradlew <task>`（Windows：`cd app; .\gradlew.bat <task>`）
+  - **构建前置：构建期 JVM 必须是 JDK 21+**（Hilt 生成的 Java 编译任务不跟随 Gradle toolchain）
 - `AutoAccounting/`：上游参考项目（本地克隆，仅用于接入分析，已 gitignore，不作为本项目提交对象）
 
 ## 构建基线（T1a 已落地）
@@ -79,7 +80,7 @@ v0.1 **采集层复用 AutoAccounting 的模块化核心**，账然不另行自�
 | AGP / Gradle | 9.4.1 / 9.8.1 |
 | Kotlin | AGP 9 内建（**不再使用** `org.jetbrains.kotlin.android` 插件）；Compose 编译器插件 2.3.21 |
 | KSP / Hilt / Room | 2.3.12 / 2.60.1 / 2.8.4 |
-| JDK | **21**（`app/gradle.properties` 的 `org.gradle.java.home` 指向 Android Studio JBR） |
+| JDK | **21**（构建期 JVM；Java 版本另由 Gradle toolchain 声明） |
 | `compileSdk` / `targetSdk` / `minSdk` | **37** / 36 / 31 |
 | Compose BOM | 2026.09.00 |
 
