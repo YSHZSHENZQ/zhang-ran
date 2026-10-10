@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  debug 变体 Manifest 合并规则（T1a）
+
+  目的：移除 debug 构建中由依赖带入的、且 `android:exported="true"` 的组件。
+  任务书 §4.3 要求「不得声明任何 exported="true" 的组件」（唯一例外是 T4 的
+  zhangran:// 接收入口），而以下组件来自调试/工具依赖，不属于账然自身声明：
+
+  - androidx.compose.ui.tooling.PreviewActivity（来自 compose-ui-tooling）
+  - androidx.profileinstaller.ProfileInstallReceiver（profileinstaller，随 debug 依赖进入）
+
+  注意：MainActivity 的 exported=true 是启动器 Activity 的必需属性（含 LAUNCHER intent-filter），
+  不在此处移除。若 T1b 需要 @Preview 的独立预览入口，再单独评估。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <activity
+            android:name="androidx.compose.ui.tooling.PreviewActivity"
+            tools:node="remove" />
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:node="remove" />
+    </application>
+
+</manifest>

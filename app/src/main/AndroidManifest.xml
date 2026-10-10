@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  账然 v0.1 Manifest（T1a）
+
+  权限红线（依据 docs/07 §9.1、docs/08 §17.3）：本应用**零权限**。
+  不得出现：INTERNET / ACCESS_NETWORK_STATE / BIND_NOTIFICATION_LISTENER_SERVICE /
+  BIND_ACCESSIBILITY_SERVICE / RECEIVE_SMS / READ_SMS / QUERY_ALL_PACKAGES /
+  FOREGROUND_SERVICE(*_SPECIAL_USE) / SYSTEM_ALERT_WINDOW。
+  采集能力全部来自上游独立应用，账然不声明、不重复申请。
+
+  组件：只允许一个不导出的启动 Activity；zhangran:// 接收入口属 T4。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:name=".ZhangRanApp"
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ZhangRan">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.ZhangRan">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

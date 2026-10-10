@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  账然 v0.1 Activity 主题（T1a）
+
+  只提供 Manifest 可引用的主题基线，继承 Material3。
+  **不得**在此定义 Design Token 色值（token 属 T1b，依据 docs/05 §3–§6）。
+-->
+<resources>
+    <style name="Theme.ZhangRan" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

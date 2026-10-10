@@ -1,0 +1,8 @@
+# Room schema 导出目录
+
+由 `app/build.gradle.kts` 的 `ksp { arg("room.schemaLocation", "$projectDir/schemas") }` 指定。
+
+- 本目录必须纳入版本控制（schema JSON 是 Migration 测试的输入，依据 `docs/04` §7、`docs/08` §9）。
+- 本目录不得被 `.gitignore` 排除；仓库根 `.gitignore` 中的 `build/` 规则已修正为 `/**/build/`。
+- **T1a 阶段此处为空**：尚未定义任何 Room 实体（实体属 T2），首次编译后仍不会产出 JSON。
+- T2 引入实体后，首次编译将在此产出形如 `com.zhangran.app.data.local.ZhangRanDatabase/1.json` 的 schema 文件。

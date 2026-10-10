@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 账然 v0.1 最小字符串资源（T1a 只放启动所需项，不做设计 token） -->
+<resources>
+    <string name="app_name">账然</string>
+</resources>

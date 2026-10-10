@@ -14,8 +14,10 @@ Thumbs.db
 *.swp
 
 # Android 构建产物（编码开始后生效）
+# 注意：必须写成 /**/build/ —— 裸 build/ 会连带排除 app/build/ 等目录，
+# 也会误伤 app/schemas/ 之外的同名路径（任务书 T1a §7 R1、§6 A6）。
 .gradle/
-build/
+/**/build/
 local.properties
 *.apk
 *.aab

@@ -66,8 +66,24 @@ v0.1 **采集层复用 AutoAccounting 的模块化核心**，账然不另行自�
 - `docs/10_AutoAccounting接入结论.md`：上游可行性结论、宿主接入契约事实、输出模型关键事实与版本锚点
 - `prototype/账然_UI原型.html`：UI 视觉参考（含示例数据，示例数字与文件名不作为行为与数据依据）
 - `docs/backup/`：历史审查报告与决策记录归档
-- `app/`：Android 工程根目录（v0.1 编码开始前保持为空）
+- `app/`：**Gradle 工程根目录**（所有代码集中在此；工作区根目录不放代码）
+  - 工程内：`settings.gradle.kts`、`build.gradle.kts`、`gradle.properties`、`gradlew(.bat)`、`gradle/libs.versions.toml`（唯一版本来源）
+  - 源码：`app/src/main/java/com/zhangran/app/`（包结构见 `docs/04` §3，由 T1b 落地）
+  - 构建命令：`cd app && ./gradlew <task>`（Windows：`cd app; .\gradlew.bat <task>`）
 - `AutoAccounting/`：上游参考项目（本地克隆，仅用于接入分析，已 gitignore，不作为本项目提交对象）
+
+## 构建基线（T1a 已落地）
+
+| 项 | 值 |
+|---|---|
+| AGP / Gradle | 9.4.1 / 9.8.1 |
+| Kotlin | AGP 9 内建（**不再使用** `org.jetbrains.kotlin.android` 插件）；Compose 编译器插件 2.3.21 |
+| KSP / Hilt / Room | 2.3.12 / 2.60.1 / 2.8.4 |
+| JDK | **21**（`app/gradle.properties` 的 `org.gradle.java.home` 指向 Android Studio JBR） |
+| `compileSdk` / `targetSdk` / `minSdk` | **37** / 36 / 31 |
+| Compose BOM | 2026.09.00 |
+
+说明：`compileSdk` 为 37 是依赖侧硬要求（AndroidX/Compose 2026.09 要求依赖方 compile 到 API ≥ 37）；`targetSdk` 保持 36，运行时行为不变。版本唯一来源为 `app/gradle/libs.versions.toml`。
 
 ## 文档优先级
 

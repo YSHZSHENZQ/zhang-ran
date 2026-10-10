@@ -1,0 +1,76 @@
+# 账然 v0.1 版本目录（Gradle Version Catalog）
+#
+# 本文件是**唯一依赖与版本来源**：所有依赖版本只在此声明，
+# 构建脚本（settings.gradle.kts / build.gradle.kts）只能通过 libs.* 引用，
+# 禁止出现字面版本号（依据 docs/04 §19 依赖原则）。
+#
+# 版本策略（用户决策，2026-10）：
+# - 采用 AGP 9.x + Gradle 9.x + Java 21（原先的 AGP 8.9.3 无法满足依赖侧要求：
+#   AndroidX/Compose 构件要求 AGP ≥ 9.1.0，见构建日志 "requires Android Gradle plugin 9.1.0 or higher"）。
+# - 版本均已核对存在：AGP 9.4.1 / Gradle 9.8.1 / Kotlin 2.3.21 / KSP 2.3.12 /
+#   Hilt 2.60.1 / Room 2.8.4 / Compose BOM 2026.09.00。
+# - JVM：Java 21（构建与 target 均使用 JDK 21，见 build.gradle.kts 与 gradle.properties）。
+
+[versions]
+# ---- 项目标识与版本号（任务书 §4.1.1：唯一来源，build.gradle.kts 只引用）----
+applicationId = "com.zhangran.app"
+versionName = "0.1.0"
+versionCode = "1"
+
+# ---- 构建插件 ----
+agp = "9.4.1"
+kotlin = "2.3.21"
+ksp = "2.3.12"
+hilt = "2.60.1"
+
+# ---- SDK ----
+# compileSdk 必须 ≥ 37：AndroidX/Compose 2026.09 的构件要求依赖方 compile 到 API 37。
+# targetSdk 仍为 36（任务书要求）。
+compileSdk = "37"
+targetSdk = "36"
+minSdk = "31"
+
+# ---- AndroidX / Jetpack ----
+coreKtx = "1.17.0"
+lifecycle = "2.10.0"
+activityCompose = "1.13.0"
+composeBom = "2026.09.00"
+
+# ---- 持久化（本任务只引入依赖，不建实体）----
+room = "2.8.4"
+
+# ---- 测试 ----
+junit = "4.13.2"
+
+[libraries]
+# AndroidX 基础
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+# Compose（版本由 BOM 统一管理）
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+
+# Hilt（依赖注入，本任务必须打通）
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
+
+# Room（本任务只引入依赖与 schema 导出参数，不建实体/DAO）
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+# 测试
+junit = { module = "junit:junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
