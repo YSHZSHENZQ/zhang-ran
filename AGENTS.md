@@ -96,8 +96,8 @@ Capture
 
 说明：
 
-- v0.1 的 Capture 与识别来自外部上游模块（AutoAccounting，仅个人自用、不分发），账然不另行自建采集实现。
-- 外部上游模块只能经 Adapter 交出候选与证据，不得直接写 Transaction，也不得决定 Pending / Confirmed。
+- v0.1 的 Capture 与识别来自**内嵌的采集核心**（AutoAccounting，GPL-3.0，仅个人自用、不分发），作为账然的一个 Gradle 模块；账然不另行自建第二套采集实现。
+- 内嵌采集核心只能经 Adapter 交出候选与证据，不得直接写 Transaction，也不得决定 Pending / Confirmed。
 - 识别引擎不能直接写最终 Transaction。
 
 ## 5. 数据安全
@@ -151,7 +151,7 @@ HTML 原型是视觉参考。
 - 修改去重策略
 - 引入新的核心依赖
 - 修改超过 10 个核心文件
-- 改变 AutoAccounting 集成边界
+- 改动采集核心与领域层的边界
 
 ## 9. 完成标准
 
