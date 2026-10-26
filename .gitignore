@@ -11,6 +11,10 @@ _acl-reports/
 # 本地分析/执行文档：不作为本项目提交对象
 review/
 
+# REA 逆向工具及其分析资料：仅作其他项目的参考资料，不作为本项目提交对象
+# 用 /rea/ 锚定仓库根，避免误伤任意层级的同名目录（见上一条 AutoAccounting 的教训）
+/rea/
+
 # 编辑器 / 系统
 .DS_Store
 Thumbs.db
