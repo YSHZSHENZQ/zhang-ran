@@ -1,11 +1,12 @@
 /**
- * 采集编排测试（纯 JVM，使用假 log sink）。
+ * 采集接入层编排测试（U0：基于 [CollectorOutput]，不再有 URI / Base64 语义）。
  *
- * 覆盖 T4 §6 的 A4（版本不匹配）、A5（非法载荷 / 脱敏）、A6（历史回灌判定）：
- * - 版本缺失/非法/不受支持 → `VERSION_MISMATCH` + 建议 `UNSUPPORTED_NOTIFICATION`，且**不解码载荷**
- * - 非法 Base64 → `INVALID_PAYLOAD`，不崩溃
- * - 正常载荷 → `ACCEPTED`，且落库/落日志的文本已脱敏
- * - 历史回灌 → 标记并给 `LOW_CONFIDENCE` 建议，但不做领域决策
+ * 覆盖：
+ * - A3 接口版本不匹配（缺失 / 非法 / 不受支持）→ `VERSION_MISMATCH`，且不带脱敏内容
+ * - A4 脱敏仍生效（`docs/02` §20 清单）
+ * - A5 落库仍经 `CaptureLogSink`（不直接写 Transaction）
+ * - A6 `interfaceVersion` 写入既有 `payloadVersion` 语义（`CaptureLogRecord.version`）
+ * - 历史回灌 / 空产出 / sink 故障隔离
  */
 package com.zhangran.app.capture
 
@@ -18,11 +19,8 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.Base64
 
-/**
- * 假 sink：记录写入内容，且可被配置为抛异常（验证故障隔离）。
- */
+/** 假 sink：记录写入内容，且可被配置为抛异常（验证故障隔离）。 */
 private class FakeLogSink(
     private val throwOnWrite: Boolean = false,
 ) : CaptureLogSink {
@@ -46,72 +44,83 @@ class CaptureProcessorTest {
             idGenerator = { fixedId },
         )
 
-    /** Base64URL（无填充换行）编码，与 docs/07 §3.5 的载荷约定一致。 */
-    private fun payloadOf(json: String): String =
-        Base64.getUrlEncoder().withoutPadding().encodeToString(json.toByteArray(Charsets.UTF_8))
-
-    private fun eventOf(
-        version: Int = SUPPORTED_PAYLOAD_VERSION,
-        payload: String? = null,
+    private fun outputOf(
+        interfaceVersion: Int = COLLECTOR_INTERFACE_VERSION,
+        sourceType: CollectorSourceType = CollectorSourceType.NOTICE,
+        rawPayloadJson: String = """{"money":26.5}""",
         isHistoricalReplay: Boolean = false,
-    ) = ExternalCaptureEvent(
-        captureId = fixedId,
-        rawUri = "zhangran://capture?v=$version",
-        version = version,
-        payloadBase64 = payload,
-        receivedAt = fixedNow,
-        sourcePackage = "net.ankio.auto",
+        sourcePackage: String? = "com.tencent.mm",
+    ) = CollectorOutput(
+        collectorId = "collector-1",
+        interfaceVersion = interfaceVersion,
+        sourceType = sourceType,
+        engineVersion = "v1",
+        sourcePackage = sourcePackage,
+        sourceChannel = "wechat",
+        rawPayloadJson = rawPayloadJson,
+        capturedAt = fixedNow,
         isHistoricalReplay = isHistoricalReplay,
     )
 
-    // ---------- A4：版本不匹配 ----------
+    private fun eventOf(output: CollectorOutput = outputOf()) = CollectorEvent(
+        captureId = fixedId,
+        output = output,
+    )
+
+    // ---------- A3：接口版本不匹配 ----------
 
     @Test
-    fun `版本缺失不匹配且不解码载荷`() = runBlocking {
+    fun `接口版本缺失不匹配且不产出脱敏内容`() = runBlocking {
         val sink = FakeLogSink()
-        val result = processor(sink).submit(
-            eventOf(version = VERSION_MISSING, payload = "not-base64-!!!")
-        )
+        val result = processor(sink).submit(eventOf(outputOf(interfaceVersion = VERSION_MISSING)))
 
         assertEquals(CaptureOutcome.VERSION_MISMATCH, result.outcome)
         assertEquals(CaptureProcessor.PENDING_REASON_VERSION_MISMATCH, result.pendingReason)
-        assertNull("版本不匹配时不得产出脱敏载荷（即未解析）", result.sanitizedPayload)
+        assertNull("版本不匹配时不得产出脱敏内容", result.sanitizedPayload)
         assertEquals(1, sink.records.size)
         assertEquals(CaptureOutcome.VERSION_MISMATCH, sink.records[0].outcome)
         assertNotNull(sink.records[0].reason)
     }
 
     @Test
-    fun `版本非法与不受支持均不匹配`() = runBlocking {
+    fun `接口版本非法与不受支持均不匹配`() = runBlocking {
         listOf(VERSION_INVALID, 0, 2, 99).forEach { v ->
-            val result = processor().submit(eventOf(version = v, payload = payloadOf("{}")))
+            val result = processor().submit(eventOf(outputOf(interfaceVersion = v)))
             assertEquals("v=$v 应为版本不匹配", CaptureOutcome.VERSION_MISMATCH, result.outcome)
+            assertNull("v=$v 不应产出脱敏内容", result.sanitizedPayload)
         }
     }
 
-    // ---------- A5：非法载荷与脱敏 ----------
+    @Test
+    fun `版本不受支持时即使产出也不解析`() = runBlocking {
+        val sink = FakeLogSink()
+        val result = processor(sink)
+            .submit(eventOf(outputOf(interfaceVersion = 9, rawPayloadJson = """{"money":99}""")))
+
+        assertEquals(CaptureOutcome.VERSION_MISMATCH, result.outcome)
+        assertNull(result.sanitizedPayload)
+        assertEquals(1, sink.records.size)
+    }
+
+    // ---------- 空产出 ----------
 
     @Test
-    fun `非法 Base64 返回 INVALID_PAYLOAD 且不崩溃`() = runBlocking {
+    fun `空产出视为非法且不崩溃`() = runBlocking {
         val sink = FakeLogSink()
-        val result = processor(sink).submit(eventOf(payload = "!!!not base64!!!"))
+        val result = processor(sink).submit(eventOf(outputOf(rawPayloadJson = "   ")))
 
         assertEquals(CaptureOutcome.INVALID_PAYLOAD, result.outcome)
         assertEquals(CaptureProcessor.PENDING_REASON_UNSUPPORTED, result.pendingReason)
         assertEquals(1, sink.records.size)
     }
 
-    @Test
-    fun `载荷缺失返回 INVALID_PAYLOAD`() = runBlocking {
-        val result = processor().submit(eventOf(payload = null))
-        assertEquals(CaptureOutcome.INVALID_PAYLOAD, result.outcome)
-    }
+    // ---------- A4：脱敏 ----------
 
     @Test
-    fun `正常载荷被接受且落日志的文本已脱敏`() = runBlocking {
+    fun `正常产出被接受且落日志的文本已脱敏`() = runBlocking {
         val sink = FakeLogSink()
         val json = """{"money":26.5,"phone":"13812345678","card":"6222021234567890123"}"""
-        val result = processor(sink).submit(eventOf(payload = payloadOf(json)))
+        val result = processor(sink).submit(eventOf(outputOf(rawPayloadJson = json)))
 
         assertEquals(CaptureOutcome.ACCEPTED, result.outcome)
         val stored = sink.records.single().sanitizedPayloadRef
@@ -119,38 +128,52 @@ class CaptureProcessorTest {
         assertFalse("手机号必须被脱敏", stored!!.contains("13812345678"))
         assertFalse("银行卡号不得完整出现", stored.contains("6222021234567890123"))
         assertTrue("脱敏后应保留前 4 位与后 4 位", stored.contains("6222***0123"))
-        assertTrue("应保留脱敏标记", stored.contains("***"))
-        // 金额等业务字段不应被脱敏逻辑破坏
-        assertTrue(stored.contains("26.5"))
+        assertTrue("金额不得被脱敏逻辑破坏", stored.contains("26.5"))
     }
 
     @Test
     fun `脱敏覆盖文档清单的各类敏感信息`() {
         val sanitize: (String?) -> String? = CaptureProcessor::sanitize
-        // 身份证（保留前 6 后 4）
         assertEquals("110101***123X", sanitize("11010119900307123X"))
-        // 银行卡（16 位带分隔符 / 19 位无分隔符，均保留前 4 后 4；掩码后不带原分隔符）
         assertEquals("6222***7890", sanitize("6222 0212 3456 7890"))
         assertEquals("6222***0123", sanitize("6222021234567890123"))
-        // 手机号（保留前 3 后 4）
         assertEquals("138***5678", sanitize("13812345678"))
-        // 支付单号（保留首尾各 4 位）
         assertEquals("1000***3456", sanitize("1000200030003456"))
-        // 姓名（保留姓氏 + **）
         assertEquals("收款方：张**", sanitize("收款方：张三丰"))
-        // 不含敏感信息时保持原样
         assertEquals("""{"money":26.5}""", sanitize("""{"money":26.5}"""))
         assertNull(sanitize(null))
     }
 
-    // ---------- A6：历史回灌 ----------
+    // ---------- A5 / A6：落库调用与版本映射 ----------
 
     @Test
-    fun `历史回灌被标记并给出低置信度建议但不做领域决策`() = runBlocking {
+    fun `落库记录携带接口版本与来源包名`() = runBlocking {
         val sink = FakeLogSink()
-        val result = processor(sink).submit(
-            eventOf(payload = payloadOf("""{"money":1.0}"""), isHistoricalReplay = true)
-        )
+        processor(sink).submit(eventOf(outputOf(interfaceVersion = 1)))
+
+        val record = sink.records.single()
+        assertEquals("interfaceVersion 写入既有 payloadVersion 语义", 1, record.version)
+        assertEquals("com.tencent.mm", record.sourcePackage)
+        assertEquals(fixedNow, record.receivedAt)
+        assertEquals(fixedId, record.captureId)
+        assertFalse(record.isHistoricalReplay)
+    }
+
+    @Test
+    fun `经由 sink 写入且不接触 Transaction`() = runBlocking {
+        val sink = FakeLogSink()
+        val processor = processor(sink)
+        processor.submit(eventOf())
+        // 采集接入层只依赖 CaptureLogSink 接口（编译期即证明不持有 DAO/Repository）
+        assertEquals(1, sink.records.size)
+    }
+
+    // ---------- 历史回灌 ----------
+
+    @Test
+    fun `历史回灌被标记并给出低置信度建议`() = runBlocking {
+        val sink = FakeLogSink()
+        val result = processor(sink).submit(eventOf(outputOf(isHistoricalReplay = true)))
 
         assertEquals(CaptureOutcome.ACCEPTED, result.outcome)
         assertEquals(CaptureProcessor.PENDING_REASON_LOW_CONFIDENCE, result.pendingReason)
@@ -159,58 +182,31 @@ class CaptureProcessorTest {
 
     @Test
     fun `markHistoricalIfNeeded 判定规则`() {
-        // 早于连接时刻 → 回灌
-        assertTrue(ExternalCaptureEvent.markHistoricalIfNeeded(eventTime = 1000L, listenerConnectedAt = 2000L))
-        // 晚于连接时刻 → 非回灌
-        assertFalse(ExternalCaptureEvent.markHistoricalIfNeeded(eventTime = 3000L, listenerConnectedAt = 2000L))
-        // 相等 → 非回灌（边界取"不早于"）
-        assertFalse(ExternalCaptureEvent.markHistoricalIfNeeded(eventTime = 2000L, listenerConnectedAt = 2000L))
-        // 任一缺失 → 无法判定，按非回灌处理
-        assertFalse(ExternalCaptureEvent.markHistoricalIfNeeded(eventTime = null, listenerConnectedAt = 2000L))
-        assertFalse(ExternalCaptureEvent.markHistoricalIfNeeded(eventTime = 1000L, listenerConnectedAt = null))
+        assertTrue(CollectorEvent.markHistoricalIfNeeded(eventTime = 1000L, listenerConnectedAt = 2000L))
+        assertFalse(CollectorEvent.markHistoricalIfNeeded(eventTime = 3000L, listenerConnectedAt = 2000L))
+        assertFalse(CollectorEvent.markHistoricalIfNeeded(eventTime = 2000L, listenerConnectedAt = 2000L))
+        assertFalse(CollectorEvent.markHistoricalIfNeeded(eventTime = null, listenerConnectedAt = 2000L))
+        assertFalse(CollectorEvent.markHistoricalIfNeeded(eventTime = 1000L, listenerConnectedAt = null))
     }
 
-    // ---------- 故障隔离（docs/07 §18）----------
+    // ---------- 故障隔离 ----------
 
     @Test
     fun `sink 抛异常不影响结果返回`() = runBlocking {
-        val result = processor(FakeLogSink(throwOnWrite = true))
-            .submit(eventOf(payload = payloadOf("""{"money":1.0}""")))
+        val result = processor(FakeLogSink(throwOnWrite = true)).submit(eventOf())
         assertEquals(CaptureOutcome.ACCEPTED, result.outcome)
     }
 
-    // ---------- 事件构造（入口不做解析）----------
+    // ---------- 事件构造 ----------
 
     @Test
-    fun `newEvent 从 URI 提取参数并填充默认值`() {
-        val event = processor().newEvent(
-            rawUri = "zhangran://capture?v=1&payload=AAA",
-            sourcePackage = "net.ankio.auto",
-        )
+    fun `newOutput 生成 captureId 并原样保留产出`() {
+        val output = outputOf()
+        val event = processor().newOutput(output)
+
         assertEquals(fixedId, event.captureId)
-        assertEquals(1, event.version)
-        assertEquals("AAA", event.payloadBase64)
-        assertEquals(fixedNow, event.receivedAt)
-        assertEquals("net.ankio.auto", event.sourcePackage)
-        assertFalse(event.isHistoricalReplay)
-    }
-
-    @Test
-    fun `newEvent 对畸形 URI 不崩溃且版本不受支持`() {
-        listOf(null, "", "???").forEach { uri ->
-            val event = processor().newEvent(rawUri = uri, sourcePackage = null)
-            assertFalse("uri=$uri 不应受支持", event.versionSupported)
-        }
-    }
-
-    @Test
-    fun `newEvent 依据连接时刻标记历史回灌`() {
-        val event = processor().newEvent(
-            rawUri = "zhangran://capture?v=1&payload=AAA",
-            sourcePackage = null,
-            listenerConnectedAt = 2000L,
-            eventTime = 1000L,
-        )
-        assertTrue(event.isHistoricalReplay)
+        assertEquals(output, event.output)
+        assertTrue(event.interfaceVersionSupported)
+        assertEquals(CollectorSourceType.NOTICE, event.sourceType)
     }
 }

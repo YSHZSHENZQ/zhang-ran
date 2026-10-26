@@ -1,47 +1,61 @@
 /**
- * 采集编排：版本校验 → 解码 → 脱敏 → 写日志/证据（经接口）→ 返回可解释结果。
+ * 采集接入层编排：接口版本校验 → 脱敏 → 写日志/证据（经接口）→ 返回可解释结果。
  *
  * 依据：
- * - `docs/07` §3.5（版本不匹配：写 `CaptureLog` + 一律 Pending，禁止按旧契约解析入账）
- * - `docs/04` §9.1（入口内禁止解析/落库/业务判断 → 这些都在本编排器里）
- * - `docs/07` §18（故障隔离：任何畸形输入不崩溃、留日志）
- * - `docs/03` §16 规则 1（`ClearlyInvalid` 分支存在 → 本任务只记录建议，不做决策）
+ * - `docs/07` §3.5（进程内接口；接口版本不匹配 → 写 `CaptureLog` + 建议 Pending）
+ * - `docs/07` §18（故障隔离：任何畸形产出不崩溃、留日志）
+ * - `docs/04` §9.1（接入层不做业务判断）
+ * - `docs/03` §16 规则 1（`ClearlyInvalid` 分支存在 → 本层只记录建议，不做决策）
  *
- * 本任务**不**：生成候选、做字段映射、决定 Pending/Confirmed、写 Room。
+ * 本层**不**：生成候选、做字段映射、决定 Pending/Confirmed、写 Transaction。
+ *
+ * U0 变更（相对 T4/T2b）：
+ * - 实现 [CollectorEventSource]（进程内接口），删除 URI 解析与 Base64URL 解码；
+ * - `interfaceVersion` 沿用既有 `payloadVersion` 列的写入语义（列名按裁决未改）。
  */
 package com.zhangran.app.capture
 
 import com.zhangran.app.log.CaptureLogRecord
 import com.zhangran.app.log.CaptureLogSink
-import java.util.Base64
 import java.util.UUID
 
 /**
- * @param logSink 日志/证据写入口（T2b 会替换为 Room 实现）
- * @param clock 时间源（便于测试注入固定值；默认使用系统时间）
+ * @param logSink 日志/证据写入口（Room 实现见 `log/RoomCaptureLogSink`）
+ * @param clock 时间源（保留以便测试注入；当前产出已自带 `capturedAt`，不再用它覆盖）
  * @param idGenerator 捕获 id 生成器（便于测试注入固定值）
  */
 class CaptureProcessor(
     private val logSink: CaptureLogSink,
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val idGenerator: () -> String = { UUID.randomUUID().toString() },
-) : CaptureEventSource {
+) : CollectorEventSource {
+
     /**
-     * 处理一个上游事件。
+     * 由采集核心产出构造事件（账然侧生成 `captureId`）。
+     *
+     * 只在账然侧补 id，**不修改**产出内容（上游对象可能被就地修改，必须只读投影）。
+     */
+    override fun newOutput(output: CollectorOutput): CollectorEvent =
+        CollectorEvent(captureId = idGenerator(), output = output)
+
+    /**
+     * 提交一条产出。
      *
      * 处理顺序（不可调换）：
-     * 1. 版本校验：不受支持 → 记录 `VERSION_MISMATCH` 并返回（**不解析载荷**）
-     * 2. Base64URL 解码：失败 → `INVALID_PAYLOAD`
-     * 3. 脱敏：仅对"将要落日志/证据"的文本做，不影响解密后的业务字段
+     * 1. 接口版本校验：不一致 → `VERSION_MISMATCH` 并返回（**不解析产出**）
+     * 2. 产出为空 → `INVALID_PAYLOAD`
+     * 3. 脱敏：只处理"将要落日志/证据"的文本
      * 4. 写日志：任何分支都必须留痕
      */
-    override suspend fun submit(event: ExternalCaptureEvent): CaptureResult {
-        // 1) 版本校验优先：不受支持时绝不按旧契约解析（docs/04 §9.1）
-        if (!event.versionSupported) {
-            val reason = when (event.version) {
-                VERSION_MISSING -> "载荷版本缺失（v 参数未提供）"
-                VERSION_INVALID -> "载荷版本非法（v 参数不是整数）"
-                else -> "载荷版本不受支持：v=${event.version}，当前支持 v=$SUPPORTED_PAYLOAD_VERSION"
+    override suspend fun submit(event: CollectorEvent): CaptureResult {
+        val output = event.output
+
+        // 1) 接口版本优先：不一致时绝不当成可用产出（docs/07 §3.5）
+        if (!event.interfaceVersionSupported) {
+            val reason = when (output.interfaceVersion) {
+                VERSION_MISSING -> "接口版本缺失（产出未携带 interfaceVersion）"
+                VERSION_INVALID -> "接口版本非法"
+                else -> "接口版本不受支持：${output.interfaceVersion}，当前支持 $COLLECTOR_INTERFACE_VERSION"
             }
             return finish(
                 event = event,
@@ -52,52 +66,37 @@ class CaptureProcessor(
             )
         }
 
-        // 2) 载荷解码（Base64URL / 无换行）
-        val decoded = decodePayload(event.payloadBase64)
-        if (decoded == null) {
+        // 2) 空产出视为非法（不崩溃，留日志）
+        if (output.rawPayloadJson.isBlank()) {
             return finish(
                 event = event,
                 outcome = CaptureOutcome.INVALID_PAYLOAD,
-                reason = event.payloadBase64?.let { "载荷不是合法的 Base64URL 文本" } ?: "载荷缺失",
+                reason = "采集产出为空",
                 pendingReason = PENDING_REASON_UNSUPPORTED,
                 sanitizedPayload = null,
             )
         }
 
         // 3) 脱敏后落日志/证据；原始文本只留在内存事件里（供后续 Adapter 使用）
-        val sanitized = sanitize(decoded)
+        val sanitized = sanitize(output.rawPayloadJson)
         return finish(
             event = event,
             outcome = CaptureOutcome.ACCEPTED,
-            reason = if (event.isHistoricalReplay) "历史回灌事件：不得直接入账" else null,
-            pendingReason = if (event.isHistoricalReplay) PENDING_REASON_LOW_CONFIDENCE else null,
+            reason = if (output.isHistoricalReplay) "历史回灌事件：不得直接入账" else null,
+            pendingReason = if (output.isHistoricalReplay) PENDING_REASON_LOW_CONFIDENCE else null,
             sanitizedPayload = sanitized,
         )
     }
 
-    /**
-     * Base64URL 解码（纯 JVM 实现，见 `docs/09` 关于 Android 桩类的教训）。
-     *
-     * 使用 `java.util.Base64.getUrlDecoder()`，与 `docs/07` §3.5 的载荷约定一致；
-     * 任何异常都归一为"解码失败"（不崩溃，`docs/07` §18）。
-     */
-    private fun decodePayload(base64: String?): String? {
-        if (base64.isNullOrBlank()) return null
-        return runCatching {
-            val bytes = Base64.getUrlDecoder().decode(base64)
-            val text = String(bytes, Charsets.UTF_8)
-            text.takeIf { it.isNotBlank() }
-        }.getOrNull()
-    }
-
     /** 统一收口：写日志 + 组装结果（保证每条路径都留痕）。 */
     private fun finish(
-        event: ExternalCaptureEvent,
+        event: CollectorEvent,
         outcome: CaptureOutcome,
         reason: String?,
         pendingReason: String?,
         sanitizedPayload: String?,
     ): CaptureResult {
+        val output = event.output
         val result = CaptureResult(
             captureId = event.captureId,
             outcome = outcome,
@@ -113,13 +112,14 @@ class CaptureProcessor(
             logSink.write(
                 CaptureLogRecord(
                     captureId = event.captureId,
-                    receivedAt = event.receivedAt,
+                    receivedAt = output.capturedAt,
                     outcome = outcome,
                     reason = reason,
                     pendingReason = pendingReason,
-                    sourcePackage = event.sourcePackage,
-                    version = event.version,
-                    isHistoricalReplay = event.isHistoricalReplay,
+                    sourcePackage = output.sourcePackage,
+                    // 接口版本写入既有 payloadVersion 列（U0 §4.3：列名未改、无 migration）
+                    version = output.interfaceVersion,
+                    isHistoricalReplay = output.isHistoricalReplay,
                     sanitizedPayloadRef = sanitizedPayload,
                 ),
             )
@@ -128,39 +128,11 @@ class CaptureProcessor(
         return result
     }
 
-    /**
-     * 由原始入参构造事件（供 Activity 调用）。
-     *
-     * 说明：参数提取（`CaptureContract.parse`）与事件组装都在这里完成，
-     * 因此接收入口不需要做任何解析（T4 §4.1「入口无业务」、验收 A3）。
-     */
-    override fun newEvent(
-        rawUri: String?,
-        sourcePackage: String?,
-        listenerConnectedAt: Long?,
-        eventTime: Long?,
-    ): ExternalCaptureEvent {
-        val params = CaptureContract.parse(rawUri)
-        return ExternalCaptureEvent(
-            captureId = idGenerator(),
-            rawUri = rawUri.orEmpty(),
-            version = params.version,
-            payloadBase64 = params.payload,
-            receivedAt = clock(),
-            sourcePackage = sourcePackage,
-            listenerConnectedAt = listenerConnectedAt,
-            isHistoricalReplay = ExternalCaptureEvent.markHistoricalIfNeeded(
-                eventTime = eventTime,
-                listenerConnectedAt = listenerConnectedAt,
-            ),
-        )
-    }
-
     companion object {
-        /** 版本不匹配对应的 Pending 原因（`docs/03` §16 规则 10 的 `UNSUPPORTED_NOTIFICATION`）。 */
+        /** 版本不匹配对应的建议原因（`docs/03` §16 规则 10 的 `UNSUPPORTED_NOTIFICATION`）。 */
         const val PENDING_REASON_VERSION_MISMATCH = "UNSUPPORTED_NOTIFICATION"
 
-        /** 非法载荷 / 无法解析对应的 Pending 原因。 */
+        /** 非法产出 / 无法解析对应的建议原因。 */
         const val PENDING_REASON_UNSUPPORTED = "UNSUPPORTED_NOTIFICATION"
 
         /** 历史回灌对应的建议原因（`docs/07` §8.1：只能进 Pending 或日志）。 */
@@ -191,9 +163,6 @@ class CaptureProcessor(
          *
          * 顺序：身份证 → 银行卡 → 手机号 → 单号 → 姓名，避免长数字被短规则先切断。
          * 脱敏是单向的，且不得改变金额、时间等业务字段。
-         *
-         * 说明：本实现内联在采集编排器内（T4 §3 白名单只允许新增所列文件）。
-         * 若后续 `log/` 需要独立复用，应在 T2b 提取为独立工具并走提案。
          */
         fun sanitize(text: String?): String? {
             if (text == null) return null

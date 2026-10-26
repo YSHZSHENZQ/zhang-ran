@@ -2,15 +2,14 @@
 <!--
   账然 v0.1 Manifest（T1a）
 
-  权限红线（依据 docs/07 §9.1、docs/08 §17.3）：本应用**零权限**。
+  权限红线（依据 docs/07 §9、docs/08 §17.3）：本任务仍**零权限**。
   不得出现：INTERNET / ACCESS_NETWORK_STATE / BIND_NOTIFICATION_LISTENER_SERVICE /
   BIND_ACCESSIBILITY_SERVICE / RECEIVE_SMS / READ_SMS / QUERY_ALL_PACKAGES /
   FOREGROUND_SERVICE(*_SPECIAL_USE) / SYSTEM_ALERT_WINDOW。
-  采集能力全部来自上游独立应用，账然不声明、不重复申请。
+  （单 APK 后这些权限最终由账然声明，属 U3；U0 不得新增。）
 
-  组件：只允许一个不导出的启动 Activity；zhangran:// 接收入口属 T4。
-  T4 已新增该入口：CaptureEntryActivity（docs/07 §3.5 的唯一 exported 例外）。
-  入站 URI scheme **不需要任何权限**，因此权限清单仍为零。
+  组件：只有启动 Activity。原 `zhangran://capture` 接收入口（CaptureEntryActivity）
+  已按 D7 删除——进程内接口不需要任何可导出组件（docs/07 §3.5）。
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -29,29 +28,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <!--
-          上游接收入口（docs/07 §3.5、docs/04 §9.1）
-          - exported=true + BROWSABLE 是硬要求：否则上游 startActivityIfResolvable 会静默失败
-          - 无界面：NoDisplay（不显示启动器图标）+ noHistory + excludeFromRecents
-          - 只做"取参 → 交给 CaptureEventSource → finish()"，不含任何解析/落库/业务判断
-        -->
-        <activity
-            android:name=".capture.CaptureEntryActivity"
-            android:exported="true"
-            android:noHistory="true"
-            android:excludeFromRecents="true"
-            android:launchMode="standard"
-            android:theme="@android:style/Theme.NoDisplay">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="zhangran"
-                    android:host="capture" />
             </intent-filter>
         </activity>
 

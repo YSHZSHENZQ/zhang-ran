@@ -1,10 +1,10 @@
 /**
- * 应用级提交作用域测试（`T2b` §4.5.1 验收 1）。
+ * 应用级提交作用域测试（`T2b` §4.5.1 验收 1；U0 仅调整类型引用，4 个用例全部保留）。
  *
  * 证明的核心命题：**调用方作用域被取消后，提交仍会完成**。
  *
  * 这正是 T4 遗留缺陷的反例：原来用 `lifecycleScope.launch { submit(...) }`，
- * `finish()` 触发 `onDestroy` 后作用域被取消，在途的 Room 落库（挂起点）会被取消，
+ * 页面结束触发作用域取消，在途的 Room 落库（挂起点）会被取消，
  * 而 `runCatching` **捕不到** `CancellationException` → 事件静默丢失。
  */
 package com.zhangran.app.capture
@@ -34,17 +34,13 @@ class CaptureSubmitterTest {
         private val delayMillis: Long = 0,
         private val done: CompletableDeferred<String>? = null,
         private val failOnId: String? = null,
-    ) : CaptureEventSource {
+    ) : CollectorEventSource {
         val submitted = mutableListOf<String>()
 
-        override fun newEvent(
-            rawUri: String?,
-            sourcePackage: String?,
-            listenerConnectedAt: Long?,
-            eventTime: Long?,
-        ): ExternalCaptureEvent = eventOf("built")
+        override fun newOutput(output: CollectorOutput): CollectorEvent =
+            CollectorEvent(captureId = "built", output = output)
 
-        override suspend fun submit(event: ExternalCaptureEvent): CaptureResult {
+        override suspend fun submit(event: CollectorEvent): CaptureResult {
             if (delayMillis > 0) delay(delayMillis)
             if (event.captureId == failOnId) throw IllegalStateException("模拟落库失败")
             submitted += event.captureId
@@ -54,12 +50,15 @@ class CaptureSubmitterTest {
     }
 
     private companion object {
-        fun eventOf(id: String) = ExternalCaptureEvent(
+        fun eventOf(id: String) = CollectorEvent(
             captureId = id,
-            rawUri = "zhangran://capture?v=1",
-            version = SUPPORTED_PAYLOAD_VERSION,
-            payloadBase64 = null,
-            receivedAt = 0L,
+            output = CollectorOutput(
+                collectorId = "collector-$id",
+                interfaceVersion = COLLECTOR_INTERFACE_VERSION,
+                sourceType = CollectorSourceType.NOTICE,
+                rawPayloadJson = """{"money":1.0}""",
+                capturedAt = 0L,
+            ),
         )
     }
 
@@ -72,15 +71,12 @@ class CaptureSubmitterTest {
         val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val submitter = CaptureSubmitter(eventSource = source, scope = appScope)
 
-        // 调用方作用域：等价于 Activity 的 lifecycleScope
+        // 调用方作用域：等价于被销毁页面的作用域
         val callerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
         try {
-            callerScope.launch {
-                // 真实实现里这一步是 lifecycleScope.launch { submit(...) }
-                submitter.submit(eventOf("evt-1"))
-            }
-            // 立刻取消调用方作用域：等价于 finish() → onDestroy → lifecycleScope 取消
+            callerScope.launch { submitter.submit(eventOf("evt-1")) }
+            // 立刻取消调用方作用域：等价于页面结束
             callerScope.cancel()
 
             // 若提交仍绑定调用方作用域，这里会超时（提交被取消）
@@ -136,7 +132,7 @@ class CaptureSubmitterTest {
         val submitter = CaptureSubmitter(eventSource = source, scope = appScope)
 
         try {
-            // 调用方作用域在提交前就已经取消（等价于一个已销毁的 Activity 调 submit）
+            // 调用方作用域在提交前就已经取消
             val callerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             callerScope.cancel()
 

@@ -3,12 +3,15 @@
  *
  * 依据 `docs/04` §3（`capture/`、`log/` 的职责）与 §6（存储归属）。
  *
- * T2b 变更：
- * - `CaptureLogSink` 由临时 logcat 实现换为 **Room 实现**（[RoomCaptureLogSink]），
- *   事件真正落 `capture_logs` + `capture_evidence`（`07` §3.2）；
- * - 新增 [CaptureSubmitter]：把提交迁到**应用级作用域**（`T2b` §4.5.1）。
+ * U0 变更：
+ * - 事件源绑定从 `CaptureEventSource`（URI 时代）切换为 **[CollectorEventSource]**（进程内接口）；
+ * - `CaptureEntryActivity` 已随 D7 删除，不再有相关绑定。
  *
- * 注意：本绑定**不**把任何 Repository 暴露给上游（`docs/04` §8 禁止项）。
+ * 保留（T2b）：
+ * - `CaptureLogSink` → [RoomCaptureLogSink]（事件真正落 `capture_logs` + `capture_evidence`）；
+ * - [CaptureSubmitter]：提交走**应用级作用域**（`T2b` §4.5.1），避免页面结束导致静默丢事件。
+ *
+ * 注意：本绑定**不**把任何 Repository 暴露给采集核心（`docs/04` §8 禁止项）。
  */
 package com.zhangran.app.capture
 
@@ -27,10 +30,10 @@ import kotlinx.coroutines.CoroutineScope
 @InstallIn(SingletonComponent::class)
 abstract class CaptureModule {
 
-    /** 事件源实现：采集编排器。 */
+    /** 事件源实现：采集接入层编排器（进程内接口）。 */
     @Binds
     @Singleton
-    abstract fun bindCaptureEventSource(impl: CaptureProcessor): CaptureEventSource
+    abstract fun bindCollectorEventSource(impl: CaptureProcessor): CollectorEventSource
 
     /** 日志写入口：Room 实现（T2b 打开落库）。 */
     @Binds
@@ -39,7 +42,7 @@ abstract class CaptureModule {
 
     companion object {
         /**
-         * 提供采集编排器。
+         * 提供采集接入层编排器。
          *
          * 说明：`clock` / `idGenerator` 用默认值（系统时间 / UUID），测试通过构造器直接注入。
          */
@@ -56,7 +59,7 @@ abstract class CaptureModule {
         @Provides
         @Singleton
         fun provideCaptureSubmitter(
-            eventSource: CaptureEventSource,
+            eventSource: CollectorEventSource,
             @ApplicationScope scope: CoroutineScope,
         ): CaptureSubmitter = CaptureSubmitter(eventSource = eventSource, scope = scope)
     }
