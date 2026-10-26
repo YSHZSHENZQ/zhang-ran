@@ -252,3 +252,45 @@ enum class DecisionActor {
     /** 系统（保留系统自动判重留痕的空间）。 */
     SYSTEM,
 }
+
+/**
+ * Pending 原因（SSOT：`docs/02` §4；决策产出见 `docs/03` §16）。
+ *
+ * **10 个取值，不得扩展、不得删减、不得改名**（`docs/02` §4 是唯一来源）。
+ * 本枚举是“原因”的完整集合，不要求 `docs/03` §16 的 12 条规则逐条对应：
+ * - [REFUND_UNCERTAIN] / [TRANSFER_UNCERTAIN] 由**上游类型映射阶段**产生
+ *   （`docs/03` §18.2：`IncomeRefund` 无法关联原交易、`Transfer` 两侧账户映射不到），
+ *   §16 没有对应分支；**不得为了“用上它们”而自造决策规则**。
+ * - 其余 8 项分别由 §16 规则 2/3/5/6/7/8/9/10 产出。
+ */
+enum class PendingReason {
+    /** 商户无法确定（规则 9）。 */
+    UNKNOWN_MERCHANT,
+
+    /** 金额无法确定（规则 2）或币种非 CNY（规则 6）。 */
+    AMOUNT_UNCERTAIN,
+
+    /** 方向无法确定（规则 2 / 11）。 */
+    DIRECTION_UNCERTAIN,
+
+    /** 分类无法确定（规则 8）。 */
+    CATEGORY_UNCERTAIN,
+
+    /** 账户无法匹配（规则 7）。 */
+    ACCOUNT_UNCERTAIN,
+
+    /** 疑似重复，需用户确认（规则 5；判重结论来自 Dedup）。 */
+    POSSIBLE_DUPLICATE,
+
+    /** 退款语义不确定（由上游类型映射 / 退款校验产生，非 §16 分支）。 */
+    REFUND_UNCERTAIN,
+
+    /** 转账语义不确定（由上游类型映射产生，非 §16 分支）。 */
+    TRANSFER_UNCERTAIN,
+
+    /** 上游结果不可用（规则 10）。 */
+    UNSUPPORTED_NOTIFICATION,
+
+    /** 整体置信度不足（规则 3）。 */
+    LOW_CONFIDENCE,
+}
