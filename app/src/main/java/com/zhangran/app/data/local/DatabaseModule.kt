@@ -13,6 +13,7 @@
 package com.zhangran.app.data.local
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Room
 import com.zhangran.app.data.local.dao.AccountDao
 import com.zhangran.app.data.local.dao.BudgetDao
@@ -26,9 +27,12 @@ import com.zhangran.app.data.local.dao.TransactionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import com.zhangran.app.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -38,14 +42,29 @@ object DatabaseModule {
     @Singleton
     fun provideZhangRanDatabase(
         @ApplicationContext context: Context,
-    ): ZhangRanDatabase =
-        Room.databaseBuilder(
+        @ApplicationScope scope: CoroutineScope,
+    ): ZhangRanDatabase {
+        val marker = InitializationMarker(context)
+        val database = Room.databaseBuilder(
             context,
             ZhangRanDatabase::class.java,
             ZhangRanDatabase.DATABASE_NAME,
         )
+            // 首次建库 → 标记置为"待初始化"（不在此写数据，避免 onCreate 事务内死锁）
+            .addCallback(ZhangRanDatabase.initializationCallback(marker))
             .addMigrations(*ZhangRanDatabase.ALL_MIGRATIONS)
             .build()
+
+        // 启动检查：数据库打开之后（不在建库事务内）写入初始数据。
+        // 放在应用级作用域异步执行，避免阻塞启动；写入本身是幂等的（标记 + name/type 判重）。
+        val initializer = DatabaseInitializer(marker)
+        scope.launch {
+            runCatching { initializer.ensureInitialized(database) }
+                .onFailure { Log.w(TAG, "初始数据写入失败", it) }
+        }
+
+        return database
+    }
 
     @Provides
     fun provideTransactionDao(database: ZhangRanDatabase): TransactionDao = database.transactionDao()
@@ -79,4 +98,7 @@ object DatabaseModule {
     @Provides
     fun provideDuplicateDecisionDao(database: ZhangRanDatabase): DuplicateDecisionDao =
         database.duplicateDecisionDao()
+
+    /** 日志标签（初始数据写入失败留痕：不崩溃、不静默，`docs/07` §18）。 */
+    private const val TAG: String = "ZhangRanDatabase"
 }

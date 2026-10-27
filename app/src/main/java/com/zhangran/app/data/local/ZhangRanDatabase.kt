@@ -86,6 +86,23 @@ abstract class ZhangRanDatabase : RoomDatabase() {
         const val DATABASE_NAME: String = "zhangran.db"
 
         /**
+         * 首次建库的初始化钩子（`docs/02` §9、`docs/03` §8「首次初始化」）。
+         *
+         * **只做一件事：把"已完成初始化"标记置为 `false`（待初始化）。**
+         * 真正的初始数据写入**不在这里**——`onCreate` 在**建库事务内**执行，
+         * 若用 DAO（另一条连接）写入会死锁；写入发生在数据库打开之后
+         * （`DatabaseInitializer.ensureInitialized`，见 `DatabaseModule`）。
+         *
+         * 该回调只在数据库文件**首次创建**时触发，因此 database 升级（migration）不会重跑初始化。
+         */
+        fun initializationCallback(marker: InitializationMarker): RoomDatabase.Callback =
+            object : RoomDatabase.Callback() {
+                override fun onCreate(db: SupportSQLiteDatabase) {
+                    marker.markPending()
+                }
+            }
+
+        /**
          * v1 → v2：**真实迁移**，一次建全 v2 新增的四张表与索引。
          *
          * DDL 必须与 Room 生成的 `2.json` 中 `createSql` 逐字一致。
