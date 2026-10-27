@@ -10,6 +10,9 @@
  * ```
  *
  * 字号按原型：数字键 `20px/500`、功能键 `15px/500`、保存键 `15px/700`。
+ * 所有键**等宽**（保存键宽度由 `(总宽 - 3*gap) / 4` 精确算出，不用 weight 分配，
+ * 否则会差 `2*gap/3`，实测偏宽 5dp）。
+ *
  * 无障碍（§4.8）：每个键都有 `contentDescription`，触控高度 ≥ 48dp。
  */
 package com.zhangran.app.ui.screen.add.components
@@ -22,11 +25,13 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,35 +95,38 @@ internal fun NumberPad(
             NumberKey("6", Modifier.weight(1f)) { onDigit('6') }
             FunctionKey("C", "清空", Modifier.weight(1f)) { onClear() }
         }
-        // 下两行 + 保存键：保存键纵跨两行，填满原型里右下角空着的那一格
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AddLayout.keyGap),
-        ) {
-            Column(
-                modifier = Modifier.weight(3f),
-                verticalArrangement = Arrangement.spacedBy(AddLayout.keyGap),
+        // 下两行 + 保存键（纵跨两行）。宽度用 BoxWithConstraints 精确计算，保证与单键等宽。
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val singleKeyWidth = (maxWidth - AddLayout.keyGap * 3) / 4
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AddLayout.keyGap),
             ) {
-                KeyRow {
-                    NumberKey("7", Modifier.weight(1f)) { onDigit('7') }
-                    NumberKey("8", Modifier.weight(1f)) { onDigit('8') }
-                    NumberKey("9", Modifier.weight(1f)) { onDigit('9') }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(AddLayout.keyGap),
+                ) {
+                    KeyRow {
+                        NumberKey("7", Modifier.weight(1f)) { onDigit('7') }
+                        NumberKey("8", Modifier.weight(1f)) { onDigit('8') }
+                        NumberKey("9", Modifier.weight(1f)) { onDigit('9') }
+                    }
+                    KeyRow {
+                        // 0 占两格（原型 `grid-column: span 2`）
+                        NumberKey("0", Modifier.weight(2f)) { onDigit('0') }
+                        NumberKey(".", Modifier.weight(1f)) { onDot() }
+                    }
                 }
-                KeyRow {
-                    // 0 占两格（原型 `grid-column: span 2`）
-                    NumberKey("0", Modifier.weight(2f)) { onDigit('0') }
-                    NumberKey(".", Modifier.weight(1f)) { onDot() }
-                }
+                SaveKey(
+                    enabled = !saving,
+                    modifier = Modifier
+                        .width(singleKeyWidth)
+                        // 高度 = 左侧两行键 + 一个间隙；不能用 fillMaxHeight：
+                        // Row 高度无约束时它会被解析成"填满剩余屏幕"，把整页撑爆（已复现）。
+                        .height(AddLayout.keyHeight * 2 + AddLayout.keyGap),
+                    onClick = onSave,
+                )
             }
-            SaveKey(
-                enabled = !saving,
-                modifier = Modifier
-                    .weight(1f)
-                    // 高度 = 左侧两行键 + 一个间隙；不能用 fillMaxHeight：
-                    // Row 高度无约束时它会被解析成"填满剩余屏幕"，把整页撑爆（已复现）。
-                    .height(AddLayout.keyHeight * 2 + AddLayout.keyGap),
-                onClick = onSave,
-            )
         }
     }
 }
@@ -182,7 +190,7 @@ private fun SaveKey(
         accent = true,
         emphasis = true,
         enabled = enabled,
-        // 跨两行时高度由外部 fillMaxHeight 决定
+        // 跨两行时高度由外部 height 决定
         fixedHeight = false,
     )
 }

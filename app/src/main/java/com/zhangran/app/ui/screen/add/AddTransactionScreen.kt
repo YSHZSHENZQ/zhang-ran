@@ -122,6 +122,24 @@ internal object AddLayout {
     /** 分类格名称字号（原型 `.cat-name { font-size: 10px }`）。 */
     val catNameFontSize = 10.sp
 
+    /** 类型胶囊字号（按用户要求较原型 `.status-pill` 的 10px 放大）。 */
+    val pillFontSize = 12.sp
+
+    /** 类型胶囊水平内边距。 */
+    val pillPaddingH = 12.dp
+
+    /** 类型胶囊纵向内边距。 */
+    val pillPaddingV = 6.dp
+
+    /** 属性行标题字号（原型 add 页内联 `.set-name { font-size: 12.5px }`）。 */
+    val rowTitleFontSize = 12.5.sp
+
+    /** 属性行右侧值字号（原型内联 12px）。 */
+    val rowValueFontSize = 12.sp
+
+    /** 属性行图标 emoji 字号（原型 add 页内联 `.set-icon { font-size: 13px }`）。 */
+    val rowIconFontSize = 13.sp
+
     /** 属性行图标块尺寸（原型 `.set-icon { width/height: 34px }`）。 */
     val rowIconSize = 34.dp
 
@@ -271,8 +289,11 @@ fun AddTransactionContent(
             }
 
             is AddTransactionUiState.Ready -> {
+                // 金额卡**固定**在顶部（不参与滚动），其余内容（分类 / 属性卡 / 键盘）整体可滚。
+                AmountCard(state = state)
+
                 // 滚动区用 Box 明确约束高度：否则 verticalScroll + weight 的组合下，
-                // 内容会按自然高度测量并溢出到键盘区域（真机截图已复现）。
+                // 内容会按自然高度测量并溢出到相邻区域（真机截图已复现）。
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -284,8 +305,6 @@ fun AddTransactionContent(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(spacing.mdDp),
                     ) {
-                        AmountCard(state = state)
-
                         if (state.hasNoCategories) {
                             NoCategoriesHint()
                         } else {
@@ -312,24 +331,22 @@ fun AddTransactionContent(
 
                         state.error?.let { error -> FormErrorText(error) }
 
-                        Spacer(modifier = Modifier.height(spacing.smDp))
+                        NumberPad(
+                            onDigit = onDigit,
+                            onDot = onDot,
+                            onBackspace = onBackspace,
+                            onClear = onClear,
+                            onSave = onSave,
+                            saving = state.saving,
+                            modifier = Modifier.padding(
+                                start = AddLayout.cardMarginH,
+                                end = AddLayout.cardMarginH,
+                                top = spacing.smDp,
+                                bottom = spacing.mdDp,
+                            ),
+                        )
                     }
                 }
-
-                NumberPad(
-                    onDigit = onDigit,
-                    onDot = onDot,
-                    onBackspace = onBackspace,
-                    onClear = onClear,
-                    onSave = onSave,
-                    saving = state.saving,
-                    modifier = Modifier.padding(
-                        start = AddLayout.cardMarginH,
-                        end = AddLayout.cardMarginH,
-                        top = spacing.smDp,
-                        bottom = spacing.mdDp,
-                    ),
-                )
             }
         }
     }
@@ -431,11 +448,11 @@ private fun AddTopBar(
                     .clip(shapes.chip)
                     .background(color = colors.surfaceColor)
                     .clickable(onClick = onToggleType)
-                    .padding(horizontal = spacing.smDp, vertical = spacing.xsDp),
+                    .padding(horizontal = AddLayout.pillPaddingH, vertical = AddLayout.pillPaddingV),
             ) {
                 Text(
                     text = if (state.type == TransactionType.EXPENSE) "支出" else "收入",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelMedium.copy(fontSize = AddLayout.pillFontSize),
                     color = colors.primaryColor,
                 )
             }
@@ -453,7 +470,7 @@ private fun AmountCard(state: AddTransactionUiState.Ready) {
 
     Box(
         modifier = Modifier
-            .padding(horizontal = AddLayout.cardMarginH)
+            .padding(start = AddLayout.cardMarginH, end = AddLayout.cardMarginH, bottom = spacing.mdDp)
             .fillMaxWidth()
             .zhangRanGlass(colors = colors, shape = shapes.card)
             .padding(horizontal = AddLayout.cardPadding, vertical = AddLayout.amountCardPaddingV),
@@ -493,12 +510,14 @@ private fun AttributesCard(
             title = "时间",
             value = if (state.transactionTime == null) "现在" else "已选择",
             onClick = onTimeClick,
+            showTopDivider = true,
         )
         EditableRow(
             icon = "📝",
             title = "备注",
             value = state.note.ifBlank { "添加" },
             onClick = onNoteClick,
+            showTopDivider = true,
         )
     }
 }
