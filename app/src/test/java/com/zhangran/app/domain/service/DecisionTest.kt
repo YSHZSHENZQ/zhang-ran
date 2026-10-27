@@ -432,4 +432,85 @@ class DecisionTest {
         val fieldTypes = resultClasses.flatMap { clazz -> clazz.declaredFields.map { it.type.name } }
         assertFalse(fieldTypes.any { it.contains("TransactionState") })
     }
+
+    // ------------------------------------------------------------------
+    // P-007：transactionTime 作为关键字段（docs/03 §5/§14/§16 规则 2）
+    // ------------------------------------------------------------------
+
+    @Test
+    fun `P1 交易时间为零时进入 Pending 且原因含 UNSUPPORTED_NOTIFICATION`() {
+        val result = Decision().decide(
+            candidate(
+                transactionTime = 0L,
+                amountMinor = 1_200L,
+                amountConfidence = 1.0,
+                direction = TransactionType.EXPENSE,
+                directionConfidence = 1.0,
+                overallConfidence = 1.0,
+            ),
+        )
+        val pending = result as DecisionResult.Pending
+        assertTrue(pending.reasons.contains(PendingReason.UNSUPPORTED_NOTIFICATION))
+    }
+
+    @Test
+    fun `P2 时间不可用不得误伤金额与方向的置信度判定`() {
+        val result = Decision().decide(
+            candidate(
+                transactionTime = 0L,
+                amountMinor = 1_200L,
+                amountConfidence = 1.0,
+                direction = TransactionType.EXPENSE,
+                directionConfidence = 1.0,
+                overallConfidence = 1.0,
+            ),
+        )
+        val reasons = (result as DecisionResult.Pending).reasons
+        assertFalse("金额与方向都齐备，不应报 AMOUNT_UNCERTAIN", reasons.contains(PendingReason.AMOUNT_UNCERTAIN))
+        assertFalse("金额与方向都齐备，不应报 DIRECTION_UNCERTAIN", reasons.contains(PendingReason.DIRECTION_UNCERTAIN))
+        assertFalse("overall=1.0，不应报 LOW_CONFIDENCE", reasons.contains(PendingReason.LOW_CONFIDENCE))
+    }
+
+    @Test
+    fun `P3 交易时间为负值时同 P1`() {
+        val result = Decision().decide(
+            candidate(
+                transactionTime = -1L,
+                amountConfidence = 1.0,
+                directionConfidence = 1.0,
+                overallConfidence = 1.0,
+            ),
+        )
+        val pending = result as DecisionResult.Pending
+        assertTrue(pending.reasons.contains(PendingReason.UNSUPPORTED_NOTIFICATION))
+    }
+
+    @Test
+    fun `P4 交易时间有效时仍可 Confirmed`() {
+        val result = Decision().decide(
+            candidate(
+                transactionTime = BASE_TIME,
+                amountConfidence = 1.0,
+                directionConfidence = 1.0,
+                overallConfidence = 1.0,
+            ),
+        )
+        assertTrue("实际=${result::class.simpleName}", result is DecisionResult.Confirmed)
+    }
+
+    @Test
+    fun `P5 时间不可用与分类未命中时两个 reason 都保留`() {
+        val result = Decision().decide(
+            candidate(
+                transactionTime = 0L,
+                amountConfidence = 1.0,
+                directionConfidence = 1.0,
+                overallConfidence = 1.0,
+                categoryId = null,
+            ),
+        )
+        val reasons = (result as DecisionResult.Pending).reasons
+        assertTrue(reasons.contains(PendingReason.UNSUPPORTED_NOTIFICATION))
+        assertTrue("多 reason 必须全部保留（03 §16 优先级说明）", reasons.contains(PendingReason.CATEGORY_UNCERTAIN))
+    }
 }

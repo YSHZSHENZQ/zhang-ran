@@ -74,12 +74,22 @@ class Decision(
 
         val reasons = LinkedHashSet<PendingReason>()
 
-        // 规则 2：关键字段缺失或 confidence < 字段阈值。
+        // 规则 2：关键字段校验。关键字段为 amountMinor、direction、transactionTime
+        // （`docs/03` §16 规则 2，P-007 修订）。
+        // - amount / direction：缺失或 confidence < 字段阈值 → 各自 reason；
+        // - transactionTime：**没有 confidence 概念**（上游不输出），只按"是否存在且 > 0"判定；
+        //   不可用（<= 0）→ UNSUPPORTED_NOTIFICATION（复用"上游结果不可用"语义，不新增枚举）。
+        // 三者**都不提前 return**：多 reason 必须全部保留（`docs/03` §16 优先级说明）。
         if (candidate.amountMinor == null || !atLeast(candidate.amountConfidence)) {
             reasons += PendingReason.AMOUNT_UNCERTAIN
         }
         if (candidate.direction == null || !atLeast(candidate.directionConfidence)) {
             reasons += PendingReason.DIRECTION_UNCERTAIN
+        }
+        // 与 `docs/03` §14「Confirmed 必须拥有真实 transactionTime」互为表里：
+        // 任何 <= 0 的候选都不得走到规则 12（`docs/03` §5 字段约束）。
+        if (candidate.transactionTime <= 0L) {
+            reasons += PendingReason.UNSUPPORTED_NOTIFICATION
         }
 
         // 规则 3：整体置信度不足。
