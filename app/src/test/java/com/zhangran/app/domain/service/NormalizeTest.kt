@@ -204,6 +204,24 @@ class NormalizeTest {
     }
 
     @Test
+    fun `分类子段未命中时即使父段命中也不拆开`() {
+        // P-008 §2.2「分类父子（子段未命中）」：父段能映射不构成命中依据
+        val n = normalizeWith(categoryMap = mapOf("餐饮" to "cat-parent"))
+        val result = n.normalize(rawOf(categoryNameRaw = "餐饮/不存在"))
+        assertNull(result.categoryId)
+        assertEquals("餐饮/不存在", result.categoryNameHint)
+    }
+
+    @Test
+    fun `分类父段未命中时即使子段命中也不拆开`() {
+        // P-008 §2.1「禁止只认子名」：这是防止"子段命中即采用"的直接证明
+        val n = normalizeWith(categoryMap = mapOf("咖啡" to "cat-child"))
+        val result = n.normalize(rawOf(categoryNameRaw = "不存在/咖啡"))
+        assertNull("子段命中但父段未命中 → 不得视为父子命中", result.categoryId)
+        assertEquals("不存在/咖啡", result.categoryNameHint)
+    }
+
+    @Test
     fun `无父子分隔符的分类按完整名匹配`() {
         val n = normalizeWith(categoryMap = mapOf("交通" to "cat-1"))
         val result = n.normalize(rawOf(categoryNameRaw = "交通"))
