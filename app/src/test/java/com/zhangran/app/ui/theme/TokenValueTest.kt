@@ -236,12 +236,50 @@ class TokenValueTest {
     fun 扩展token不破坏基础token数量() {
         // 既有 ThemeTokensTest 以"恰好 14 项"作为完整性判据，扩展 token 必须走独立映射
         assertEquals(14, LightColors.asTokenMap().size)
-        assertEquals(29, LightColors.asExtendedTokenMap().size)
+        // M2e-1b 新增 5 组图标渐变（10 项）→ 29 + 10 = 39
+        assertEquals(39, LightColors.asExtendedTokenMap().size)
         assertEquals(6, Spacing.asTokenMap().size)
         assertEquals(9, Spacing.asExtendedTokenMap().size)
         assertEquals(5, Radii.asTokenMap().size)
         // UI-0b：删除 Radii.screen 后，扩展圆角由 5 项减为 4 项
         assertEquals(9, Radii.asExtendedTokenMap().size)
+    }
+
+    // ------------------------------------------------------------------ M2e-1b 图标渐变
+
+    @Test
+    fun 图标渐变token与原型一致() {
+        val c = LightColors
+        // 原型首页 `.tx-icon` 内联 135deg 渐变（亮色）
+        assertEquals("#FFF1E0", 0xFFFFF1E0.toInt(), c.iconGradientOrangeStart)
+        assertEquals("#FFE1C4", 0xFFFFE1C4.toInt(), c.iconGradientOrangeEnd)
+        assertEquals("#E5EEFF", 0xFFE5EEFF.toInt(), c.iconGradientBlueStart)
+        assertEquals("#D4E3FF", 0xFFD4E3FF.toInt(), c.iconGradientBlueEnd)
+        assertEquals("#DCFCE9", 0xFFDCFCE9.toInt(), c.iconGradientGreenStart)
+        assertEquals("#C3F5DC", 0xFFC3F5DC.toInt(), c.iconGradientGreenEnd)
+        assertEquals("#E9E4FF", 0xFFE9E4FF.toInt(), c.iconGradientPurpleStart)
+        assertEquals("#D9D0FF", 0xFFD9D0FF.toInt(), c.iconGradientPurpleEnd)
+        assertEquals("#FDE8E8", 0xFFFDE8E8.toInt(), c.iconGradientRedStart)
+        assertEquals("#FBD5D5", 0xFFFBD5D5.toInt(), c.iconGradientRedEnd)
+    }
+
+    @Test
+    fun 暗色图标渐变沿用亮色同值() {
+        // 原型只定义了亮色这 5 组；任务书 §4.1 要求暗色沿用，不得自行发明
+        val light = LightColors.asExtendedTokenMap()
+        val dark = DarkColors.asExtendedTokenMap()
+        val iconKeys = light.keys.filter { it.startsWith("IconGradient") }
+        assertEquals("5 组 × 起止 = 10 项", 10, iconKeys.size)
+        iconKeys.forEach { key ->
+            assertEquals("暗色 $key 必须沿用亮色", light[key], dark[key])
+        }
+    }
+
+    @Test
+    fun 图标渐变分组覆盖五组且每组两色() {
+        IconGradientGroup.entries.forEach { group ->
+            assertEquals("$group 必须有起止两色", 2, LightColors.iconGradientColors(group).size)
+        }
     }
 
     @Test

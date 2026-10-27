@@ -68,7 +68,9 @@ class ScreensSmokeTest(
         composeRule.setContent {
             ZhangRanTheme(darkTheme = darkTheme) { screenFor(destination) }
         }
-        composeRule.onNodeWithText(destination.title).assertIsDisplayed()
+        // 首页已由 M2e-1b 落成真实页面：标题不再是"首页"，而是原型里的「账然」logo
+        val expectedText = if (destination == Destination.Home) "账然" else destination.title
+        composeRule.onNodeWithText(expectedText).assertIsDisplayed()
     }
 }
 

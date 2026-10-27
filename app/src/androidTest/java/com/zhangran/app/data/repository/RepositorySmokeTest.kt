@@ -39,6 +39,7 @@ import com.zhangran.app.domain.usecase.ManualTransactionInput
 import com.zhangran.app.domain.usecase.ObserveTransactionsUseCase
 import com.zhangran.app.domain.usecase.TransactionListEntry
 import com.zhangran.app.ui.screen.home.HomeContent
+import com.zhangran.app.ui.screen.home.HomeSection
 import com.zhangran.app.ui.screen.home.HomeUiState
 import com.zhangran.app.ui.screen.home.TransactionListItem
 import com.zhangran.app.ui.theme.ZhangRanTheme
@@ -291,11 +292,14 @@ class HomeScreenStatesTest {
     private fun item(id: String) = TransactionListItem(
         id = id,
         title = "全家便利店",
-        amountText = "-¥12.00",
+        amountText = "-12.00",
         typeText = "支出",
-        timeText = "2026-10-27 10:30",
+        timeText = "10:30",
         categoryName = "餐饮",
-        accountName = "微信零钱",
+        categoryIcon = "food",
+        sourceText = "手工",
+        type = TransactionType.EXPENSE,
+        accessibilityText = "全家便利店，餐饮，10:30，支出 12.00 元",
     )
 
     @Test
@@ -303,7 +307,7 @@ class HomeScreenStatesTest {
         composeRule.setContent {
             ZhangRanTheme { HomeContent(state = HomeUiState.Loading) }
         }
-        composeRule.onNodeWithText("首页").assertIsDisplayed()
+        composeRule.onNodeWithText("账然").assertIsDisplayed()
     }
 
     @Test
@@ -311,7 +315,7 @@ class HomeScreenStatesTest {
         composeRule.setContent {
             ZhangRanTheme { HomeContent(state = HomeUiState.Empty) }
         }
-        composeRule.onNodeWithText("首页").assertIsDisplayed()
+        composeRule.onNodeWithText("账然").assertIsDisplayed()
         composeRule.onNodeWithText("还没有记录").assertIsDisplayed()
     }
 
@@ -322,7 +326,7 @@ class HomeScreenStatesTest {
                 HomeContent(state = HomeUiState.Error("数据库打开失败"), onRetry = {})
             }
         }
-        composeRule.onNodeWithText("首页").assertIsDisplayed()
+        composeRule.onNodeWithText("账然").assertIsDisplayed()
         composeRule.onNodeWithText("数据库打开失败").assertIsDisplayed()
         composeRule.onNodeWithText("重试").assertIsDisplayed()
     }
@@ -333,15 +337,15 @@ class HomeScreenStatesTest {
             ZhangRanTheme {
                 HomeContent(
                     state = HomeUiState.Content(
-                        items = listOf(item("tx-1")),
+                        sections = listOf(HomeSection(label = "今天", items = listOf(item("tx-1")))),
                         // 汇总字段与列表语义无关，本渲染测试用 0 值占位
                         summary = HomeSummary(0L, 0L, 0L, 0),
                     ),
                 )
             }
         }
-        composeRule.onNodeWithText("首页").assertIsDisplayed()
+        composeRule.onNodeWithText("账然").assertIsDisplayed()
         composeRule.onNodeWithText("全家便利店").assertIsDisplayed()
-        composeRule.onNodeWithText("-¥12.00").assertIsDisplayed()
+        composeRule.onNodeWithText("-12.00").assertIsDisplayed()
     }
 }

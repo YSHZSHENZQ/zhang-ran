@@ -15,6 +15,8 @@
  */
 package com.zhangran.app.ui.theme
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 /**
@@ -50,6 +52,13 @@ import androidx.compose.ui.graphics.Color
  * @property cardTopAccentStart/Mid/End 卡片顶部强调线三段；**暗色为 `null`**（原型 `--card-top: none`）
  * @property glassShadowColor 玻璃外阴影颜色（`--glass-shadow` 的投影部分）
  * @property glassInnerHighlight 玻璃内高光颜色（`--glass-shadow` 的 `inset` 部分）
+ *
+ * 图标块渐变（`M2e-1b` §4.1，原型 `.tx-icon` 的 5 组 `135deg` 浅色渐变）：
+ * 原型只在亮色内联样式里定义了这 5 组，**暗色无对应取值**，因此暗色**沿用同值**
+ * （不自行发明暗色渐变；见任务书 §4.1 与 §7 R5）。
+ *
+ * @property iconGradientOrange/Blue/Green/Purple/RedStart 各组渐变起点色
+ * @property iconGradientOrange/Blue/Green/Purple/RedEnd 各组渐变终点色
  */
 data class ZhangRanColors(
     // ---- 基础 14 项（docs/05 §3）----
@@ -89,6 +98,17 @@ data class ZhangRanColors(
     val cardTopAccentEnd: Int?,
     val glassShadowColor: Int,
     val glassInnerHighlight: Int,
+    // ---- 扩展：图标块渐变（原型 .tx-icon 的 5 组；暗色沿用亮色）----
+    val iconGradientOrangeStart: Int,
+    val iconGradientOrangeEnd: Int,
+    val iconGradientBlueStart: Int,
+    val iconGradientBlueEnd: Int,
+    val iconGradientGreenStart: Int,
+    val iconGradientGreenEnd: Int,
+    val iconGradientPurpleStart: Int,
+    val iconGradientPurpleEnd: Int,
+    val iconGradientRedStart: Int,
+    val iconGradientRedEnd: Int,
 )
 
 /**
@@ -131,6 +151,16 @@ fun ZhangRanColors.asExtendedTokenMap(): Map<String, Int> = asTokenMap() + linke
     "AccentGradientEnd" to accentGradientEnd,
     "GlassShadowColor" to glassShadowColor,
     "GlassInnerHighlight" to glassInnerHighlight,
+    "IconGradientOrangeStart" to iconGradientOrangeStart,
+    "IconGradientOrangeEnd" to iconGradientOrangeEnd,
+    "IconGradientBlueStart" to iconGradientBlueStart,
+    "IconGradientBlueEnd" to iconGradientBlueEnd,
+    "IconGradientGreenStart" to iconGradientGreenStart,
+    "IconGradientGreenEnd" to iconGradientGreenEnd,
+    "IconGradientPurpleStart" to iconGradientPurpleStart,
+    "IconGradientPurpleEnd" to iconGradientPurpleEnd,
+    "IconGradientRedStart" to iconGradientRedStart,
+    "IconGradientRedEnd" to iconGradientRedEnd,
 )
 
 /**
@@ -173,6 +203,17 @@ val LightColors: ZhangRanColors = ZhangRanColors(
     cardTopAccentEnd = 0xFF10B981.toInt(),
     glassShadowColor = 0x1A4F46E5,
     glassInnerHighlight = 0xBFFFFFFF.toInt(),
+    // 原型 `.tx-icon` 内联 `linear-gradient(135deg, …)` 的 5 组浅色渐变
+    iconGradientOrangeStart = 0xFFFFF1E0.toInt(),
+    iconGradientOrangeEnd = 0xFFFFE1C4.toInt(),
+    iconGradientBlueStart = 0xFFE5EEFF.toInt(),
+    iconGradientBlueEnd = 0xFFD4E3FF.toInt(),
+    iconGradientGreenStart = 0xFFDCFCE9.toInt(),
+    iconGradientGreenEnd = 0xFFC3F5DC.toInt(),
+    iconGradientPurpleStart = 0xFFE9E4FF.toInt(),
+    iconGradientPurpleEnd = 0xFFD9D0FF.toInt(),
+    iconGradientRedStart = 0xFFFDE8E8.toInt(),
+    iconGradientRedEnd = 0xFFFBD5D5.toInt(),
 )
 
 /**
@@ -215,6 +256,17 @@ val DarkColors: ZhangRanColors = ZhangRanColors(
     cardTopAccentEnd = null,
     glassShadowColor = 0x59000000,
     glassInnerHighlight = 0x14FFFFFF,
+    // 原型未定义暗色图标渐变 → **沿用亮色同值**（任务书 §4.1：不得自行发明暗色值）
+    iconGradientOrangeStart = 0xFFFFF1E0.toInt(),
+    iconGradientOrangeEnd = 0xFFFFE1C4.toInt(),
+    iconGradientBlueStart = 0xFFE5EEFF.toInt(),
+    iconGradientBlueEnd = 0xFFD4E3FF.toInt(),
+    iconGradientGreenStart = 0xFFDCFCE9.toInt(),
+    iconGradientGreenEnd = 0xFFC3F5DC.toInt(),
+    iconGradientPurpleStart = 0xFFE9E4FF.toInt(),
+    iconGradientPurpleEnd = 0xFFD9D0FF.toInt(),
+    iconGradientRedStart = 0xFFFDE8E8.toInt(),
+    iconGradientRedEnd = 0xFFFBD5D5.toInt(),
 )
 
 // ---- Compose 侧投影（页面/组件只能引用这些属性，不得写字面值）----
@@ -258,3 +310,57 @@ val ZhangRanColors.cardTopAccentColors: List<Color>?
         val end = cardTopAccentEnd ?: return null
         return listOf(Color(start), Color(mid), Color(end))
     }
+
+/**
+ * 图标块渐变分组（原型 `.tx-icon` 的 5 组浅色渐变）。
+ *
+ * 分组语义（`M2e-1b` §4.1）：橙 = 餐饮/日常；蓝 = 购物/数码；绿 = 交通/居住；
+ * 紫 = 收入类别；红 = 医疗/警示类。
+ */
+enum class IconGradientGroup {
+    ORANGE,
+    BLUE,
+    GREEN,
+    PURPLE,
+    RED,
+}
+
+/** 某组渐变的两个停靠色（唯一取值来源；暗色沿用同值）。 */
+fun ZhangRanColors.iconGradientColors(group: IconGradientGroup): List<Color> = when (group) {
+    IconGradientGroup.ORANGE -> listOf(
+        Color(iconGradientOrangeStart),
+        Color(iconGradientOrangeEnd),
+    )
+
+    IconGradientGroup.BLUE -> listOf(
+        Color(iconGradientBlueStart),
+        Color(iconGradientBlueEnd),
+    )
+
+    IconGradientGroup.GREEN -> listOf(
+        Color(iconGradientGreenStart),
+        Color(iconGradientGreenEnd),
+    )
+
+    IconGradientGroup.PURPLE -> listOf(
+        Color(iconGradientPurpleStart),
+        Color(iconGradientPurpleEnd),
+    )
+
+    IconGradientGroup.RED -> listOf(
+        Color(iconGradientRedStart),
+        Color(iconGradientRedEnd),
+    )
+}
+
+/**
+ * 图标块渐变画刷：按原型 `linear-gradient(135deg, start, end)`。
+ *
+ * `135deg` 在 CSS 中指向右下：起点左上、终点右下，因此用 `Offset.Zero → Offset.Infinite`
+ * 的对角线（前者正好是 45° 屏幕对角，与 CSS 135deg 的视觉方向一致）。
+ */
+fun ZhangRanColors.iconGradientBrush(group: IconGradientGroup): Brush = Brush.linearGradient(
+    colors = iconGradientColors(group),
+    start = Offset.Zero,
+    end = Offset.Infinite,
+)

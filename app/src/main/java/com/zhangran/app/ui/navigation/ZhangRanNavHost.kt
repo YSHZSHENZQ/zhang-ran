@@ -15,10 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.zhangran.app.ui.screen.about.AboutScreen
 import com.zhangran.app.ui.screen.accounts.AccountsScreen
 import com.zhangran.app.ui.screen.add.AddTransactionScreen
@@ -86,12 +88,24 @@ fun ZhangRanNavHost(
         startDestination = Destination.start.route,
         modifier = modifier,
     ) {
-        composable(Destination.Home.route) { HomeScreen() }
+        composable(Destination.Home.route) {
+            // 首页的 5 个入口都经这一个回调出站（`M2e-1b` §4.2/§4.4/§4.6）
+            HomeScreen(onNavigate = { route -> navController.navigate(route) })
+        }
         composable(Destination.Stats.route) { StatsScreen() }
         composable(Destination.Add.route) { AddTransactionScreen() }
         composable(Destination.Budget.route) { BudgetScreen() }
         composable(Destination.Mine.route) { MineScreen() }
-        composable(Destination.Detail.route) { TransactionDetailScreen() }
+        composable(
+            route = Destination.Detail.route,
+            arguments = listOf(
+                // 可选参数：首页点交易时带 id；其他入口（未来）可不带
+                navArgument(Destination.ARG_TRANSACTION_ID) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) { TransactionDetailScreen() }
         composable(Destination.Pending.route) { PendingScreen() }
         composable(Destination.PendingEdit.route) { PendingEditScreen() }
         composable(Destination.DuplicateReview.route) { DuplicateReviewScreen() }

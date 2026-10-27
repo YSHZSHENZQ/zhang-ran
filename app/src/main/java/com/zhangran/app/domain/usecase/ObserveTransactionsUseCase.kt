@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.combine
  * 账务列表项（展示所需的纯领域类型，`docs/06` §4.1）。
  *
  * @property categoryName 分类名（分类缺失或已删除时为 `null`）
+ * @property categoryIcon 分类的**语义图标标识**（如 `food`；分类缺失时为 `null`）。
+ *   供 UI 选择图标块渐变组与 emoji（`M2e-1b` §4.1）；数据库里存的是语义标识而非 emoji（`docs/02` §9）。
  * @property accountName 账户名（账户缺失时为 `null`；转账用转出账户）
  */
 data class TransactionListEntry(
@@ -39,6 +41,7 @@ data class TransactionListEntry(
     val note: String?,
     val transactionTime: Long,
     val categoryName: String?,
+    val categoryIcon: String?,
     val accountName: String?,
     val source: CaptureSource,
     val state: TransactionState,
@@ -84,6 +87,7 @@ class ObserveTransactionsUseCase @Inject constructor(
                         transactionTime = entity.transactionTime,
                         // 名称解析保留降级行为：分类/账户缺失时为 null，不崩溃（`M2b0` §4.2）
                         categoryName = entity.categoryId?.let { categoriesById[it]?.name },
+                        categoryIcon = entity.categoryId?.let { categoriesById[it]?.icon },
                         accountName = accountId?.let { accountsById[it]?.name },
                         source = entity.source,
                         state = entity.state,

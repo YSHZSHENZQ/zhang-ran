@@ -28,7 +28,8 @@ enum class Destination(
     Mine(route = "mine", title = "我的", isTopLevel = true),
 
     // —— 其余 13 个页面（通过路由可达，不出现在底栏）
-    Detail(route = "detail", title = "交易详情", isTopLevel = false),
+    // 详情页带可选参数 transactionId（`M2e-1b`：首页点击交易 → 详情，需带 id）
+    Detail(route = "detail?transactionId={transactionId}", title = "交易详情", isTopLevel = false),
     Pending(route = "pending", title = "待确认记录", isTopLevel = false),
     PendingEdit(route = "pendingEdit", title = "编辑后入账", isTopLevel = false),
     DuplicateReview(route = "duplicateReview", title = "疑似重复", isTopLevel = false),
@@ -44,6 +45,12 @@ enum class Destination(
     ;
 
     companion object {
+        /** 详情页的交易 id 路由参数名。 */
+        const val ARG_TRANSACTION_ID: String = "transactionId"
+
+        /** 详情路由里的参数占位符。 */
+        private const val TRANSACTION_ID_PLACEHOLDER: String = "{transactionId}"
+
         /** 底部导航项（固定 5 项，`docs/05` §12）。 */
         val topLevel: List<Destination> = entries.filter { it.isTopLevel }
 
@@ -52,5 +59,13 @@ enum class Destination(
 
         /** 按路由查找目的地；未知名返回 null。 */
         fun fromRoute(route: String?): Destination? = entries.firstOrNull { it.route == route }
+
+        /**
+         * 生成带交易 id 的详情路由（`M2e-1b` A10：详情入口必须带 `transactionId`）。
+         *
+         * 交易 id 为 UUID 字符串，不含需要转义的字符。
+         */
+        fun detailRoute(transactionId: String): String =
+            Detail.route.replace(TRANSACTION_ID_PLACEHOLDER, transactionId)
     }
 }
