@@ -13,9 +13,13 @@
 package com.zhangran.app.di
 
 import com.zhangran.app.data.repository.AccountRepository
+import com.zhangran.app.data.repository.CaptureEvidenceRepository
 import com.zhangran.app.data.repository.CategoryRepository
+import com.zhangran.app.data.repository.FieldEditRepository
 import com.zhangran.app.data.repository.RoomAccountRepository
+import com.zhangran.app.data.repository.RoomCaptureEvidenceRepository
 import com.zhangran.app.data.repository.RoomCategoryRepository
+import com.zhangran.app.data.repository.RoomFieldEditRepository
 import com.zhangran.app.data.repository.RoomTransactionRepository
 import com.zhangran.app.data.repository.TransactionRepository
 import com.zhangran.app.domain.service.Normalize
@@ -28,6 +32,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import java.time.Clock
 import javax.inject.Singleton
 
 @Module
@@ -45,6 +50,18 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAccountRepository(impl: RoomAccountRepository): AccountRepository
+
+    /** `M2b`：字段级用户修改保护（`docs/03` §11）。 */
+    @Binds
+    @Singleton
+    abstract fun bindFieldEditRepository(impl: RoomFieldEditRepository): FieldEditRepository
+
+    /** `M2b`：详情页读取置信度与证据摘要（`capture_evidence`，只读）。 */
+    @Binds
+    @Singleton
+    abstract fun bindCaptureEvidenceRepository(
+        impl: RoomCaptureEvidenceRepository,
+    ): CaptureEvidenceRepository
 
     companion object {
 
@@ -79,5 +96,16 @@ abstract class RepositoryModule {
             normalize = normalize,
             transactionRepository = transactionRepository,
         )
+
+        /**
+         * 时间源（`M2b` §4.3/§4.4）。
+         *
+         * 编辑与删除用例都要记录 `editedAt` / `updatedAt` / `deletedAt`；
+         * 用 `Clock` 注入而非在用例内直接 `System.currentTimeMillis()`，
+         * 让 JVM 单测可以用 `Clock.fixed` 精确断言时间戳。
+         */
+        @Provides
+        @Singleton
+        fun provideClock(): Clock = Clock.systemDefaultZone()
     }
 }

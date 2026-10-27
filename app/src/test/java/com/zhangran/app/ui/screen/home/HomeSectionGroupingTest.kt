@@ -274,7 +274,7 @@ class HomeMoneyFormatTest {
         )
         val item = sections.single().items.single()
         assertEquals("14:23", item.timeText)
-        assertEquals("手工", item.sourceText)
+        assertEquals("手动", item.sourceText)
         assertEquals("餐饮", item.categoryName)
         assertEquals("food", item.categoryIcon)
         assertEquals("星巴克咖啡，餐饮，14:23，支出 38.50 元", item.accessibilityText)

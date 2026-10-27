@@ -344,6 +344,25 @@ private class FakeTransactionRepository : TransactionRepository {
 
     override suspend fun getById(id: String, includeDeleted: Boolean): TransactionEntity? =
         inserted.firstOrNull { it.id == id }
+
+    override suspend fun update(transaction: TransactionEntity) {
+        val index = inserted.indexOfFirst { it.id == transaction.id }
+        if (index >= 0) inserted[index] = transaction
+    }
+
+    override suspend fun softDelete(id: String, deletedAt: Long) {
+        val index = inserted.indexOfFirst { it.id == id }
+        if (index >= 0) {
+            inserted[index] = inserted[index].copy(deletedAt = deletedAt, updatedAt = deletedAt)
+        }
+    }
+
+    override suspend fun restore(id: String, updatedAt: Long) {
+        val index = inserted.indexOfFirst { it.id == id }
+        if (index >= 0) {
+            inserted[index] = inserted[index].copy(deletedAt = null, updatedAt = updatedAt)
+        }
+    }
 }
 
 private class FakeCategoryRepository(

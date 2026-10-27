@@ -43,6 +43,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,8 +68,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.zhangran.app.domain.usecase.DeleteTransactionUseCase
 import com.zhangran.app.domain.usecase.ObserveHomeSummaryUseCase
 import com.zhangran.app.domain.usecase.ObserveTransactionsUseCase
+import com.zhangran.app.ui.common.TransactionDeletionEvents
 import com.zhangran.app.ui.navigation.Destination
 import com.zhangran.app.ui.screen.home.components.BalanceCard
 import com.zhangran.app.ui.screen.home.components.HomeEmptyState
@@ -105,16 +111,43 @@ fun HomeScreen(onNavigate: (String) -> Unit = {}) {
                 HomeViewModel(
                     observeTransactions = entryPoint.observeTransactionsUseCase(),
                     observeHomeSummary = entryPoint.observeHomeSummaryUseCase(),
+                    undoDeleteTransaction = entryPoint.deleteTransactionUseCase(),
                 )
             }
         },
     )
     val state by homeViewModel.uiState.collectAsState()
-    HomeContent(
-        state = state,
-        onNavigate = onNavigate,
-        onRetry = homeViewModel::refresh,
-    )
+
+    // 「已删除，可撤销」（`M2b` §1.2）：详情页删除成功后返回首页，在这里弹一次性 SnackBar。
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(homeViewModel) {
+        TransactionDeletionEvents.lastDeleted.collect { event ->
+            if (event == null) return@collect
+            // 先消费，避免返回首页/重组时重复弹出
+            TransactionDeletionEvents.clear()
+            val result = snackbarHostState.showSnackbar(
+                message = "已删除",
+                actionLabel = "撤销",
+                withDismissAction = false,
+                duration = SnackbarDuration.Long,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                homeViewModel.undoDelete(event.transactionId)
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        HomeContent(
+            state = state,
+            onNavigate = onNavigate,
+            onRetry = homeViewModel::refresh,
+        )
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
 }
 
 /**
@@ -389,4 +422,7 @@ interface HomeEntryPoint {
     fun observeTransactionsUseCase(): ObserveTransactionsUseCase
 
     fun observeHomeSummaryUseCase(): ObserveHomeSummaryUseCase
+
+    /** `M2b`：首页「已删除，可撤销」SnackBar 的撤销入口。 */
+    fun deleteTransactionUseCase(): DeleteTransactionUseCase
 }

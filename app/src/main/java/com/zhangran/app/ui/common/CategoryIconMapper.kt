@@ -11,6 +11,8 @@
  */
 package com.zhangran.app.ui.common
 
+import com.zhangran.app.domain.model.CaptureSource
+
 /**
  * 语义图标标识与 emoji 的映射表。
  *
@@ -56,4 +58,31 @@ object CategoryIconMapper {
 
     /** 完整映射（只读，供测试断言）。 */
     val mappings: Map<String, String> get() = MAPPINGS
+}
+
+/**
+ * 采集来源的中文展示文案（`M2b` §4.1；枚举 SSOT 见 `docs/07` §5）。
+ *
+ * 集中定义，**首页与详情页共用**（`AGENTS.md` §7.2：不得散落各页）。
+ * `MANUAL` 用「手动」（`M2b` §4.1 的展示口径；`docs/07` §5 原文是"用户手工记账"，此处取展示用语）。
+ *
+ * 说明：`docs/07` §5 给了示例「NOTIFICATION → 自动捕获 · 通知」；
+ * 本任务按更简洁的行内文案展示（"通知"），细节（渠道名）属日志/证据页。
+ */
+object CaptureSourceText {
+
+    /**
+     * 来源 → 中文文案。
+     *
+     * @param source 采集来源枚举
+     */
+    fun of(source: CaptureSource): String = when (source) {
+        CaptureSource.MANUAL -> "手动"
+        CaptureSource.NOTIFICATION -> "通知"
+        CaptureSource.HOOK -> "应用数据"
+        CaptureSource.SMS -> "短信"
+        CaptureSource.ACCESSIBILITY -> "无障碍"
+        CaptureSource.AI -> "AI"
+        CaptureSource.OCR -> "OCR"
+    }
 }

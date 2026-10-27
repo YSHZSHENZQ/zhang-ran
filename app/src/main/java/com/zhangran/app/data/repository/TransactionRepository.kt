@@ -47,6 +47,24 @@ interface TransactionRepository {
 
     /** 按 id 读取；`includeDeleted = true` 用于恢复场景（`docs/03` §6）。 */
     suspend fun getById(id: String, includeDeleted: Boolean = false): TransactionEntity?
+
+    /**
+     * 更新一笔交易（字段级编辑的唯一落库口，`M2b` §4.3）。
+     *
+     * 本方法**不做校验**：校验、`FieldEdit` 写入与状态守卫都在
+     * `UpdateTransactionFieldUseCase`，本层只负责写。
+     */
+    suspend fun update(transaction: TransactionEntity)
+
+    /**
+     * 软删除：写入 `deletedAt`，**不改 `state`**（`docs/03` §6：可见性由 `deletedAt` 控制）。
+     *
+     * @param deletedAt 删除时刻（UTC epoch millis）
+     */
+    suspend fun softDelete(id: String, deletedAt: Long)
+
+    /** 恢复软删除（清空 `deletedAt`）；恢复窗口的判定属 Domain。 */
+    suspend fun restore(id: String, updatedAt: Long)
 }
 
 @Singleton
@@ -76,4 +94,12 @@ class RoomTransactionRepository @Inject constructor(
 
     override suspend fun getById(id: String, includeDeleted: Boolean): TransactionEntity? =
         if (includeDeleted) dao.findByIdIncludingDeleted(id) else dao.findById(id)
+
+    override suspend fun update(transaction: TransactionEntity) = dao.update(transaction)
+
+    override suspend fun softDelete(id: String, deletedAt: Long) =
+        // updatedAt 与 deletedAt 同值：软删除也是一次写入
+        dao.softDelete(id = id, deletedAt = deletedAt, updatedAt = deletedAt)
+
+    override suspend fun restore(id: String, updatedAt: Long) = dao.restore(id, updatedAt)
 }

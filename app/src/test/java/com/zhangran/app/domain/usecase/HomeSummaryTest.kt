@@ -84,6 +84,22 @@ private class FakeSummaryTransactionRepository(
 
     override suspend fun getById(id: String, includeDeleted: Boolean): TransactionEntity? =
         rows.value.firstOrNull { it.id == id && (includeDeleted || it.deletedAt == null) }
+
+    override suspend fun update(transaction: TransactionEntity) {
+        rows.value = rows.value.map { if (it.id == transaction.id) transaction else it }
+    }
+
+    override suspend fun softDelete(id: String, deletedAt: Long) {
+        rows.value = rows.value.map {
+            if (it.id == id) it.copy(deletedAt = deletedAt, updatedAt = deletedAt) else it
+        }
+    }
+
+    override suspend fun restore(id: String, updatedAt: Long) {
+        rows.value = rows.value.map {
+            if (it.id == id) it.copy(deletedAt = null, updatedAt = updatedAt) else it
+        }
+    }
 }
 
 private class FakeSummaryCategoryRepository(

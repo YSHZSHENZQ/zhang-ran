@@ -50,7 +50,7 @@ class HomeScreenTest {
         timeText = "14:23",
         categoryName = "餐饮",
         categoryIcon = "food",
-        sourceText = "手工",
+        sourceText = "手动",
         type = TransactionType.EXPENSE,
         accessibilityText = "星巴克咖啡，餐饮，14:23，支出 38.50 元",
     )
@@ -135,7 +135,7 @@ class HomeScreenTest {
         composeRule.onNodeWithText("BALANCE").assertIsDisplayed()
         composeRule.onNodeWithText("今天").assertIsDisplayed()
         composeRule.onNodeWithText("星巴克咖啡").assertIsDisplayed()
-        composeRule.onNodeWithText("餐饮 · 14:23 · 手工").assertIsDisplayed()
+        composeRule.onNodeWithText("餐饮 · 14:23 · 手动").assertIsDisplayed()
         composeRule.onNodeWithText("-38.50").assertIsDisplayed()
     }
 

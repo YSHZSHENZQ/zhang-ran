@@ -23,9 +23,11 @@ import androidx.lifecycle.viewModelScope
 import com.zhangran.app.domain.model.CaptureSource
 import com.zhangran.app.domain.model.HomeSummary
 import com.zhangran.app.domain.model.TransactionType
+import com.zhangran.app.domain.usecase.DeleteTransactionUseCase
 import com.zhangran.app.domain.usecase.ObserveHomeSummaryUseCase
 import com.zhangran.app.domain.usecase.ObserveTransactionsUseCase
 import com.zhangran.app.domain.usecase.TransactionListEntry
+import com.zhangran.app.ui.common.CaptureSourceText
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.ZoneId
@@ -40,6 +42,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * 首页 UI 状态（`docs/06` §5 的页面统一状态）。
@@ -83,11 +86,13 @@ enum class AmountSign {
 /**
  * @param observeTransactions 列表用例（响应式，三表 combine）
  * @param observeHomeSummary 本月汇总用例（响应式，交易变化即重算）
+ * @param undoDelete 撤销删除用例（`M2b` §1.2：首页 SnackBar「已删除，可撤销」）
  * @param clock 当前时间源（毫秒）。默认系统时间；测试可注入固定"现在"以稳定"今天/昨天"分组
  */
 class HomeViewModel(
     private val observeTransactions: ObserveTransactionsUseCase,
     private val observeHomeSummary: ObserveHomeSummaryUseCase,
+    private val undoDeleteTransaction: DeleteTransactionUseCase,
     private val clock: () -> Long = { System.currentTimeMillis() },
 ) : ViewModel() {
 
@@ -130,6 +135,17 @@ class HomeViewModel(
      */
     fun refresh() {
         refreshTrigger.value += 1
+    }
+
+    /**
+     * 撤销删除（`M2b` §1.2）：清除 `deletedAt`，列表因响应式自动恢复该行。
+     *
+     * 失败保持静默：撤销只是"补救"，不应再弹错打断用户；下一次列表刷新会反映真实状态。
+     */
+    fun undoDelete(transactionId: String) {
+        viewModelScope.launch {
+            runCatching { undoDeleteTransaction.restore(transactionId) }
+        }
     }
 
     /** 空列表 → `Empty`；否则按日期分组映射为 `Content`（判定条件与既有实现一致）。 */
@@ -270,16 +286,8 @@ class HomeViewModel(
         fun formatTimeOfDay(epochMillis: Long, zone: ZoneId): String =
             TIME_FORMATTER.format(Instant.ofEpochMilli(epochMillis).atZone(zone))
 
-        /** 来源文案（`docs/07` §5 的 7 个枚举 → 中文；MANUAL 依既有实现为"手工"）。 */
-        fun sourceTextOf(source: CaptureSource): String = when (source) {
-            CaptureSource.MANUAL -> "手工"
-            CaptureSource.NOTIFICATION -> "通知"
-            CaptureSource.HOOK -> "应用数据"
-            CaptureSource.SMS -> "短信"
-            CaptureSource.ACCESSIBILITY -> "无障碍"
-            CaptureSource.AI -> "AI"
-            CaptureSource.OCR -> "OCR"
-        }
+        /** 来源文案：与详情页共用 `CategoryIconText`（`docs/07` §5 的 7 个枚举 → 中文）。 */
+        fun sourceTextOf(source: CaptureSource): String = CaptureSourceText.of(source)
 
         /** 领域展示类型 → UI 展示模型（格式化在此完成，Compose 不再做计算）。 */
         private fun TransactionListEntry.toListItem(zone: ZoneId): TransactionListItem {
