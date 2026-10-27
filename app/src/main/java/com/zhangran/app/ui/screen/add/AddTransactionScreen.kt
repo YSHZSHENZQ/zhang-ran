@@ -116,6 +116,12 @@ internal object AddLayout {
     /** 网格列数（任务书 §4.1/§4.4：3 列；原型为 5 列，差异见文件头）。 */
     const val gridColumns: Int = 5
 
+    /** 分类格 emoji 字号（原型 `.cat-emoji { font-size: 20px }`）。 */
+    val catEmojiFontSize = 20.sp
+
+    /** 分类格名称字号（原型 `.cat-name { font-size: 10px }`）。 */
+    val catNameFontSize = 10.sp
+
     /** 属性行图标块尺寸（原型 `.set-icon { width/height: 34px }`）。 */
     val rowIconSize = 34.dp
 
@@ -447,9 +453,10 @@ private fun AmountCard(state: AddTransactionUiState.Ready) {
 
     Box(
         modifier = Modifier
+            .padding(horizontal = AddLayout.cardMarginH)
             .fillMaxWidth()
             .zhangRanGlass(colors = colors, shape = shapes.card)
-            .padding(horizontal = AddLayout.cardPadding, vertical = spacing.mdDp),
+            .padding(horizontal = AddLayout.cardPadding, vertical = AddLayout.amountCardPaddingV),
     ) {
         AmountDisplay(amount = state.amount)
     }
@@ -473,7 +480,7 @@ private fun AttributesCard(
             .padding(horizontal = AddLayout.cardMarginH)
             .fillMaxWidth()
             .zhangRanGlass(colors = colors, shape = shapes.card)
-            .padding(horizontal = AddLayout.cardPadding, vertical = AddLayout.amountCardPaddingV),
+            .padding(horizontal = AddLayout.cardPadding, vertical = spacing.mdDp),
     ) {
         EditableRow(
             icon = "💳",

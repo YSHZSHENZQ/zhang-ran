@@ -148,11 +148,13 @@ private fun CategoryCell(
     ) {
         Text(
             text = CategoryIconMapper.toEmoji(option.icon),
-            style = MaterialTheme.typography.titleMedium,
+            // 原型 .cat-emoji { font-size: 20px }
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = AddLayout.catEmojiFontSize),
         )
         Text(
             text = option.name,
-            style = MaterialTheme.typography.labelMedium,
+            // 原型 .cat-name { font-size: 10px }
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = AddLayout.catNameFontSize),
             color = if (selected) colors.primaryColor else colors.textSecondaryColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
