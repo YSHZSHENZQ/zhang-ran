@@ -26,3 +26,16 @@ Transfer、用户修改保护（FieldEdit）、统计口径计算。
 - 阈值（整体 0.8、字段 0.5）通过 `Decision` 构造参数注入；
   `PendingReason` 的全量取值在 `model/Enums.kt`（`docs/02` §4，10 项，不得扩展）。
 - 被保护字段（`docs/03` §11）只记录冲突、保留用户值，**不得改写候选**。
+
+## Normalize 与 Confidence 的职责（M1b）
+
+pipeline 顺序（`docs/03` §1）：`候选 → Normalize → Confidence → Dedup → Decision`。
+
+- `service/Normalize.kt`：**纯函数**规范化（商户、备注长度、分类名拆分、账户名、时区补齐、
+  金额结果校验、币种归一）。名称→ID 的查询经 `service/resolver/` 的
+  `CategoryResolver` / `AccountResolver` **接口注入**（实现属 M1c），
+  因此本层**不得**访问 DAO / Room / Repository（`docs/03` §15）。
+- `service/Confidence.kt`：按 `docs/03` §18.3 推导各字段 confidence 与 `overallConfidence`
+  （= 关键字段最小值），并组装 `Candidate`；**不得**产出任何状态。
+- 两者都**不得**决定 Pending / Confirmed（唯一决策点是 `Decision`，`docs/03` §16）；
+  **不得**重新实现金额/时间口径（复用 `service/Money.kt`、`service/TransactionTime.kt`）。
