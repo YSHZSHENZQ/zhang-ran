@@ -111,6 +111,33 @@ class ConfidenceTest {
     }
 
     @Test
+    fun `B2 餐饮咖啡 父子都命中时拆开且分类置信度为一`() {
+        val normalized = normalizer(
+            categoryMap = mapOf("餐饮" to "cat-parent", "咖啡" to "cat-child"),
+        ).normalize(rawOf(categoryNameRaw = "餐饮/咖啡"))
+        assertEquals("cat-child", normalized.categoryId)
+        assertEquals("咖啡", normalized.categoryNameHint)
+
+        val candidate = Confidence.derive(normalized)
+        assertEquals("cat-child", candidate.categoryId)
+        assertEquals(1.0, candidate.categoryConfidence!!, 0.0)
+    }
+
+    @Test
+    fun `B3 餐饮不存在 子段未命中时不拆开且分类置信度为零点七`() {
+        // 父段命中、子段未命中 → 不拆开；完整名作 hint，分类置信度 0.7（裁定单 §1.4 B3）
+        val normalized = normalizer(
+            categoryMap = mapOf("餐饮" to "cat-parent"),
+        ).normalize(rawOf(categoryNameRaw = "餐饮/不存在"))
+        assertNull(normalized.categoryId)
+        assertEquals("餐饮/不存在", normalized.categoryNameHint)
+
+        val candidate = Confidence.derive(normalized)
+        assertNull(candidate.categoryId)
+        assertEquals(0.7, candidate.categoryConfidence!!, 0.0)
+    }
+
+    @Test
     fun `账户置信度 命中一档 未命中零点七 无名为空`() {
         assertEquals(1.0, derive(rawOf()).accountConfidence!!, 0.0)
         assertEquals(0.7, derive(rawOf(), accountMap = emptyMap()).accountConfidence!!, 0.0)

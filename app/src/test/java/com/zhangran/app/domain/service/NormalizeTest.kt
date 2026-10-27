@@ -92,6 +92,52 @@ class NormalizeTest {
     }
 
     @Test
+    fun `B6 收款方加空格前缀被剥离`() {
+        val n = normalizeWith()
+        assertEquals("星巴克", n.normalize(rawOf(merchantRaw = "收款方 星巴克")).merchant)
+    }
+
+    @Test
+    fun `B7 商户服务中心 保持原样`() {
+        // `商户` 是通用词，可能是真实店名前缀：裁定单 §2.1 已把 `商户` 移出清单
+        val n = normalizeWith()
+        assertEquals("商户服务中心", n.normalize(rawOf(merchantRaw = "商户服务中心")).merchant)
+    }
+
+    @Test
+    fun `B8 星巴克收款方店 保持原样`() {
+        // 仅前缀匹配：角色标签出现在中间不得剥离
+        val n = normalizeWith()
+        assertEquals("星巴克收款方店", n.normalize(rawOf(merchantRaw = "星巴克收款方店")).merchant)
+    }
+
+    @Test
+    fun `B9 仅标签 收款方 剥离后为空时保留原值`() {
+        // 剥离后为空不得把商户变成 null（否则会被误判为 UNKNOWN_MERCHANT）
+        val n = normalizeWith()
+        assertEquals("收款方", n.normalize(rawOf(merchantRaw = "收款方")).merchant)
+        assertEquals("收款方", n.normalize(rawOf(merchantRaw = "  收款方  ")).merchant)
+    }
+
+    @Test
+    fun `B10 商户前后缀清单不含商户且标注三条约束`() {
+        // 裁定单 §2.3 B10：清单 KDoc 说明"仅前缀/后缀、仅一次、剥离后不得为空"。
+        // KDoc 无法在运行期断言，此处以"清单内容 + 行为"固化，KDoc 由代码评审保证。
+        assertEquals(
+            listOf("收款方", "付款方", "收款人", "付款人", "对方"),
+            Normalize.MERCHANT_PREFIXES,
+        )
+        assertFalse(Normalize.MERCHANT_PREFIXES.contains("商户"))
+    }
+
+    @Test
+    fun `商户前缀仅剥离一次`() {
+        // 裁定单 §2.2 第三条约束：不连续剥离多个标签
+        val n = normalizeWith()
+        assertEquals("付款方星巴克", n.normalize(rawOf(merchantRaw = "收款方付款方星巴克")).merchant)
+    }
+
+    @Test
     fun `商户为空或纯空白时为 null`() {
         val n = normalizeWith()
         assertNull(n.normalize(rawOf(merchantRaw = null)).merchant)
@@ -140,19 +186,21 @@ class NormalizeTest {
     }
 
     @Test
-    fun `分类完整名未命中时命中子名`() {
-        val n = normalizeWith(categoryMap = mapOf("早餐" to "cat-child"))
+    fun `分类完整名未命中且父子都命中时命中子名`() {
+        val n = normalizeWith(
+            categoryMap = mapOf("餐饮" to "cat-parent", "早餐" to "cat-child"),
+        )
         val result = n.normalize(rawOf(categoryNameRaw = "餐饮/早餐"))
         assertEquals("cat-child", result.categoryId)
         assertEquals("早餐", result.categoryNameHint)
     }
 
     @Test
-    fun `分类都未命中时保留子名线索`() {
+    fun `分类父或子任一段未命中时不拆开且保留完整名线索`() {
         val n = normalizeWith(categoryMap = emptyMap())
         val result = n.normalize(rawOf(categoryNameRaw = "餐饮/早餐"))
         assertNull(result.categoryId)
-        assertEquals("早餐", result.categoryNameHint)
+        assertEquals("餐饮/早餐", result.categoryNameHint)
     }
 
     @Test
@@ -164,11 +212,52 @@ class NormalizeTest {
     }
 
     @Test
-    fun `支持多种父子分隔符`() {
-        val n = normalizeWith(categoryMap = mapOf("早餐" to "cat-child"))
+    fun `仅斜杠与大于号作为父子分隔符`() {
+        val n = normalizeWith(
+            categoryMap = mapOf("餐饮" to "cat-parent", "早餐" to "cat-child"),
+        )
+        // 保留的分隔符：`/` 与 `>`
+        assertEquals("cat-child", n.normalize(rawOf(categoryNameRaw = "餐饮/早餐")).categoryId)
         assertEquals("cat-child", n.normalize(rawOf(categoryNameRaw = "餐饮>早餐")).categoryId)
-        assertEquals("cat-child", n.normalize(rawOf(categoryNameRaw = "餐饮：早餐")).categoryId)
-        assertEquals("cat-child", n.normalize(rawOf(categoryNameRaw = "餐饮: 早餐")).categoryId)
+        // 已移除的分隔符：`：` / `:` / `-` —— 不拆分，保留完整名线索
+        val colonFullWidth = n.normalize(rawOf(categoryNameRaw = "餐饮：早餐"))
+        assertNull(colonFullWidth.categoryId)
+        assertEquals("餐饮：早餐", colonFullWidth.categoryNameHint)
+        val colonHalfWidth = n.normalize(rawOf(categoryNameRaw = "餐饮: 早餐"))
+        assertNull(colonHalfWidth.categoryId)
+        assertEquals("餐饮: 早餐", colonHalfWidth.categoryNameHint)
+        val hyphen = n.normalize(rawOf(categoryNameRaw = "餐饮-早餐"))
+        assertNull(hyphen.categoryId)
+        assertEquals("餐饮-早餐", hyphen.categoryNameHint)
+    }
+
+    @Test
+    fun `B1 话费-充值 不被拆分且完整名作为线索保留`() {
+        // 即使父段与子段都能命中，`-` 已从分隔符集合移除，不得拆开（裁定单 §1.4 B1）
+        val n = normalizeWith(
+            categoryMap = mapOf("话费" to "cat-phone", "充值" to "cat-recharge"),
+        )
+        val result = n.normalize(rawOf(categoryNameRaw = "话费-充值"))
+        assertNull("不得把 话费-充值 误拆成 话费 + 充值", result.categoryId)
+        assertEquals("话费-充值", result.categoryNameHint)
+    }
+
+    @Test
+    fun `B4 A大于B 双段都命中时拆开`() {
+        val n = normalizeWith(categoryMap = mapOf("A" to "cat-a", "B" to "cat-b"))
+        val result = n.normalize(rawOf(categoryNameRaw = "A>B"))
+        assertEquals("cat-b", result.categoryId)
+        assertEquals("B", result.categoryNameHint)
+    }
+
+    @Test
+    fun `B5 分类分隔符常量已收窄并标注待 P0 校准`() {
+        // 裁定单 §1.4 B5：常量存在，且源码 KDoc 标注"待 P0 真实载荷校准（docs/10 §8 #1）"。
+        // KDoc 无法在运行期断言，此处以"常量可见 + 内容收窄"固化，KDoc 由代码评审保证。
+        assertEquals(listOf("/", ">"), Normalize.CATEGORY_SEPARATORS)
+        assertFalse(Normalize.CATEGORY_SEPARATORS.contains("-"))
+        assertFalse(Normalize.CATEGORY_SEPARATORS.contains("："))
+        assertFalse(Normalize.CATEGORY_SEPARATORS.contains(":"))
     }
 
     @Test

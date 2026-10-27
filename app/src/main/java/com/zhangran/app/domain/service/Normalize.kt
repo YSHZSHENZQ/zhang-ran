@@ -210,38 +210,52 @@ class Normalize(
     // ---------------------------------------------------------------- 分类
 
     /**
-     * 分类解析（`docs/03` §7、任务书 §4.4 D-3）。
+     * 分类解析（`docs/03` §7、任务书 §4.4 D-3；按裁定单 §1.3 加"双段命中"保护）。
      *
-     * 三级回退：先试**完整名**（如 `父/子`），再试**子名**，都不中则 `categoryId = null`
-     * 并保留线索（由 [Confidence] 记为 0.7，`03` §16 规则 8 决定 Pending）。
+     * 回退顺序（D-3 保留）：
+     * 1. 先试**完整名**（`父/子` 本身也可能就是一个分类名）——命中即返回，不拆分；
+     * 2. 完整名未命中时才拆父子名，且**父段与子段都必须能映射到分类**才算"父子命中"，
+     *    此时返回子名对应的 id（最具体），置信度由 [Confidence] 记为 1.0；
+     * 3. 任一段映射失败 → **不拆开**，把**完整名**作为线索保留（`categoryId = null`，
+     *    [Confidence] 记为 0.7，`03` §16 规则 8 判 Pending）。
+     *
+     * 只"少拆"不"误拆"：即使分隔符猜对，拆分本身也不构成分类可信的证据
+     * （裁定单 §1.3）。
      *
      * @return `(分类 id, 名称线索)`
      */
     private fun resolveCategory(raw: String?): Pair<String?, String?> {
         val fullName = raw?.trim()?.ifBlank { null } ?: return null to null
-        val childName = splitCategoryChildName(fullName)
 
+        // 第 1 级：完整名优先（完整名自身命中时无需拆分，不受"双段命中"约束）
         categoryResolver.resolveId(fullName)?.let { return it to fullName }
-        if (childName != null) {
-            categoryResolver.resolveId(childName)?.let { return it to childName }
+
+        // 第 2 级：拆父子名，但父段与子段都必须能映射到分类（裁定单 §1.3）
+        val split = splitCategoryName(fullName)
+        if (split != null) {
+            val (parentName, childName) = split
+            val childId = categoryResolver.resolveId(childName)
+            if (childId != null && categoryResolver.resolveId(parentName) != null) {
+                return childId to childName
+            }
         }
-        // 未命中：保留最具体的线索（子名优先，便于用户辨认）
-        return null to (childName ?: fullName)
+
+        // 未命中或拆分未通过校验：保留**完整名**作线索，不拆开（宁可 Pending，不可误分类）
+        return null to fullName
     }
 
     /**
-     * 拆出分类名的子名（父/子分隔符）。
+     * 按 [CATEGORY_SEPARATORS] 把分类名语法拆成 `(父段, 子段)`；无合法分隔符时返回 `null`。
      *
-     * 分隔符集合来自 `docs/10` §5 的上游观察（**具体写法仍待 P0 实测确认**，属 `10` §8 待确认项）：
-     * 常见为 `/`、`>`、`:`；`-` 放最后，避免误伤名称本身含连字符的分类。
+     * 本函数只做**语法拆分**，不判断两段是否都能映射到分类（该校验在 [resolveCategory]）。
      */
-    private fun splitCategoryChildName(fullName: String): String? {
+    private fun splitCategoryName(fullName: String): Pair<String, String>? {
         for (separator in CATEGORY_SEPARATORS) {
             val index = fullName.indexOf(separator)
             if (index <= 0) continue
             val parent = fullName.substring(0, index).trim()
             val child = fullName.substring(index + separator.length).trim()
-            if (parent.isNotEmpty() && child.isNotEmpty()) return child
+            if (parent.isNotEmpty() && child.isNotEmpty()) return parent to child
         }
         return null
     }
@@ -258,26 +272,50 @@ class Normalize(
     // ---------------------------------------------------------------- 商户
 
     /**
-     * 商户规范化（`docs/03` §5 领域约束）。
+     * 商户规范化（`docs/03` §5 领域约束；裁定单 §2）。
      *
-     * 步骤：去首尾空白 → 合并连续空白（含全角空格）→ 去渠道前后缀 → 去尾部连字符 → 再收敛空白。
+     * 步骤：去首尾空白 → 合并连续空白（含全角空格）→ **仅剥离一次**渠道前缀 →
+     * 去尾部连字符 → 再收敛空白。
+     *
+     * 前缀/后缀规则见 [MERCHANT_PREFIXES]：仅匹配开头、只剥离一次、剥离后不得为空
+     * （为空则保留剥离前的值，避免本来有商户信息却变成 `UNKNOWN_MERCHANT`）。
      * 结果为空串时返回 `null`（`03` §16 规则 9 视为"商户无法确定"）。
      */
     fun normalizeMerchant(raw: String?): String? {
-        var text = raw?.trim().orEmpty()
-        if (text.isEmpty()) return null
+        val original = raw?.trim().orEmpty()
+        if (original.isEmpty()) return null
 
-        text = collapseSpaces(text)
+        var text = collapseSpaces(original)
 
-        // 去渠道前后缀（带冒号或不带，按长度降序避免"收款"先于"收款方"被匹配）
-        for (prefix in MERCHANT_PREFIXES) {
-            text = text.removePrefix("$prefix：").removePrefix("$prefix:")
-            if (text.startsWith(prefix)) text = text.removePrefix(prefix)
-        }
+        // 仅剥离一次；剥离后为空则保留剥离前的值（裁定单 §2.2）
+        val stripped = stripMerchantChannelPrefix(text)
+        if (stripped.isNotBlank()) text = stripped
 
         text = collapseSpaces(text).trimEnd('-', '－', '—', '–').let(::collapseSpaces).trim()
 
         return text.ifBlank { null }
+    }
+
+    /**
+     * 剥离**开头**的渠道角色标签（[MERCHANT_PREFIXES]），最多一次。
+     *
+     * - **仅匹配前缀**：出现在中间的标签不处理（如 `星巴克收款方店` 保持原样）；
+     * - 可吞掉标签后紧跟的全/半角冒号与空白（`收款方：张三` / `收款方: 张三` / `收款方 张三`）；
+     * - **只剥离一次**：只处理清单中第一个命中的标签，不连续剥离
+     *   （`收款方付款方张三` → `付款方张三`，不会继续剥成 `张三`）；
+     * - 返回空串表示"剥离后为空"，由调用方保留剥离前的值。
+     */
+    private fun stripMerchantChannelPrefix(text: String): String {
+        for (prefix in MERCHANT_PREFIXES) {
+            if (!text.startsWith(prefix)) continue
+            val rest = text.removePrefix(prefix).trimStart()
+            val withoutColon = when {
+                rest.startsWith("：") || rest.startsWith(":") -> rest.substring(1)
+                else -> rest
+            }
+            return withoutColon.trimStart()
+        }
+        return text
     }
 
     // ---------------------------------------------------------------- 备注
@@ -303,13 +341,36 @@ class Normalize(
         /** `docs/03` §5：`note` 最大长度 500 字符。 */
         const val MAX_NOTE_LENGTH: Int = 500
 
-        /** 商户名可能需要剥离的渠道前后缀（`docs/03` §5 举例"收款方"）。 */
-        private val MERCHANT_PREFIXES = listOf(
-            "收款方", "付款方", "收款人", "付款人", "对方", "商户",
+        /**
+         * 商户名需要剥离的**渠道角色标签**（`docs/03` §5 举例"收款方"；裁定单 §2）。
+         *
+         * 三条约束（**必须同时满足**，见 [stripMerchantChannelPrefix]）：
+         * 1. **仅前缀**：只剥离字符串起始处的标签，出现在中间不处理
+         *    （`星巴克收款方店` 保持原样）；
+         * 2. **仅一次**：命中第一个标签后即停止，不连续剥离多个标签
+         *    （`收款方付款方张三` → `付款方张三`）；
+         * 3. **剥离后不得为空**：剥离结果为空串时保留剥离前的值
+         *    （`收款方` 保持 `收款方`，否则会被 `03` §16 规则 9 误判为 `UNKNOWN_MERCHANT`）。
+         *
+         * `商户` **不在清单内**：它是通用词，可能是真实店名前缀（如 `商户服务中心`），
+         * 误删会改变商户名，影响展示与 `03` §12.2 的去重比对。
+         *
+         * 后缀（尾部连字符 `-` / `－` / `—` / `–`）的剥离见 [normalizeMerchant]。
+         */
+        internal val MERCHANT_PREFIXES = listOf(
+            "收款方", "付款方", "收款人", "付款人", "对方",
         )
 
-        /** 分类名可能的父子分隔符（顺序即优先级；`docs/10` §5 待实测确认）。 */
-        private val CATEGORY_SEPARATORS = listOf("/", ">", "：" , ":", "-")
+        /**
+         * 分类名父子分隔符（顺序即优先级）。
+         *
+         * **已收窄为 `/` 与 `>`**（裁定单 §1.1/§1.2）：`-`（`话费-充值`、`工资-奖金` 等
+         * 复合分类名会被误拆并错误分类）、`：`/`:` 风险高，均已移除。
+         *
+         * **待 P0 真实载荷校准（`docs/10` §8 #1）**：具体分隔符必须在 P0 用真实载荷确认，
+         * 禁止按文档猜测；本常量集中定义，便于 P0 后一处修改。
+         */
+        internal val CATEGORY_SEPARATORS = listOf("/", ">")
 
         /** 连续空白（含全角空格 U+3000）。 */
         private val SPACES = Regex("""[\s\u3000]+""")
