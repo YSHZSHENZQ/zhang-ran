@@ -1,16 +1,16 @@
 /**
- * 自定义数字键盘（任务书 M2a §4.1）。
+ * 自定义数字键盘（任务书 M2a §4.1，视觉按原型 `.keypad`）。
  *
- * 布局（严格按原型 `.keypad`）：
+ * 布局（保存键**纵跨右下两行**，填满原型里空着的那一格）：
  * ```text
  * 1 2 3 ⌫
  * 4 5 6 C
- * 7 8 9 保存
- * 0(占两格) .
+ * 7 8 9 ┐
+ * 0(占两格) .  保存
  * ```
  *
- * 无障碍（§4.8）：每个键都有 `contentDescription`（"1" "删除" "保存" 等），
- * 触控高度不小于 48dp。
+ * 字号按原型：数字键 `20px/500`、功能键 `15px/500`、保存键 `15px/700`。
+ * 无障碍（§4.8）：每个键都有 `contentDescription`，触控高度 ≥ 48dp。
  */
 package com.zhangran.app.ui.screen.add.components
 
@@ -24,9 +24,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,19 +39,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import com.zhangran.app.ui.screen.add.AddLayout
 import com.zhangran.app.ui.theme.MotionDuration
 import com.zhangran.app.ui.theme.MotionEasings
 import com.zhangran.app.ui.theme.MotionScale
 import com.zhangran.app.ui.theme.ZhangRanGlassTokens
 import com.zhangran.app.ui.theme.ZhangRanTheme
-import com.zhangran.app.ui.theme.zhangRanGlass
 import com.zhangran.app.ui.theme.accentGradientEndColor
 import com.zhangran.app.ui.theme.accentGradientStartColor
 import com.zhangran.app.ui.theme.glassBorderColor
-import com.zhangran.app.ui.theme.surfaceVariantColor
 import com.zhangran.app.ui.theme.textPrimaryColor
 import com.zhangran.app.ui.theme.textSecondaryColor
+import com.zhangran.app.ui.theme.zhangRanGlass
 
 /**
  * 数字键盘。
@@ -90,27 +90,41 @@ internal fun NumberPad(
             NumberKey("6", Modifier.weight(1f)) { onDigit('6') }
             FunctionKey("C", "清空", Modifier.weight(1f)) { onClear() }
         }
-        KeyRow {
-            NumberKey("7", Modifier.weight(1f)) { onDigit('7') }
-            NumberKey("8", Modifier.weight(1f)) { onDigit('8') }
-            NumberKey("9", Modifier.weight(1f)) { onDigit('9') }
+        // 下两行 + 保存键：保存键纵跨两行，填满原型里右下角空着的那一格
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AddLayout.keyGap),
+        ) {
+            Column(
+                modifier = Modifier.weight(3f),
+                verticalArrangement = Arrangement.spacedBy(AddLayout.keyGap),
+            ) {
+                KeyRow {
+                    NumberKey("7", Modifier.weight(1f)) { onDigit('7') }
+                    NumberKey("8", Modifier.weight(1f)) { onDigit('8') }
+                    NumberKey("9", Modifier.weight(1f)) { onDigit('9') }
+                }
+                KeyRow {
+                    // 0 占两格（原型 `grid-column: span 2`）
+                    NumberKey("0", Modifier.weight(2f)) { onDigit('0') }
+                    NumberKey(".", Modifier.weight(1f)) { onDot() }
+                }
+            }
             SaveKey(
                 enabled = !saving,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    // 高度 = 左侧两行键 + 一个间隙；不能用 fillMaxHeight：
+                    // Row 高度无约束时它会被解析成"填满剩余屏幕"，把整页撑爆（已复现）。
+                    .height(AddLayout.keyHeight * 2 + AddLayout.keyGap),
                 onClick = onSave,
             )
-        }
-        KeyRow {
-            // 0 占两格（原型 grid-column: span 2）
-            NumberKey("0", Modifier.weight(2f)) { onDigit('0') }
-            NumberKey(".", Modifier.weight(1f)) { onDot() }
-            SpacerKey(Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun KeyRow(content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit) {
+private fun KeyRow(content: @Composable RowScope.() -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(AddLayout.keyGap),
@@ -118,13 +132,7 @@ private fun KeyRow(content: @Composable androidx.compose.foundation.layout.RowSc
     )
 }
 
-/** 行尾占位（保持 4 列对齐；不响应点击）。 */
-@Composable
-private fun SpacerKey(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.height(AddLayout.keyHeight))
-}
-
-/** 数字键。 */
+/** 数字键（原型 `.key { font-size: 20px; font-weight: 500 }`）。 */
 @Composable
 private fun NumberKey(
     text: String,
@@ -141,7 +149,7 @@ private fun NumberKey(
     )
 }
 
-/** 功能键（⌫ / C）。 */
+/** 功能键（原型 `.key.fn { font-size: 15px }`）。 */
 @Composable
 private fun FunctionKey(
     text: String,
@@ -159,7 +167,7 @@ private fun FunctionKey(
     )
 }
 
-/** 保存键（原型 `.key.accent`：渐变背景 + 白字）。 */
+/** 保存键（原型 `.key.accent`：渐变背景 + 白字 15px/700）。 */
 @Composable
 private fun SaveKey(
     enabled: Boolean,
@@ -174,11 +182,15 @@ private fun SaveKey(
         accent = true,
         emphasis = true,
         enabled = enabled,
+        // 跨两行时高度由外部 fillMaxHeight 决定
+        fixedHeight = false,
     )
 }
 
 /**
  * 键的统一外观：玻璃底 + 圆角 + 按压缩放（`MotionScale.tile`，`MotionDuration.instant`）。
+ *
+ * @param fixedHeight 是否使用固定键高（保存键跨行时由外部高度决定，传 `false`）
  */
 @Composable
 private fun KeySurface(
@@ -189,6 +201,7 @@ private fun KeySurface(
     accent: Boolean,
     emphasis: Boolean,
     enabled: Boolean = true,
+    fixedHeight: Boolean = true,
 ) {
     val colors = ZhangRanTheme.colors
     val shapes = ZhangRanTheme.shapes
@@ -221,7 +234,7 @@ private fun KeySurface(
 
     Box(
         modifier = modifier
-            .height(AddLayout.keyHeight)
+            .then(if (fixedHeight) Modifier.height(AddLayout.keyHeight) else Modifier)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(shapes.tile)
             .then(background)
@@ -237,9 +250,17 @@ private fun KeySurface(
         Text(
             text = text,
             style = if (emphasis) {
-                MaterialTheme.typography.labelMedium
+                MaterialTheme.typography.labelMedium.copy(
+                    // 原型 `.key.fn` 15px；`.key.accent` 15px/700
+                    fontSize = AddLayout.keyFunctionFontSize,
+                    fontWeight = if (accent) FontWeight.Bold else FontWeight.Medium,
+                )
             } else {
-                MaterialTheme.typography.titleMedium
+                MaterialTheme.typography.titleMedium.copy(
+                    // 原型 `.key` 20px/500
+                    fontSize = AddLayout.keyFontSize,
+                    fontWeight = FontWeight.Medium,
+                )
             },
             color = when {
                 accent -> colors.glassBorderColor // 近白（原型 #fff），不写字面色值

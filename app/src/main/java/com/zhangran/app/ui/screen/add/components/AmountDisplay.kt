@@ -15,8 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.zhangran.app.ui.screen.add.AddLayout
 import com.zhangran.app.ui.screen.add.AmountInput
 import com.zhangran.app.ui.theme.ZhangRanTheme
 import com.zhangran.app.ui.theme.textPrimaryColor
@@ -47,9 +49,16 @@ internal fun AmountDisplay(
     ) {
         Text(
             text = "¥",
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineMedium.copy(
+                // 原型：¥ 与数字同为粗体，且下沿与数字对齐
+                fontWeight = FontWeight.Bold,
+            ),
             color = colors.textSecondaryColor,
-            modifier = Modifier.padding(end = spacing.xsDp),
+            modifier = Modifier.padding(
+                end = spacing.xsDp,
+                // 视觉微调：¥ 的字形下沿高于数字基线，抬一点才能看起来"贴底"
+                bottom = AddLayout.amountCurrencyBaselineNudge,
+            ),
         )
         Text(
             text = shown,

@@ -145,6 +145,24 @@ internal object AddLayout {
 
     /** 副标题字距（原型 `.app-sub { letter-spacing: 3.2px }`）。 */
     val subtitleLetterSpacing = 3.2.sp
+
+    /** 副标题与标题的间距（原型 `.app-sub { margin-top: 6px }`）。 */
+    val subtitleMarginTop = 6.dp
+
+    /** 卡片水平外边距（原型 `.card { margin: 0 16px 12px }`；顶栏是 22px，二者不同）。 */
+    val cardMarginH = 16.dp
+
+    /** 金额卡纵向内边距（原型覆盖为 `padding: 16px 18px`）。 */
+    val amountCardPaddingV = 16.dp
+
+    /** 数字键字号（原型 `.key { font-size: 20px }`）。 */
+    val keyFontSize = 20.sp
+
+    /** 功能键 / 保存键字号（原型 `.key.fn`、`.key.accent` 15px）。 */
+    val keyFunctionFontSize = 15.sp
+
+    /** `¥` 符号相对数字基线的视觉微调（原型中 ¥ 与数字下沿齐平）。 */
+    val amountCurrencyBaselineNudge = 6.dp
 }
 
 /**
@@ -257,8 +275,7 @@ fun AddTransactionContent(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = AddLayout.pagePaddingH),
+                            .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(spacing.mdDp),
                     ) {
                         AmountCard(state = state)
@@ -267,6 +284,7 @@ fun AddTransactionContent(
                             NoCategoriesHint()
                         } else {
                             CategoryGrid(
+                                modifier = Modifier.padding(horizontal = AddLayout.cardMarginH),
                                 categories = state.categories,
                                 selectedId = state.selectedCategoryId,
                                 onSelect = { option ->
@@ -300,8 +318,8 @@ fun AddTransactionContent(
                     onSave = onSave,
                     saving = state.saving,
                     modifier = Modifier.padding(
-                        start = AddLayout.pagePaddingH,
-                        end = AddLayout.pagePaddingH,
+                        start = AddLayout.cardMarginH,
+                        end = AddLayout.cardMarginH,
                         top = spacing.smDp,
                         bottom = spacing.mdDp,
                     ),
@@ -410,7 +428,7 @@ private fun AddTopBar(
                     .padding(horizontal = spacing.smDp, vertical = spacing.xsDp),
             ) {
                 Text(
-                    text = if (state.type == TransactionType.EXPENSE) "支出 ⇄" else "收入 ⇄",
+                    text = if (state.type == TransactionType.EXPENSE) "支出" else "收入",
                     style = MaterialTheme.typography.labelMedium,
                     color = colors.primaryColor,
                 )
@@ -452,9 +470,10 @@ private fun AttributesCard(
 
     Column(
         modifier = Modifier
+            .padding(horizontal = AddLayout.cardMarginH)
             .fillMaxWidth()
             .zhangRanGlass(colors = colors, shape = shapes.card)
-            .padding(horizontal = AddLayout.cardPadding, vertical = spacing.mdDp),
+            .padding(horizontal = AddLayout.cardPadding, vertical = AddLayout.amountCardPaddingV),
     ) {
         EditableRow(
             icon = "💳",

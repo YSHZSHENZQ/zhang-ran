@@ -148,8 +148,18 @@ fun Modifier.zhangRanGlass(
             colors.glassShadowColor,
         )
         drawIntoCanvas { canvas ->
-            // 硬件加速下 setShadowLayer 需要先 saveLayer 才会生效
-            canvas.saveLayer(Rect(Offset.Zero, size), Paint())
+            // saveLayer 的 bounds 必须**比卡片本身大**：阴影画在卡片外侧，
+            // 若 bounds 恰好等于卡片大小，阴影会被图层裁掉（真机表现为"几乎没有阴影"）。
+            val inflate = tokens.shadowBlurDp.toFloat() + tokens.shadowOffsetYDp.toFloat()
+            canvas.saveLayer(
+                Rect(
+                    left = -inflate,
+                    top = -inflate,
+                    right = size.width + inflate,
+                    bottom = size.height + inflate,
+                ),
+                Paint(),
+            )
             canvas.drawRoundRect(
                 left = 0f,
                 top = 0f,

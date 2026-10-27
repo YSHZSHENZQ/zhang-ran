@@ -167,8 +167,8 @@ class AddTransactionScreenTest {
                 )
             }
         }
-        composeRule.onNodeWithText("支出 ⇄").assertIsDisplayed()
-        composeRule.onNodeWithText("支出 ⇄").performClick()
-        composeRule.onNodeWithText("收入 ⇄").assertIsDisplayed()
+        composeRule.onNodeWithText("支出").assertIsDisplayed()
+        composeRule.onNodeWithText("支出").performClick()
+        composeRule.onNodeWithText("收入").assertIsDisplayed()
     }
 }

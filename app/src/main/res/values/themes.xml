@@ -4,7 +4,19 @@
 
   只提供 Manifest 可引用的主题基线，继承 Material3。
   **不得**在此定义 Design Token 色值（token 属 T1b，依据 docs/05 §3–§6）。
+
+  系统栏外观（2026-10-27 补）：
+  页面背景是**浅色四段渐变**，系统默认把状态栏图标画成浅色，
+  导致时间/信号在浅底上几乎看不见 → 显式声明"浅色背景 + 深色图标"。
+  这是系统栏外观而非 Design Token，故放在主题而不在 ui/theme。
+  若后续支持深色主题，需按主题动态切换
+  （WindowInsetsControllerCompat.isAppearanceLightStatusBars）。
 -->
 <resources>
-    <style name="Theme.ZhangRan" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.ZhangRan" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 </resources>

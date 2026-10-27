@@ -93,10 +93,10 @@ object ZhangRanTheme {
  * - 金额等宽文本仍用 [FontFamily.Monospace]（原型金额用 `'SF Mono', ui-monospace, monospace`）。
  */
 val ZhangRanFontFamily: FontFamily = FontFamily(
+    // **只声明 Normal 一个字重**：Medium/SemiBold/Bold 的请求会落到这里，由系统**合成加粗**。
+    // 若把 4 档字重都指向同一个文件，Compose 会认为各字重"已存在"、反而不再合成，
+    // 标题/金额该粗的地方会退化成 Regular（真机已复现）。
     Font(R.font.msyh, FontWeight.Normal),
-    Font(R.font.msyh, FontWeight.Medium),
-    Font(R.font.msyh, FontWeight.SemiBold),
-    Font(R.font.msyh, FontWeight.Bold),
 )
 
 /**
