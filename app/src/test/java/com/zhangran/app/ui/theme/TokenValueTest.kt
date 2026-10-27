@@ -188,11 +188,18 @@ class TokenValueTest {
         assertEquals("button = .onboard-btn 16px", 16, r.button)
         assertEquals("input = .modal-input 13px", 13, r.input)
         assertEquals("chip = .chip 20px", 20, r.chip)
-        assertEquals("screen = .screen 36px", 36, r.screen)
         assertEquals("badge = .badge-* 5px", 5, r.badge)
         assertEquals("option = .modal-option 12px", 12, r.option)
         assertEquals("handle = .modal-handle 2px", 2, r.handle)
         assertEquals("tile = .head-icon 14px", 14, r.tile)
+    }
+
+    @Test
+    fun A6_已删除原型手机外框的screen圆角token() {
+        // UI-0b：`.screen` 的 36px 是原型手机模型外框的圆角，不是 App 内元素，
+        // 保留会诱导"页面自己加圆角"，故删除。此处以"扩展集合中不含 screen"固化该决定。
+        assertEquals(false, Radii.asExtendedTokenMap().containsKey("screen"))
+        assertEquals(false, Radii.asTokenMap().containsKey("screen"))
     }
 
     @Test
@@ -233,17 +240,30 @@ class TokenValueTest {
         assertEquals(6, Spacing.asTokenMap().size)
         assertEquals(9, Spacing.asExtendedTokenMap().size)
         assertEquals(5, Radii.asTokenMap().size)
-        assertEquals(10, Radii.asExtendedTokenMap().size)
+        // UI-0b：删除 Radii.screen 后，扩展圆角由 5 项减为 4 项
+        assertEquals(9, Radii.asExtendedTokenMap().size)
     }
 
     @Test
     fun 玻璃效果token与原型一致() {
         val g = ZhangRanGlassTokens
-        assertEquals("backdrop blur 26px", 26, g.blurRadiusDp)
-        assertEquals("saturate 1.4", 1.4f, g.saturation, 0.001f)
+        assertEquals("backdrop blur 26px（有意识不生效）", 26, g.blurRadiusDp)
+        assertEquals("saturate 1.4（有意识不生效）", 1.4f, g.saturation, 0.001f)
         assertEquals("border 1px", 1, g.borderWidthDp)
-        assertEquals("box-shadow Y 偏移 8px", 8, g.shadowOffsetYDp)
+        assertEquals("box-shadow Y 偏移 8px（已用 setShadowLayer 生效）", 8, g.shadowOffsetYDp)
         assertEquals("box-shadow blur 32px", 32, g.shadowBlurDp)
-        assertEquals("inset 高光 1px", 1, g.innerHighlightOffsetYDp)
+        assertEquals("inset 高光距顶 1px", 1, g.innerHighlightOffsetYDp)
+        assertEquals("inset 高光高度 1px", 1, g.innerHighlightHeightDp)
+    }
+
+    @Test
+    fun 光晕token与原型一致() {
+        val g = ZhangRanGlowTokens
+        assertEquals(".glow.g1 尺寸 260px", 260, g.glow1SizeDp)
+        assertEquals(".glow.g1 blur 60px", 60, g.glow1BlurDp)
+        assertEquals(".glow.g2 尺寸 280px", 280, g.glow2SizeDp)
+        assertEquals(".glow.g2 blur 64px", 64, g.glow2BlurDp)
+        assertEquals(".glow.g3 尺寸 240px", 240, g.glow3SizeDp)
+        assertEquals(".glow.g3 blur 66px", 66, g.glow3BlurDp)
     }
 }

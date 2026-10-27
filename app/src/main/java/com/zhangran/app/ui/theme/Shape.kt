@@ -6,7 +6,7 @@
  *
  * 取值来自 `prototype/账然_UI原型.html`：
  * `.card` 20 / `.chip` 20 / 主按钮 `.onboard-btn`、`.detail-btn` 16 / `.modal-input` 13 /
- * 弹层容器 22 / `.screen` 36 / `.badge-*` 5 / `.modal-option` 12 / `.modal-handle` 2。
+ * 弹层容器 22 / `.badge-*` 5 / `.modal-option` 12 / `.modal-handle` 2。
  */
 package com.zhangran.app.ui.theme
 
@@ -18,7 +18,9 @@ import androidx.compose.ui.unit.dp
  * 组件形状 token。
  *
  * - `card` / `dialog` / `button` / `input` / `chip` 供组件直接引用（`docs/05` §6 的五项）；
- * - `screen` / `badge` / `option` / `handle` / `tile` 为原型中另有用途的扩展形状；
+ * - `badge` / `option` / `handle` / `tile` 为原型中另有用途的扩展形状；
+ *   `Radii.screen` 已删除——原型 `.screen` 的 36px 是**手机模型外框的圆角**（外框装饰），
+ *   不是 App 内任何元素；设备圆角由系统处理，保留该 token 会诱导"页面自己加圆角"。
  * - `materialShapes` 供 `MaterialTheme(shapes = …)` 使用（small/medium/large 映射到 input/card/dialog）。
  */
 data class ZhangRanShapes(
@@ -27,7 +29,6 @@ data class ZhangRanShapes(
     val button: RoundedCornerShape,
     val input: RoundedCornerShape,
     val chip: RoundedCornerShape,
-    val screen: RoundedCornerShape,
     val badge: RoundedCornerShape,
     val option: RoundedCornerShape,
     val handle: RoundedCornerShape,
@@ -49,7 +50,6 @@ fun zhangRanShapes(radii: ZhangRanRadii = Radii): ZhangRanShapes = ZhangRanShape
     button = RoundedCornerShape(radii.button.dp),
     input = RoundedCornerShape(radii.input.dp),
     chip = RoundedCornerShape(radii.chip.dp),
-    screen = RoundedCornerShape(radii.screen.dp),
     badge = RoundedCornerShape(radii.badge.dp),
     option = RoundedCornerShape(radii.option.dp),
     handle = RoundedCornerShape(radii.handle.dp),

@@ -51,6 +51,9 @@ val LocalZhangRanRadii = staticCompositionLocalOf { Radii }
 /** 当前生效的玻璃效果数值 token。 */
 val LocalZhangRanGlass = staticCompositionLocalOf { ZhangRanGlassTokens }
 
+/** 当前生效的背景光晕数值 token。 */
+val LocalZhangRanGlow = staticCompositionLocalOf { ZhangRanGlowTokens }
+
 /** 访问当前主题的 token。 */
 object ZhangRanTheme {
     val colors: ZhangRanColors
@@ -70,6 +73,9 @@ object ZhangRanTheme {
 
     val glass: ZhangRanGlass
         @Composable @ReadOnlyComposable get() = LocalZhangRanGlass.current
+
+    val glow: ZhangRanGlow
+        @Composable @ReadOnlyComposable get() = LocalZhangRanGlow.current
 }
 
 /**
@@ -208,6 +214,7 @@ fun ZhangRanTheme(
         LocalZhangRanSpacing provides Spacing,
         LocalZhangRanRadii provides Radii,
         LocalZhangRanGlass provides ZhangRanGlassTokens,
+        LocalZhangRanGlow provides ZhangRanGlowTokens,
     ) {
         MaterialTheme(
             colorScheme = if (darkTheme) {

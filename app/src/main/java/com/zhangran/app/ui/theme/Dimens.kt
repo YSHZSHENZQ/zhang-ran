@@ -52,7 +52,6 @@ data class ZhangRanSpacing(
  * @property button 主按钮（16，原型 `.onboard-btn` / `.detail-btn`）
  * @property input 输入框（13，原型 `.modal-input`）
  * @property chip 标签（20，原型 `.chip`）
- * @property screen 扩展：设备屏幕容器（36，原型 `.screen`）
  * @property badge 扩展：状态徽标（5，原型 `.badge-*`）
  * @property option 扩展：选项行（12，原型 `.modal-option`）
  * @property handle 扩展：拖拽把手（2，原型 `.modal-handle`）
@@ -64,7 +63,6 @@ data class ZhangRanRadii(
     val button: Int,
     val input: Int,
     val chip: Int,
-    val screen: Int = 36,
     val badge: Int = 5,
     val option: Int = 12,
     val handle: Int = 2,
@@ -84,14 +82,13 @@ val Spacing: ZhangRanSpacing = ZhangRanSpacing(
     pagePadding = 22,
 )
 
-/** 圆角 token 取值（5 个主项 + 5 个扩展项；逐条取自原型）。 */
+/** 圆角 token 取值（5 个主项 + 4 个扩展项；逐条取自原型）。 */
 val Radii: ZhangRanRadii = ZhangRanRadii(
     card = 20,
     dialog = 22,
     button = 16,
     input = 13,
     chip = 20,
-    screen = 36,
     badge = 5,
     option = 12,
     handle = 2,
@@ -126,7 +123,6 @@ fun ZhangRanRadii.asTokenMap(): Map<String, Int> = linkedMapOf(
 
 /** 圆角 token 全部项（5 主 + 5 扩展）。 */
 fun ZhangRanRadii.asExtendedTokenMap(): Map<String, Int> = asTokenMap() + linkedMapOf(
-    "screen" to screen,
     "badge" to badge,
     "option" to option,
     "handle" to handle,
