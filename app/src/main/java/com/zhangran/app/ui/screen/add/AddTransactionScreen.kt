@@ -100,10 +100,10 @@ internal object AddLayout {
     val keyGap = 8.dp
 
     /** 分类网格间距（原型 `.cat-grid { gap: 10px }`）。 */
-    val catGap = 10.dp
+    val catGap = 6.dp
 
     /** 分类格内边距（原型 `.cat-item { padding: 10px 4px }`）。 */
-    val catItemPaddingV = 10.dp
+    val catItemPaddingV = 6.dp
     val catItemPaddingH = 4.dp
 
     /** 分类格内 emoji 与名称的间距（原型 `.cat-item { gap: 5px }`）。 */
@@ -231,41 +231,49 @@ fun AddTransactionContent(
             }
 
             is AddTransactionUiState.Ready -> {
-                Column(
+                // 滚动区用 Box 明确约束高度：否则 verticalScroll + weight 的组合下，
+                // 内容会按自然高度测量并溢出到键盘区域（真机截图已复现）。
+                Box(
                     modifier = Modifier
                         .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = AddLayout.pagePaddingH),
-                    verticalArrangement = Arrangement.spacedBy(spacing.mdDp),
+                        .fillMaxWidth(),
                 ) {
-                    AmountCard(state = state)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = AddLayout.pagePaddingH),
+                        verticalArrangement = Arrangement.spacedBy(spacing.mdDp),
+                    ) {
+                        AmountCard(state = state)
 
-                    if (state.hasNoCategories) {
-                        NoCategoriesHint()
-                    } else {
-                        CategoryGrid(
-                            categories = state.categories,
-                            selectedId = state.selectedCategoryId,
-                            onSelect = { option ->
-                                if (option.isFallback) {
-                                    showCustomCategory = true
-                                } else {
-                                    onSelectCategory(option)
-                                }
-                            },
+                        if (state.hasNoCategories) {
+                            NoCategoriesHint()
+                        } else {
+                            CategoryGrid(
+                                categories = state.categories,
+                                selectedId = state.selectedCategoryId,
+                                onSelect = { option ->
+                                    if (option.isFallback) {
+                                        showCustomCategory = true
+                                    } else {
+                                        onSelectCategory(option)
+                                    }
+                                },
+                            )
+                        }
+
+                        AttributesCard(
+                            state = state,
+                            onAccountClick = { showAccountPicker = true },
+                            onTimeClick = { showTimePicker = true },
+                            onNoteClick = { showNoteEditor = true },
                         )
+
+                        state.error?.let { error -> FormErrorText(error) }
+
+                        Spacer(modifier = Modifier.height(spacing.smDp))
                     }
-
-                    AttributesCard(
-                        state = state,
-                        onAccountClick = { showAccountPicker = true },
-                        onTimeClick = { showTimePicker = true },
-                        onNoteClick = { showNoteEditor = true },
-                    )
-
-                    state.error?.let { error -> FormErrorText(error) }
-
-                    Spacer(modifier = Modifier.height(spacing.smDp))
                 }
 
                 NumberPad(
@@ -278,6 +286,7 @@ fun AddTransactionContent(
                     modifier = Modifier.padding(
                         start = AddLayout.pagePaddingH,
                         end = AddLayout.pagePaddingH,
+                        top = spacing.smDp,
                         bottom = spacing.mdDp,
                     ),
                 )
@@ -400,7 +409,7 @@ private fun AmountCard(state: AddTransactionUiState.Ready) {
         modifier = Modifier
             .fillMaxWidth()
             .zhangRanGlass(colors = colors, shape = shapes.card)
-            .padding(horizontal = AddLayout.cardPadding, vertical = spacing.lgDp),
+            .padding(horizontal = AddLayout.cardPadding, vertical = spacing.mdDp),
     ) {
         AmountDisplay(amount = state.amount)
     }

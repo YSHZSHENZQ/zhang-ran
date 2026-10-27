@@ -29,6 +29,7 @@ import com.zhangran.app.ui.theme.textDisabledColor
 import com.zhangran.app.ui.theme.textPrimaryColor
 import com.zhangran.app.ui.theme.mdDp
 import com.zhangran.app.ui.theme.smDp
+import com.zhangran.app.ui.theme.xsDp
 
 /**
  * @param icon emoji 图标（账户 💳 / 时间 🕐 / 备注 📝）
@@ -54,7 +55,7 @@ internal fun EditableRow(
             .fillMaxWidth()
             .clip(shapes.option)
             .clickable(onClick = onClick)
-            .padding(vertical = spacing.smDp),
+            .padding(vertical = spacing.xsDp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.mdDp),
     ) {
