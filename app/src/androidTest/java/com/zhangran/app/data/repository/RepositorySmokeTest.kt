@@ -121,6 +121,78 @@ class RepositorySmokeTest {
         assertNotNull(transactionRepository.getById("tx-1"))
     }
 
+    @Test
+    fun 分类仓储支持新增与更新且读方法保持可用() = runBlocking {
+        categoryRepository.insert(
+            CategoryEntity(
+                id = "cat-1",
+                name = "餐饮",
+                type = CategoryType.EXPENSE,
+                icon = "food",
+                sortOrder = 0,
+                createdAt = TIME_1,
+                updatedAt = TIME_1,
+            ),
+        )
+        assertEquals(1, categoryRepository.all().size)
+
+        val inserted = categoryRepository.findByName(CategoryType.EXPENSE, "餐饮")!!
+        categoryRepository.update(
+            inserted.copy(
+                name = "吃饭",
+                icon = "entertainment",
+                enabled = false,
+                updatedAt = TIME_2,
+            ),
+        )
+
+        val updated = categoryRepository.findByName(CategoryType.EXPENSE, "吃饭")!!
+        assertEquals("entertainment", updated.icon)
+        assertTrue("更新后应禁用", !updated.enabled)
+        assertEquals("不得新增第二条", 1, categoryRepository.all().size)
+        // 既有读方法未删（A17）：禁用分类仍可全量读出，但不再进入选择列表
+        assertEquals(1, categoryRepository.observeAll().first().size)
+        assertTrue(categoryRepository.enabledByType(CategoryType.EXPENSE).isEmpty())
+    }
+
+    @Test
+    fun 分类排序交换可持久化并改变读回顺序() = runBlocking {
+        categoryRepository.insert(
+            CategoryEntity(
+                id = "cat-a",
+                name = "餐饮",
+                type = CategoryType.EXPENSE,
+                icon = "food",
+                sortOrder = 0,
+                createdAt = TIME_1,
+                updatedAt = TIME_1,
+            ),
+        )
+        categoryRepository.insert(
+            CategoryEntity(
+                id = "cat-b",
+                name = "购物",
+                type = CategoryType.EXPENSE,
+                icon = "shopping",
+                sortOrder = 1,
+                createdAt = TIME_1,
+                updatedAt = TIME_1,
+            ),
+        )
+
+        // 等价于分类管理页的「下移」：交换相邻两项的 sortOrder（A8）
+        val first = categoryRepository.findByName(CategoryType.EXPENSE, "餐饮")!!
+        val second = categoryRepository.findByName(CategoryType.EXPENSE, "购物")!!
+        categoryRepository.update(first.copy(sortOrder = second.sortOrder, updatedAt = TIME_2))
+        categoryRepository.update(second.copy(sortOrder = first.sortOrder, updatedAt = TIME_2))
+
+        val ordered = categoryRepository.all()
+            .filter { it.type == CategoryType.EXPENSE }
+            .sortedBy { it.sortOrder }
+            .map { it.name }
+        assertEquals(listOf("购物", "餐饮"), ordered)
+    }
+
     // ---------------------------------------------------------- A7 软删除与禁用项
 
     @Test

@@ -20,7 +20,11 @@ import com.zhangran.app.domain.model.CategoryType
 import com.zhangran.app.domain.model.TransactionType
 import com.zhangran.app.domain.usecase.AddManualTransactionResult
 import com.zhangran.app.domain.usecase.AddManualTransactionUseCase
+import com.zhangran.app.domain.usecase.EnsureCategoryUseCase
+import com.zhangran.app.domain.usecase.FALLBACK_CATEGORY_NAME
 import com.zhangran.app.domain.usecase.ManualTransactionInput
+import com.zhangran.app.domain.usecase.SaveCategoryUseCase
+import java.time.Clock
 import java.util.TimeZone
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +39,8 @@ import kotlinx.coroutines.launch
  * @param categoryRepository 分类读取
  * @param accountRepository 账户读取
  * @param clock 时间源（测试可注入固定值）
+ * @param ensureCategory 「其他」按名创建/复用（`M2d-1`；默认用同一 `categoryRepository` 构造，
+ *   生产无需改 `AddTransactionScreen` 的工厂）
  */
 class AddTransactionViewModel(
     private val addTransaction: AddManualTransactionUseCase,
@@ -42,9 +48,13 @@ class AddTransactionViewModel(
     private val accountRepository: AccountRepository,
     private val clock: () -> Long = { System.currentTimeMillis() },
     externalScope: CoroutineScope? = null,
+    private val ensureCategory: EnsureCategoryUseCase = EnsureCategoryUseCase(
+        categories = categoryRepository,
+        saveCategory = SaveCategoryUseCase(categories = categoryRepository, clock = Clock.systemDefaultZone()),
+    ),
 ) : ViewModel() {
 
-    /** 工作作用域（测试可注入 Unconfined，生产用 iewModelScope）。 */
+    /** 工作作用域（测试可注入 Unconfined，生产用 viewModelScope）。 */
     private val scope: CoroutineScope = externalScope ?: viewModelScope
 
     private val _uiState = MutableStateFlow<AddTransactionUiState>(AddTransactionUiState.Loading)
@@ -136,28 +146,34 @@ class AddTransactionViewModel(
     }
 
     /**
-     * 处理"自定义分类"弹窗的确认。
+     * 处理"自定义分类"弹窗的确认（`M2d-1` §4.3：`02` §9 的「其他」流程）。
      *
-     * 当前实现：在**当前类型**下按名称复用已存在的分类；若不存在则给出提示。
-     *
-     * 注意：**创建新分类的写入路径尚未打通**——`CategoryRepository`（M1c'）只提供读取，
-     * 而本任务禁止修改 `data/`。该缺口已在任务报告中说明（A8 部分实现）。
+     * 改为调用 [EnsureCategoryUseCase]：当前 type 下同名分类存在则复用（已禁用会被重新启用），
+     * 不存在则**创建**；成功后把返回的分类 id 用于本笔交易。
      */
     fun confirmCustomCategory(name: String) {
         val current = _uiState.value as? AddTransactionUiState.Ready ?: return
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
         scope.launch {
-            val existing = runCatching {
-                categoryRepository.findByName(current.type.toCategoryType(), trimmed)
-            }.getOrNull()
+            val ensured = runCatching {
+                ensureCategory(current.type.toCategoryType(), trimmed)
+            }
             val latest = _uiState.value as? AddTransactionUiState.Ready ?: return@launch
-            if (existing != null) {
-                _uiState.value = latest.copy(selectedCategoryId = existing.id, error = null)
+            val created = ensured.getOrNull()
+            if (created != null) {
+                // 新分类可能刚创建：重新拉取当前 type 的启用分类，保证选择器能显示并选中它
+                val categories = runCatching { categoriesOf(latest.type) }
+                    .getOrElse { latest.categories }
+                _uiState.value = latest.copy(
+                    categories = categories,
+                    selectedCategoryId = created.id,
+                    error = null,
+                )
             } else {
                 _events.emit(
                     AddTransactionEvent.Message(
-                        "分类「$trimmed」尚不存在，请先在分类管理中创建",
+                        ensured.exceptionOrNull()?.message ?: "分类「$trimmed」创建失败，请重试",
                     ),
                 )
             }
@@ -234,7 +250,7 @@ class AddTransactionViewModel(
         _uiState.value = current.copy(amount = transform(current.amount), error = null)
     }
 
-    /** 交易类型 → 分类类型（ 3 §7：支出/收入分类互不通用）。 */
+    /** 交易类型 → 分类类型（`docs/03 §7：支出/收入分类互不通用）。 */
     private fun TransactionType.toCategoryType(): CategoryType = when (this) {
         TransactionType.EXPENSE -> CategoryType.EXPENSE
         TransactionType.INCOME -> CategoryType.INCOME
@@ -275,8 +291,5 @@ class AddTransactionViewModel(
     private companion object {
         /** 备注长度上限（`03` §5）。 */
         const val MAX_NOTE_LENGTH: Int = 500
-
-        /** 兜底分类名（`02` §9）。 */
-        const val FALLBACK_CATEGORY_NAME: String = "其他"
     }
 }

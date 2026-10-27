@@ -25,9 +25,15 @@ import com.zhangran.app.domain.service.Normalize
 import com.zhangran.app.domain.service.resolver.AccountResolver
 import com.zhangran.app.domain.service.resolver.CategoryResolver
 import com.zhangran.app.domain.usecase.AddManualTransactionUseCase
+import com.zhangran.app.domain.usecase.EnsureCategoryUseCase
+import com.zhangran.app.domain.usecase.SaveCategoryUseCase
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -236,27 +242,76 @@ class AddTransactionViewModelTest {
         assertTrue(state.categories.isEmpty())
     }
 
+    // ------------------------------------------------------------------ 「其他」按名创建（M2d-1 A9）
+
+    @Test
+    fun A9_其他输入新名称会创建分类并选中() = runBlocking {
+        val viewModel = newViewModel()
+
+        viewModel.confirmCustomCategory("咖啡")
+
+        val ready = viewModel.uiState.value as AddTransactionUiState.Ready
+        val created = ready.categories.firstOrNull { it.name == "咖啡" }
+        assertTrue("应创建并出现在选择列表", created != null)
+        assertEquals(created!!.id, ready.selectedCategoryId)
+    }
+
+    @Test
+    fun A9_其他输入已存在名称时复用不新增() = runBlocking {
+        val viewModel = newViewModel()
+
+        viewModel.confirmCustomCategory("餐饮")
+
+        val ready = viewModel.uiState.value as AddTransactionUiState.Ready
+        assertEquals(EXPENSE_CATEGORY_ID, ready.selectedCategoryId)
+        assertEquals(1, ready.categories.count { it.name == "餐饮" })
+    }
+
+    @Test
+    fun A11_其他输入已禁用同名分类会重新启用并选中() = runBlocking {
+        val disabled = sampleCategories().map {
+            if (it.id == EXPENSE_CATEGORY_ID) it.copy(enabled = false) else it
+        }
+        val viewModel = newViewModel(categories = disabled)
+
+        viewModel.confirmCustomCategory("餐饮")
+
+        val ready = viewModel.uiState.value as AddTransactionUiState.Ready
+        assertEquals(EXPENSE_CATEGORY_ID, ready.selectedCategoryId)
+        assertEquals("应重新出现在启用列表", 1, ready.categories.count { it.name == "餐饮" })
+    }
+
     // ------------------------------------------------------------------ 辅助
 
     private fun newViewModel(
         transactions: FakeTransactionRepository = FakeTransactionRepository(),
         categories: List<CategoryEntity> = sampleCategories(),
-    ): AddTransactionViewModel = AddTransactionViewModel(
-        addTransaction = AddManualTransactionUseCase(
-            normalize = Normalize(
-                categoryResolver = CategoryResolver { null },
-                accountResolver = AccountResolver { null },
-                defaultZoneId = "Asia/Shanghai",
+    ): AddTransactionViewModel {
+        val categoryRepository = FakeCategoryRepository(categories)
+        return AddTransactionViewModel(
+            addTransaction = AddManualTransactionUseCase(
+                normalize = Normalize(
+                    categoryResolver = CategoryResolver { null },
+                    accountResolver = AccountResolver { null },
+                    defaultZoneId = "Asia/Shanghai",
+                ),
+                transactionRepository = transactions,
+                clock = { NOW },
+                idGenerator = { "tx-1" },
             ),
-            transactionRepository = transactions,
+            categoryRepository = categoryRepository,
+            accountRepository = FakeAccountRepository(sampleAccounts()),
             clock = { NOW },
-            idGenerator = { "tx-1" },
-        ),
-        categoryRepository = FakeCategoryRepository(categories),
-        accountRepository = FakeAccountRepository(sampleAccounts()),
-        clock = { NOW },
-        externalScope = CoroutineScope(Dispatchers.Unconfined),
-    )
+            externalScope = CoroutineScope(Dispatchers.Unconfined),
+            ensureCategory = EnsureCategoryUseCase(
+                categories = categoryRepository,
+                saveCategory = SaveCategoryUseCase(
+                    categories = categoryRepository,
+                    clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneId.of("Asia/Shanghai")),
+                ),
+            ),
+        )
+    }
 
     private fun sampleCategories(): List<CategoryEntity> = listOf(
         CategoryEntity(
@@ -366,17 +421,28 @@ private class FakeTransactionRepository : TransactionRepository {
 }
 
 private class FakeCategoryRepository(
-    private val items: List<CategoryEntity>,
+    initial: List<CategoryEntity>,
 ) : CategoryRepository {
-    override suspend fun all(): List<CategoryEntity> = items
 
-    override fun observeAll(): Flow<List<CategoryEntity>> = flowOf(items)
+    private val rows = MutableStateFlow(initial)
+
+    override suspend fun all(): List<CategoryEntity> = rows.value
+
+    override fun observeAll(): Flow<List<CategoryEntity>> = rows
 
     override suspend fun enabledByType(type: CategoryType): List<CategoryEntity> =
-        items.filter { it.type == type && it.enabled }
+        rows.value.filter { it.type == type && it.enabled }
 
     override suspend fun findByName(type: CategoryType, name: String): CategoryEntity? =
-        items.firstOrNull { it.type == type && it.name == name }
+        rows.value.firstOrNull { it.type == type && it.name == name }
+
+    override suspend fun insert(category: CategoryEntity) {
+        rows.value = rows.value + category
+    }
+
+    override suspend fun update(category: CategoryEntity) {
+        rows.value = rows.value.map { if (it.id == category.id) category else it }
+    }
 }
 
 private class FakeAccountRepository(

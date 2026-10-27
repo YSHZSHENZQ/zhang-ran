@@ -31,6 +31,17 @@ interface CategoryRepository {
 
     /** 按类型与名字精确查找（含已禁用；`docs/03` §7「同一 type 下 name 唯一」保证无歧义）。 */
     suspend fun findByName(type: CategoryType, name: String): CategoryEntity?
+
+    /**
+     * 新增分类（`M2d-1` §4.2）。
+     *
+     * 本层**不做业务校验**：名称唯一、兜底分类保护、「其他」重启用等规则都在
+     * `SaveCategoryUseCase` / `EnsureCategoryUseCase`。同一 `type` 下重名由数据库唯一索引兜底。
+     */
+    suspend fun insert(category: CategoryEntity)
+
+    /** 更新分类（名称/图标/启用/排序；**不提供物理删除**，P-011）。 */
+    suspend fun update(category: CategoryEntity)
 }
 
 @Singleton
@@ -47,4 +58,8 @@ class RoomCategoryRepository @Inject constructor(
 
     override suspend fun findByName(type: CategoryType, name: String): CategoryEntity? =
         dao.listAll().firstOrNull { it.type == type && it.name == name }
+
+    override suspend fun insert(category: CategoryEntity) = dao.insert(category)
+
+    override suspend fun update(category: CategoryEntity) = dao.update(category)
 }

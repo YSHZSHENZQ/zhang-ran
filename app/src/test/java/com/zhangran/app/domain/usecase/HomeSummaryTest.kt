@@ -118,6 +118,14 @@ private class FakeSummaryCategoryRepository(
     override suspend fun findByName(type: CategoryType, name: String): CategoryEntity? =
         rows.value.firstOrNull { it.type == type && it.name == name }
 
+    override suspend fun insert(category: CategoryEntity) {
+        rows.value = rows.value + category
+    }
+
+    override suspend fun update(category: CategoryEntity) {
+        rows.value = rows.value.map { if (it.id == category.id) category else it }
+    }
+
     /** 模拟 M2d 的分类重命名（只改名字，不改 id）。 */
     fun rename(id: String, newName: String) {
         rows.value = rows.value.map { if (it.id == id) it.copy(name = newName) else it }

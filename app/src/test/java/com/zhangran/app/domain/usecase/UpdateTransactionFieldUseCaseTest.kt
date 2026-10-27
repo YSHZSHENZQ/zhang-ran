@@ -86,6 +86,10 @@ private class FakeCategoryStore(private val items: List<CategoryEntity>) : Categ
         items.filter { it.type == type && it.enabled }
     override suspend fun findByName(type: CategoryType, name: String): CategoryEntity? =
         items.firstOrNull { it.type == type && it.name == name }
+
+    override suspend fun insert(category: CategoryEntity) = Unit
+
+    override suspend fun update(category: CategoryEntity) = Unit
 }
 
 private class FakeAccountStore(private val items: List<AccountEntity>) : AccountRepository {

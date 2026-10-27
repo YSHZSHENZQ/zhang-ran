@@ -111,7 +111,12 @@ fun ZhangRanNavHost(
         composable(Destination.DuplicateReview.route) { DuplicateReviewScreen() }
         composable(Destination.AutoLedger.route) { AutoLedgerScreen() }
         composable(Destination.Onboard.route) { OnboardScreen() }
-        composable(Destination.Categories.route) { CategoriesScreen() }
+        // M2d-1：分类管理 →「分类规则」跳转（导航层唯一改动，经批准）
+        composable(Destination.Categories.route) {
+            CategoriesScreen(
+                onNavigateToRules = { navController.navigate(Destination.Rules.route) },
+            )
+        }
         composable(Destination.Accounts.route) { AccountsScreen() }
         composable(Destination.Rules.route) { RulesScreen() }
         composable(Destination.Backup.route) { BackupScreen() }
