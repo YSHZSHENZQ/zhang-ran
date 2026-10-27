@@ -43,7 +43,9 @@ import com.zhangran.app.ui.screen.add.AddLayout
 import com.zhangran.app.ui.theme.MotionDuration
 import com.zhangran.app.ui.theme.MotionEasings
 import com.zhangran.app.ui.theme.MotionScale
+import com.zhangran.app.ui.theme.ZhangRanGlassTokens
 import com.zhangran.app.ui.theme.ZhangRanTheme
+import com.zhangran.app.ui.theme.zhangRanGlass
 import com.zhangran.app.ui.theme.accentGradientEndColor
 import com.zhangran.app.ui.theme.accentGradientStartColor
 import com.zhangran.app.ui.theme.glassBorderColor
@@ -208,7 +210,13 @@ private fun KeySurface(
             shape = shapes.tile,
         )
     } else {
-        Modifier.background(color = colors.surfaceVariantColor, shape = shapes.tile)
+        // 原型 `.key` 是 `.glass`：半透明填充 + 1dp 描边 + 顶部内高光。
+        // 键盘键密排，故把外阴影归零（否则 32dp 阴影会互相叠加、显脏）。
+        Modifier.zhangRanGlass(
+            colors = colors,
+            shape = shapes.tile,
+            tokens = ZhangRanGlassTokens.copy(shadowBlurDp = 0, shadowOffsetYDp = 0),
+        )
     }
 
     Box(

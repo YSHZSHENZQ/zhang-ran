@@ -54,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -69,7 +70,9 @@ import com.zhangran.app.ui.screen.add.components.CategoryGrid
 import com.zhangran.app.ui.screen.add.components.EditableRow
 import com.zhangran.app.ui.screen.add.components.NumberPad
 import com.zhangran.app.ui.theme.ZhangRanTheme
-import com.zhangran.app.ui.theme.backgroundColor
+import com.zhangran.app.ui.theme.accentGradientEndColor
+import com.zhangran.app.ui.theme.accentGradientStartColor
+import com.zhangran.app.ui.theme.zhangRanBackground
 import com.zhangran.app.ui.theme.zhangRanGlass
 import com.zhangran.app.ui.theme.lgDp
 import com.zhangran.app.ui.theme.mdDp
@@ -204,7 +207,7 @@ fun AddTransactionContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(colors.backgroundColor)
+            .zhangRanBackground(colors)
             .padding(top = AddLayout.pagePaddingTop),
     ) {
         AddTopBar(state = state, onToggleType = onToggleType)
@@ -370,8 +373,12 @@ private fun AddTopBar(
         Column {
             Text(
                 text = "记一笔",
-                style = MaterialTheme.typography.headlineMedium,
-                color = colors.textPrimaryColor,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    // 原型 `.app-logo` 用 `background-clip: text` 做渐变文字
+                    brush = Brush.linearGradient(
+                        listOf(colors.accentGradientStartColor, colors.accentGradientEndColor),
+                    ),
+                ),
             )
             Text(
                 text = "MANUAL ENTRY",
