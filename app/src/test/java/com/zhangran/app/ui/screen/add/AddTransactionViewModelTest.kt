@@ -118,6 +118,8 @@ class AddTransactionViewModelTest {
         assertEquals(EXPENSE_CATEGORY_ID, state.categories.first().id)
         assertEquals("A5：默认选中 isDefault 账户", DEFAULT_ACCOUNT_ID, state.selectedAccountId)
         assertEquals("现金", state.selectedAccountName)
+        assertEquals("按原型：初始即选中第一个分类", EXPENSE_CATEGORY_ID, state.selectedCategoryId)
+        assertEquals("按原型：初始即选中第一个分类", EXPENSE_CATEGORY_ID, state.selectedCategoryId)
     }
 
     @Test
@@ -133,7 +135,7 @@ class AddTransactionViewModelTest {
         assertEquals(TransactionType.INCOME, after.type)
         assertTrue("收入分类不得混入支出分类", after.categories.all { it.id != EXPENSE_CATEGORY_ID })
         assertEquals(INCOME_CATEGORY_ID, after.categories.first().id)
-        assertNull("切换类型后必须清空已选分类", after.selectedCategoryId)
+        assertEquals("切换类型后默认选中新类型第一个分类", INCOME_CATEGORY_ID, after.selectedCategoryId)
         assertTrue("支出侧原本有分类", before.categories.isNotEmpty())
     }
 
@@ -185,7 +187,8 @@ class AddTransactionViewModelTest {
     @Test
     fun A7_未选分类时就地报错且不落库() = runBlocking {
         val transactions = FakeTransactionRepository()
-        val vm = newViewModel(transactions = transactions)
+        // 无可用分类 → 无法默认选中 → 保存应报 CATEGORY_REQUIRED
+        val vm = newViewModel(transactions = transactions, categories = emptyList())
 
         vm.pressDigit('5')
         vm.save()

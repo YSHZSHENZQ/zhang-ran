@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -113,7 +114,7 @@ internal object AddLayout {
     val catItemGap = 5.dp
 
     /** 网格列数（任务书 §4.1/§4.4：3 列；原型为 5 列，差异见文件头）。 */
-    const val gridColumns: Int = 3
+    const val gridColumns: Int = 5
 
     /** 属性行图标块尺寸（原型 `.set-icon { width/height: 34px }`）。 */
     val rowIconSize = 34.dp
@@ -132,6 +133,18 @@ internal object AddLayout {
 
     /** 顶栏与首个卡片之间（原型 `.app-head` 的下 16px）。 */
     val pagePaddingBottom = 16.dp
+
+    /** 页面标题字号（原型 `.app-logo { font-size: 22px }`）。 */
+    val titleFontSize = 22.sp
+
+    /** 页面标题字距（原型 `.app-logo { letter-spacing: 3px }`）。 */
+    val titleLetterSpacing = 3.sp
+
+    /** 副标题字号（原型 `.app-sub { font-size: 9px }`）。 */
+    val subtitleFontSize = 9.sp
+
+    /** 副标题字距（原型 `.app-sub { letter-spacing: 3.2px }`）。 */
+    val subtitleLetterSpacing = 3.2.sp
 }
 
 /**
@@ -374,7 +387,9 @@ private fun AddTopBar(
             Text(
                 text = "记一笔",
                 style = MaterialTheme.typography.headlineMedium.copy(
-                    // 原型 `.app-logo` 用 `background-clip: text` 做渐变文字
+                    // 原型 `.app-logo`：22px / 700 / letter-spacing 3px + `background-clip: text` 渐变文字
+                    fontSize = AddLayout.titleFontSize,
+                    letterSpacing = AddLayout.titleLetterSpacing,
                     brush = Brush.linearGradient(
                         listOf(colors.accentGradientStartColor, colors.accentGradientEndColor),
                     ),

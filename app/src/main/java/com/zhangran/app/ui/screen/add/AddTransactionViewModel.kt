@@ -88,8 +88,8 @@ class AddTransactionViewModel(
             _uiState.value = latest.copy(
                 type = next,
                 categories = categories,
-                // 支出/收入分类互不通用（`03` §7），切换后必须清空选中项
-                selectedCategoryId = null,
+                // 支出/收入分类互不通用（`03` §7）；切换后默认选中新类型的第一个
+                selectedCategoryId = categories.firstOrNull()?.id,
                 error = null,
             )
         }
@@ -265,6 +265,8 @@ class AddTransactionViewModel(
             categories = categories,
             accounts = accounts,
             selectedAccountId = defaultAccountId,
+            // 按原型：进入页面即选中第一个分类
+            selectedCategoryId = categories.firstOrNull()?.id,
             note = "",
             transactionTime = null,
         )

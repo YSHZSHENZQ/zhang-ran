@@ -24,11 +24,13 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import com.zhangran.app.R
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -79,6 +81,25 @@ object ZhangRanTheme {
 }
 
 /**
+ * 账然正文字体族：**内置微软雅黑**（`res/font/msyh.ttf`）。
+ *
+ * 背景：原型 `font-family` 首选 `-apple-system` / `PingFang SC` / `Microsoft YaHei`，
+ * 在 Windows 上实际渲染为**微软雅黑**；Android 系统默认中文是 Noto Sans CJK（思源黑体），
+ * 两者的字形、字宽、标点宽度各不相同。为与原型一致，内置雅黑。
+ *
+ * 说明（已知并接受）：
+ * - 仅内置 Regular 一个字重文件，Medium/SemiBold/Bold 由系统**合成加粗**（不额外打包 16MB 的 Bold）；
+ * - 雅黑字体文件受微软授权限制，仅用于本项目**个人学习、不分发**的构建，不进公开分发产物；
+ * - 金额等宽文本仍用 [FontFamily.Monospace]（原型金额用 `'SF Mono', ui-monospace, monospace`）。
+ */
+val ZhangRanFontFamily: FontFamily = FontFamily(
+    Font(R.font.msyh, FontWeight.Normal),
+    Font(R.font.msyh, FontWeight.Medium),
+    Font(R.font.msyh, FontWeight.SemiBold),
+    Font(R.font.msyh, FontWeight.Bold),
+)
+
+/**
  * 账然字体权重 → Compose `FontWeight`。
  *
  * 原型用到的 400 / 500 / 600 / 700 一一对应。
@@ -93,14 +114,14 @@ private fun ZhangRanFontWeight.toComposeFontWeight(): FontWeight = when (this) {
 /**
  * 单个排版 token → `TextStyle`。
  *
- * 金额类文本使用等宽字体族，保证数字对齐（`docs/05` §9 金额展示要求）；其余用系统默认字体。
+ * 金额类文本使用等宽字体族，保证数字对齐（`docs/05` §9）；其余用内置雅黑（[ZhangRanFontFamily]）。
  */
 private fun ZhangRanTextToken.toTextStyle(monospace: Boolean = false): TextStyle = TextStyle(
     fontSize = fontSizeSp.sp,
     fontWeight = fontWeight.toComposeFontWeight(),
     lineHeight = lineHeightSp.sp,
     letterSpacing = letterSpacingSp.sp,
-    fontFamily = if (monospace) FontFamily.Monospace else FontFamily.Default,
+    fontFamily = if (monospace) FontFamily.Monospace else ZhangRanFontFamily,
 )
 
 /**
@@ -108,16 +129,30 @@ private fun ZhangRanTextToken.toTextStyle(monospace: Boolean = false): TextStyle
  *
  * 映射：Display→displayLarge、Amount→displayMedium、Headline→headlineMedium、
  * Title→titleMedium、Body→bodyMedium、Caption→bodySmall、Label→labelMedium。
+ *
+ * 其余槽位（titleLarge / bodyLarge / labelLarge / headlineSmall 等）虽未直接使用，
+ * 也统一换成内置雅黑，避免任何组件回落到系统默认字体。
  */
-fun zhangRanTypography(tokens: ZhangRanTypographyTokens = TypographyTokens): Typography = Typography(
-    displayLarge = tokens.display.toTextStyle(monospace = true),
-    displayMedium = tokens.amount.toTextStyle(monospace = true),
-    headlineMedium = tokens.headline.toTextStyle(),
-    titleMedium = tokens.title.toTextStyle(),
-    bodyMedium = tokens.body.toTextStyle(),
-    bodySmall = tokens.caption.toTextStyle(),
-    labelMedium = tokens.label.toTextStyle(),
-)
+fun zhangRanTypography(tokens: ZhangRanTypographyTokens = TypographyTokens): Typography {
+    val base = Typography()
+    return Typography(
+        displayLarge = tokens.display.toTextStyle(monospace = true),
+        displayMedium = tokens.amount.toTextStyle(monospace = true),
+        displaySmall = base.displaySmall.copy(fontFamily = ZhangRanFontFamily),
+        headlineLarge = base.headlineLarge.copy(fontFamily = ZhangRanFontFamily),
+        headlineMedium = tokens.headline.toTextStyle(),
+        headlineSmall = base.headlineSmall.copy(fontFamily = ZhangRanFontFamily),
+        titleLarge = base.titleLarge.copy(fontFamily = ZhangRanFontFamily),
+        titleMedium = tokens.title.toTextStyle(),
+        titleSmall = base.titleSmall.copy(fontFamily = ZhangRanFontFamily),
+        bodyLarge = base.bodyLarge.copy(fontFamily = ZhangRanFontFamily),
+        bodyMedium = tokens.body.toTextStyle(),
+        bodySmall = tokens.caption.toTextStyle(),
+        labelLarge = base.labelLarge.copy(fontFamily = ZhangRanFontFamily),
+        labelMedium = tokens.label.toTextStyle(),
+        labelSmall = base.labelSmall.copy(fontFamily = ZhangRanFontFamily),
+    )
+}
 
 /** 由账然颜色 token 组装 Material3 浅色方案。 */
 private fun zhangRanLightColorScheme(colors: ZhangRanColors) = lightColorScheme(
