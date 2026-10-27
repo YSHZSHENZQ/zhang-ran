@@ -26,6 +26,7 @@ import com.zhangran.app.data.local.entity.TransactionEntity
 import com.zhangran.app.domain.model.AccountType
 import com.zhangran.app.domain.model.CaptureSource
 import com.zhangran.app.domain.model.CategoryType
+import com.zhangran.app.domain.model.HomeSummary
 import com.zhangran.app.domain.model.TransactionState
 import com.zhangran.app.domain.model.TransactionType
 import com.zhangran.app.domain.service.Normalize
@@ -41,6 +42,7 @@ import com.zhangran.app.ui.screen.home.HomeContent
 import com.zhangran.app.ui.screen.home.HomeUiState
 import com.zhangran.app.ui.screen.home.TransactionListItem
 import com.zhangran.app.ui.theme.ZhangRanTheme
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -233,7 +235,7 @@ class RepositorySmokeTest {
             categories = categoryRepository,
             accounts = accountRepository,
         )
-        val entries: List<TransactionListEntry> = observeUseCase()
+        val entries: List<TransactionListEntry> = observeUseCase().first()
 
         assertEquals("端到端：落库的两笔都应可见", 2, entries.size)
         assertTrue(
@@ -329,7 +331,13 @@ class HomeScreenStatesTest {
     fun 内容态可渲染并显示列表项() {
         composeRule.setContent {
             ZhangRanTheme {
-                HomeContent(state = HomeUiState.Content(listOf(item("tx-1"))))
+                HomeContent(
+                    state = HomeUiState.Content(
+                        items = listOf(item("tx-1")),
+                        // 汇总字段与列表语义无关，本渲染测试用 0 值占位
+                        summary = HomeSummary(0L, 0L, 0L, 0),
+                    ),
+                )
             }
         }
         composeRule.onNodeWithText("首页").assertIsDisplayed()

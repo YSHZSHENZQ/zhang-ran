@@ -18,6 +18,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.zhangran.app.data.local.entity.AccountEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AccountDao {
@@ -70,4 +71,13 @@ interface AccountDao {
     /** 禁用账户；被禁用账户仍保留 `isDefault` 取值，但不得作为新交易的默认账户。 */
     @Query("UPDATE accounts SET enabled = 0, updatedAt = :updatedAt WHERE id = :id")
     suspend fun disable(id: String, updatedAt: Long)
+
+    /**
+     * 响应式全量列表（**含已禁用**），过滤与排序与 [listAll] **逐字一致**。
+     *
+     * 为什么含已禁用：历史交易引用的禁用账户仍要显示名称（`docs/03` §8）；
+     * 为什么需要响应式：改账户名后首页列表要自动更新（`M2b0` §4.2 三表 combine）。
+     */
+    @Query("SELECT * FROM accounts ORDER BY sortOrder ASC")
+    fun observeAll(): Flow<List<AccountEntity>>
 }

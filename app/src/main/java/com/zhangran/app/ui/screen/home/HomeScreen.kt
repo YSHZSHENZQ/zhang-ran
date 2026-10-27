@@ -39,7 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.zhangran.app.di.ApplicationScope
+import com.zhangran.app.domain.usecase.ObserveHomeSummaryUseCase
 import com.zhangran.app.domain.usecase.ObserveTransactionsUseCase
 import com.zhangran.app.ui.theme.ZhangRanTheme
 import com.zhangran.app.ui.theme.dividerColor
@@ -54,7 +54,6 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineScope
 
 /** 页面标题（同时是 `ScreensSmokeTest` 的渲染判据）。 */
 private const val PAGE_TITLE: String = "首页"
@@ -74,7 +73,7 @@ fun HomeScreen() {
                 )
                 HomeViewModel(
                     observeTransactions = entryPoint.observeTransactionsUseCase(),
-                    scope = entryPoint.applicationScope(),
+                    observeHomeSummary = entryPoint.observeHomeSummaryUseCase(),
                 )
             }
         },
@@ -213,12 +212,16 @@ private fun CenteredBox(content: @Composable () -> Unit) {
 
 /**
  * Hilt 入口（本任务不引入 `hilt-navigation-compose`，故用 EntryPoint 手工构造 ViewModel）。
+ *
+ * 说明（`M2e-1a` §4.7 的必要连带）：`ObserveTransactionsUseCase.invoke()` 改为返回 `Flow`
+ * 后 `HomeViewModel` 的构造依赖发生变化，本入口随之**只做装配**——新增汇总用例的 getter，
+ * 并移除已不再使用的 `applicationScope()`（`HomeViewModel` 已改用 `viewModelScope`）。
+ * 页面视觉结构零改动。
  */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface HomeEntryPoint {
     fun observeTransactionsUseCase(): ObserveTransactionsUseCase
 
-    @ApplicationScope
-    fun applicationScope(): CoroutineScope
+    fun observeHomeSummaryUseCase(): ObserveHomeSummaryUseCase
 }

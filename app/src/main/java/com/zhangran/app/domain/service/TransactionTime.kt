@@ -14,6 +14,7 @@
 package com.zhangran.app.domain.service
 
 import java.time.Instant
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.DateTimeException
 
@@ -133,6 +134,43 @@ object TransactionTime {
      */
     fun deviceZoneId(): String = ZoneId.systemDefault().id
 
+    /**
+     * 计算指定时区下「某月」的 UTC 半开区间 `[startInclusive, endExclusive)`。
+     *
+     * 为什么必须按**指定时区**算：`transactionTime` 是 UTC millis，但「本月」是用户视角的概念。
+     * 若按 UTC 划分月边界，UTC+8 用户在 3 月 1 日 00:30 的记录（UTC 为 2 月 28 日 16:30）
+     * 会被算进 2 月 —— 造成跨月错账（与 [TransactionTimeResult.Success.localDateIn] 的警告同源）。
+     *
+     * 设计纪律：
+     * - **纯函数**：不读系统时间、不读设备时区，`year` / `month` 由调用方给，便于测试；
+     * - 月边界用 `ZonedDateTime.atStartOfDay(zone)` 计算，因此**夏令时跳变**月份也能得到
+     *   该时区真实的一天起点（而不是固定偏移）；
+     * - 半开区间：下月第一天 00:00:00.000 **不属于**本月，本月最后一毫秒属于本月。
+     *
+     * @param zoneId IANA 时区 id（如 `Asia/Shanghai`）；**必须显式传入**
+     * @param year 年份（如 `2024`）
+     * @param month 月份（`1`–`12`）
+     * @return 该月的 UTC 半开区间
+     * @throws IllegalArgumentException 时区 id 非法/缺失，或 `year` / `month` 越界。
+     *   **不得回退** `ZoneId.systemDefault()`（静默回退会造成跨月错账）
+     */
+    fun monthRangeUtc(zoneId: String, year: Int, month: Int): UtcRange {
+        val zone = resolveZone(zoneId)
+            ?: throw IllegalArgumentException("时区 id 非法或缺失：$zoneId")
+        val targetMonth = try {
+            YearMonth.of(year, month)
+        } catch (e: DateTimeException) {
+            throw IllegalArgumentException("月份非法：year=$year, month=$month", e)
+        }
+        val start = targetMonth.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val end = targetMonth.plusMonths(1)
+            .atDay(1)
+            .atStartOfDay(zone)
+            .toInstant()
+            .toEpochMilli()
+        return UtcRange(startInclusive = start, endExclusive = end)
+    }
+
     /** 解析时区 id；非法返回 `null`（由调用方转成显式失败）。 */
     private fun resolveZone(zoneId: String?): ZoneId? {
         val id = zoneId?.trim().orEmpty()
@@ -143,4 +181,22 @@ object TransactionTime {
             null
         }
     }
+}
+
+/**
+ * UTC 毫秒的**半开区间** `[startInclusive, endExclusive)`。
+ *
+ * 为什么半开：闭区间会让「本月最后一毫秒」与「下月第一毫秒」在边界上重复或遗漏；
+ * 半开区间让任意毫秒**有且只有一个**归属（`M2e-1a` §4.1）。
+ *
+ * @property startInclusive 区间起点（含）
+ * @property endExclusive 区间终点（不含）
+ */
+data class UtcRange(
+    val startInclusive: Long,
+    val endExclusive: Long,
+) {
+    /** 某个 UTC 毫秒是否落在本区间内（`start <= t < end`）。 */
+    fun contains(epochMillis: Long): Boolean =
+        epochMillis >= startInclusive && epochMillis < endExclusive
 }

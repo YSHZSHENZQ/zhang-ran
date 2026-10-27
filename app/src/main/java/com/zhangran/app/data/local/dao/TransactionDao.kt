@@ -18,6 +18,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.zhangran.app.data.local.entity.TransactionEntity
 import com.zhangran.app.domain.model.TransactionState
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
@@ -75,4 +76,46 @@ interface TransactionDao {
     /** 计数（排除软删除），用于测试与统计前置。 */
     @Query("SELECT COUNT(*) FROM transactions WHERE deletedAt IS NULL")
     suspend fun countVisible(): Int
+
+    // ------------------------------------------------------------------
+    // 响应式读取与首页统计查询（`M2e-1a` §4.6：**只加不删**，
+    // 既有 suspend 方法保持原样，供一次性读取与既有调用方继续使用）。
+    // ------------------------------------------------------------------
+
+    /**
+     * 响应式默认列表：与 [listAll] 的**过滤与排序逐字一致**
+     * （`WHERE deletedAt IS NULL ORDER BY transactionTime DESC`）。
+     *
+     * 逐字一致是硬要求：两套结果若不一致，首页会出现"手动刷新前后不同"的假象。
+     */
+    @Query("SELECT * FROM transactions WHERE deletedAt IS NULL ORDER BY transactionTime DESC")
+    fun observeVisible(): Flow<List<TransactionEntity>>
+
+    /**
+     * 月区间内的**已确认**交易（排除软删除），半开区间 `[startInclusive, endExclusive)`。
+     *
+     * 为什么固定 `state = 'CONFIRMED'`：`docs/02` §14「统计」只计 CONFIRMED；
+     * PENDING / IGNORED / DELETED / DUPLICATE 一律不计（`docs/03` §6 可见性矩阵）。
+     * 枚举以**枚举名**存为 TEXT（见 `Converters`），所以这里直接写字面量。
+     *
+     * 注意：本方法只负责"取数"，**不含**任何统计口径（EXPENSE−REFUND、排除 TRANSFER 等
+     * 都属领域层，禁止下沉到 DAO）。
+     */
+    @Query(
+        "SELECT * FROM transactions WHERE state = 'CONFIRMED' " +
+            "AND transactionTime >= :startInclusive AND transactionTime < :endExclusive " +
+            "AND deletedAt IS NULL ORDER BY transactionTime DESC",
+    )
+    suspend fun listConfirmedInRange(
+        startInclusive: Long,
+        endExclusive: Long,
+    ): List<TransactionEntity>
+
+    /**
+     * 某状态的条数（**排除软删除**）。
+     *
+     * 首页「待确认数量」用它统计**全时段** PENDING（待办概念，`docs/06` §4.1），不限月。
+     */
+    @Query("SELECT COUNT(*) FROM transactions WHERE state = :state AND deletedAt IS NULL")
+    suspend fun countByState(state: TransactionState): Int
 }

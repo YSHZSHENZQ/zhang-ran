@@ -2,39 +2,61 @@
  * 首页 ViewModel（`docs/04` §16 状态管理、`docs/06` §4.1）。
  *
  * 职责：
- * - 订阅 `ObserveTransactionsUseCase`，把领域展示类型映射为 UI 展示模型
- *   （金额/时间等**格式化只在这里做**，Compose 不参与口径计算）；
+ * - 订阅 `ObserveTransactionsUseCase` 与 `ObserveHomeSummaryUseCase`，把领域展示类型映射为
+ *   UI 展示模型（金额/时间等**格式化只在这里做**，Compose 不参与口径计算）；
  * - 暴露 `UiState`（Loading / Content / Empty / Error）与 `refresh()`。
+ *
+ * 响应式（`M2e-1a` §4.7）：数据获取由 `suspend` 一次性拉取改为 `Flow` 收集，
+ * 用 `stateIn + WhileSubscribed(5_000)` 共享，退到后台 5 秒后停止上游查询、回到前台自动恢复；
+ * **异常必须在这里被捕获**并转成 `Error`，不得让 Flow 异常冒泡（否则页面崩溃）。
+ *
+ * 本任务只做数据契约，**不改任何视觉结构**：列表项与四态语义保持不变，
+ * 仅在 `Content` 上新增 [HomeUiState.Content.summary] 供 M2e-1b 展示。
  *
  * 不依赖采集能力（`docs/02` §22）：本文件不引用 `capture/` 下的任何类型。
  */
 package com.zhangran.app.ui.screen.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.zhangran.app.domain.model.CaptureSource
+import com.zhangran.app.domain.model.HomeSummary
 import com.zhangran.app.domain.model.TransactionType
+import com.zhangran.app.domain.usecase.ObserveHomeSummaryUseCase
 import com.zhangran.app.domain.usecase.ObserveTransactionsUseCase
 import com.zhangran.app.domain.usecase.TransactionListEntry
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 
 /**
  * 首页 UI 状态（`docs/06` §5 的页面统一状态）。
  */
 sealed interface HomeUiState {
 
-    /** 首次加载中。 */
+    /** 首次加载中（上游 Flow 尚未发射）。 */
     data object Loading : HomeUiState
 
-    /** 有数据。 */
-    data class Content(val items: List<TransactionListItem>) : HomeUiState
+    /**
+     * 有数据。
+     *
+     * @property items 最近交易（按交易时间倒序）
+     * @property summary 本月汇总（消费/收入/结余/待确认数，口径见 `docs/02` §14）
+     */
+    data class Content(
+        val items: List<TransactionListItem>,
+        val summary: HomeSummary,
+    ) : HomeUiState
 
     /** 加载完成但没有任何记录。 */
     data object Empty : HomeUiState
@@ -44,37 +66,66 @@ sealed interface HomeUiState {
 }
 
 /**
- * @param observeTransactions 列表用例
- * @param scope 协程作用域（由 DI 注入应用级作用域，避免绑定界面生命周期）
+ * @param observeTransactions 列表用例（响应式，三表 combine）
+ * @param observeHomeSummary 本月汇总用例（响应式，交易变化即重算）
  */
 class HomeViewModel(
     private val observeTransactions: ObserveTransactionsUseCase,
-    private val scope: CoroutineScope,
+    private val observeHomeSummary: ObserveHomeSummaryUseCase,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    /** `refresh()` 的触发计数：每次递增都让上游 Flow **重新订阅**（失败重试）。 */
+    private val refreshTrigger = MutableStateFlow(0)
 
-    init {
-        refresh()
+    /**
+     * 首页状态。
+     *
+     * 组合方式：
+     * - `flatMapLatest`：`refresh()` 递增触发时取消旧收集、重新订阅（否则 `catch` 之后
+     *   上游已结束，重试不会生效）；
+     * - `onStart` 发 `Loading`：首次发射前与重试时都保持 `Loading`（`docs/06` §5）；
+     * - `catch` 捕获**任何**上游异常 → `Error`，异常不冒泡（`M2b0` §4.3）；
+     * - `stateIn(WhileSubscribed(5_000))`：无人订阅 5 秒后停止查询，避免后台空转。
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val uiState: StateFlow<HomeUiState> = refreshTrigger
+        .flatMapLatest {
+            combine(
+                observeTransactions(),
+                observeHomeSummary(),
+            ) { entries, summary -> toUiState(entries, summary) }
+                .catch { throwable ->
+                    emit(HomeUiState.Error(throwable.message ?: "加载失败"))
+                }
+                .onStart { emit(HomeUiState.Loading) }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(SUBSCRIPTION_TIMEOUT_MILLIS),
+            initialValue = HomeUiState.Loading,
+        )
+
+    /**
+     * 重新加载（错误态"重试"用）。
+     *
+     * 数据已由 `Flow` 驱动，本方法**不再**直接拉取，只负责触发一次重新订阅；
+     * 对外语义（"让页面重新加载一次"）保持不变。
+     */
+    fun refresh() {
+        refreshTrigger.value += 1
     }
 
-    /** 重新加载（失败重试、写入后刷新都用它）。 */
-    fun refresh() {
-        scope.launch {
-            _uiState.value = HomeUiState.Loading
-            runCatching { observeTransactions() }
-                .onSuccess { entries ->
-                    _uiState.value = if (entries.isEmpty()) {
-                        HomeUiState.Empty
-                    } else {
-                        HomeUiState.Content(entries.map { it.toListItem() })
-                    }
-                }
-                .onFailure { throwable ->
-                    _uiState.value = HomeUiState.Error(throwable.message ?: "加载失败")
-                }
-        }
+    /** 空列表 → `Empty`；否则映射为 `Content`（判定条件与既有实现一致）。 */
+    private fun toUiState(
+        entries: List<TransactionListEntry>,
+        summary: HomeSummary,
+    ): HomeUiState = if (entries.isEmpty()) {
+        HomeUiState.Empty
+    } else {
+        HomeUiState.Content(
+            items = entries.map { it.toListItem() },
+            summary = summary,
+        )
     }
 
     /** 领域展示类型 → UI 展示模型（格式化在此完成）。 */
@@ -89,6 +140,9 @@ class HomeViewModel(
     )
 
     companion object {
+
+        /** 无人订阅后保留上游收集的时长（`M2b0` §4.3：避免退到后台立即断开又重订阅而闪动）。 */
+        private const val SUBSCRIPTION_TIMEOUT_MILLIS: Long = 5_000L
 
         /** 主标题：商户 → 备注 → 类型默认文案（`docs/06` §4.1）。 */
         fun titleOf(merchant: String?, note: String?, type: TransactionType): String {

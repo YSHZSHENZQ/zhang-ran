@@ -15,6 +15,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.zhangran.app.data.local.entity.CategoryEntity
 import com.zhangran.app.domain.model.CategoryType
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CategoryDao {
@@ -43,4 +44,13 @@ interface CategoryDao {
     /** 禁用（`enabled = false`）：分类不允许物理删除。 */
     @Query("UPDATE categories SET enabled = 0, updatedAt = :updatedAt WHERE id = :id")
     suspend fun disable(id: String, updatedAt: Long)
+
+    /**
+     * 响应式全量列表（**含已禁用**），过滤与排序与 [listAll] **逐字一致**。
+     *
+     * 为什么含已禁用：历史交易引用的禁用分类仍要显示名称（`docs/03` §7）；
+     * 为什么需要响应式：改分类名后首页列表要自动更新（`M2b0` §4.2 三表 combine）。
+     */
+    @Query("SELECT * FROM categories ORDER BY sortOrder ASC")
+    fun observeAll(): Flow<List<CategoryEntity>>
 }

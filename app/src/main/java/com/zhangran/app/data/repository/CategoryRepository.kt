@@ -13,11 +13,18 @@ import com.zhangran.app.data.local.entity.CategoryEntity
 import com.zhangran.app.domain.model.CategoryType
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
 
 interface CategoryRepository {
 
     /** 全部分类（**含已禁用**），按 `sortOrder` 升序。 */
     suspend fun all(): List<CategoryEntity>
+
+    /**
+     * 响应式全部分类（**含已禁用**），按 `sortOrder` 升序；
+     * 与 [all] 的过滤/排序一致（改分类名后列表自动更新）。
+     */
+    fun observeAll(): Flow<List<CategoryEntity>>
 
     /** 某类型下**启用**的分类（选择列表用）。 */
     suspend fun enabledByType(type: CategoryType): List<CategoryEntity>
@@ -32,6 +39,8 @@ class RoomCategoryRepository @Inject constructor(
 ) : CategoryRepository {
 
     override suspend fun all(): List<CategoryEntity> = dao.listAll()
+
+    override fun observeAll(): Flow<List<CategoryEntity>> = dao.observeAll()
 
     override suspend fun enabledByType(type: CategoryType): List<CategoryEntity> =
         dao.listEnabledByType(type)

@@ -12,11 +12,18 @@ import com.zhangran.app.data.local.dao.AccountDao
 import com.zhangran.app.data.local.entity.AccountEntity
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
 
 interface AccountRepository {
 
     /** 全部账户（**含已禁用**），按 `sortOrder` 升序。 */
     suspend fun all(): List<AccountEntity>
+
+    /**
+     * 响应式全部账户（**含已禁用**），按 `sortOrder` 升序；
+     * 与 [all] 的过滤/排序一致（改账户名后列表自动更新）。
+     */
+    fun observeAll(): Flow<List<AccountEntity>>
 
     /** 当前默认账户（`docs/03` §8：全库至多一个；无默认时为 `null`）。 */
     suspend fun defaultAccount(): AccountEntity?
@@ -31,6 +38,8 @@ class RoomAccountRepository @Inject constructor(
 ) : AccountRepository {
 
     override suspend fun all(): List<AccountEntity> = dao.listAll()
+
+    override fun observeAll(): Flow<List<AccountEntity>> = dao.observeAll()
 
     override suspend fun defaultAccount(): AccountEntity? = dao.findDefault()
 

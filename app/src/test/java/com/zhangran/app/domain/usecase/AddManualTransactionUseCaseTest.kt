@@ -15,6 +15,8 @@ import com.zhangran.app.domain.model.TransactionType
 import com.zhangran.app.domain.service.Normalize
 import com.zhangran.app.domain.service.resolver.AccountResolver
 import com.zhangran.app.domain.service.resolver.CategoryResolver
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -32,6 +34,22 @@ private class FakeTransactionRepository : TransactionRepository {
     override suspend fun listByState(state: TransactionState): List<TransactionEntity> = inserted
 
     override suspend fun listVisible(): List<TransactionEntity> = inserted
+
+    override fun observeVisible(): Flow<List<TransactionEntity>> =
+        flowOf(inserted.filter { it.deletedAt == null })
+
+    override suspend fun listInRange(
+        startInclusive: Long,
+        endExclusive: Long,
+    ): List<TransactionEntity> = inserted.filter {
+        it.state == TransactionState.CONFIRMED &&
+            it.deletedAt == null &&
+            it.transactionTime >= startInclusive &&
+            it.transactionTime < endExclusive
+    }
+
+    override suspend fun countByState(state: TransactionState): Int =
+        inserted.count { it.state == state && it.deletedAt == null }
 
     override suspend fun getById(id: String, includeDeleted: Boolean): TransactionEntity? =
         inserted.firstOrNull { it.id == id }
