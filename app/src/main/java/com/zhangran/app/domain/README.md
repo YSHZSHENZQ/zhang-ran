@@ -39,3 +39,14 @@ pipeline 顺序（`docs/03` §1）：`候选 → Normalize → Confidence → De
   （= 关键字段最小值），并组装 `Candidate`；**不得**产出任何状态。
 - 两者都**不得**决定 Pending / Confirmed（唯一决策点是 `Decision`，`docs/03` §16）；
   **不得**重新实现金额/时间口径（复用 `service/Money.kt`、`service/TransactionTime.kt`）。
+
+## UseCase 的职责（M1c'）
+
+- `usecase/AddManualTransactionUseCase.kt`：**手工记账的唯一写入口**。用户已确认，直接落
+  `CONFIRMED`（`docs/03` §14），**不经过** `Dedup` / `Decision`；校验失败**不落库**并返回结构化错误；
+  `REFUND` 无法关联原交易时落 `PENDING`（`REFUND_UNCERTAIN`）。
+- `usecase/ObserveTransactionsUseCase.kt`：只读列表（排除软删除、按时间倒序、把分类/账户 id 解析成名称）。
+- 约束：
+  - UseCase **不含**数据访问实现（走 `data/repository` 的接口）；
+  - 金额/时间/商户口径一律复用 `service/`，不得自写；
+  - 手工记账链路**不依赖采集能力**（`docs/02` §22）。
