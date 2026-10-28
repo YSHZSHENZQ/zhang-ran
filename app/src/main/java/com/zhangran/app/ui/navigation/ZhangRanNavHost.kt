@@ -100,7 +100,10 @@ fun ZhangRanNavHost(
         }
         composable(Destination.Add.route) { AddTransactionScreen() }
         composable(Destination.Budget.route) { BudgetScreen() }
-        composable(Destination.Mine.route) { MineScreen() }
+        // M4c：「我的」页入口跳转（导航层唯一改动，经批准）
+        composable(Destination.Mine.route) {
+            MineScreen(onNavigate = { route -> navController.navigate(route) })
+        }
         composable(
             route = Destination.Detail.route,
             arguments = listOf(

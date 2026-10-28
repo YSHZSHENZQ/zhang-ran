@@ -122,6 +122,9 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
+    // DataStore：仅存设置项（主题/置信度阈值），不存账务数据（M4c §4.1）
+    implementation(libs.androidx.datastore.preferences)
+
     // Room（只引入依赖，不建实体）
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

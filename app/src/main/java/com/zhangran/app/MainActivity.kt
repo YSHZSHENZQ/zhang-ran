@@ -9,7 +9,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.zhangran.app.ui.navigation.ZhangRanApp
-import com.zhangran.app.ui.theme.ZhangRanTheme
+import com.zhangran.app.ui.theme.ZhangRanAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -17,8 +17,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            // 骨架期使用系统明暗设置；后续若提供“暗色主题”设置项，从此处接入
-            ZhangRanTheme {
+            // 主题由设置驱动（M4c）：DataStore 首读后再渲染，避免先亮后暗
+            ZhangRanAppTheme {
                 ZhangRanApp()
             }
         }

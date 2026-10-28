@@ -14,6 +14,8 @@
  */
 package com.zhangran.app.ui.theme
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -22,9 +24,24 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import com.zhangran.app.R
+import com.zhangran.app.data.settings.ThemeMode
+import com.zhangran.app.di.SettingsEntryPoint
+import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -191,33 +208,45 @@ private fun zhangRanDarkColorScheme(colors: ZhangRanColors) = darkColorScheme(
  *
  * 页面**必须**用本修饰符绘制底色，不得自行拼渐变（`docs/05` §3）。
  *
+ * `M4c`：四个停靠色用 `animateColorAsState`（`MotionDuration.slow`）过渡，
+ * 主题切换时背景平滑变色（A10）。
+ *
  * @param colors 当前主题颜色（四段渐变的四个停靠色）
  */
-fun Modifier.zhangRanBackground(colors: ZhangRanColors): Modifier = drawBehind {
-    val width = size.width
-    val height = size.height
-    if (width <= 0f || height <= 0f) return@drawBehind
+@Composable
+fun Modifier.zhangRanBackground(colors: ZhangRanColors): Modifier {
+    val spec = tween<Color>(durationMillis = MotionDuration.slow, easing = MotionEasings.ease)
+    val base by animateColorAsState(colors.backgroundColor, spec, label = "bgBase")
+    val mid1 by animateColorAsState(colors.backgroundGradientMid1Color, spec, label = "bgMid1")
+    val mid2 by animateColorAsState(colors.backgroundGradientMid2Color, spec, label = "bgMid2")
+    val end by animateColorAsState(colors.backgroundGradientEndColor, spec, label = "bgEnd")
 
-    // CSS 角度 → 方向向量：0deg 指向正上方，顺时针为正
-    val radians = Math.toRadians(BACKGROUND_ANGLE_DEGREES)
-    val dx = sin(radians).toFloat()
-    val dy = -cos(radians).toFloat()
-    // 以较长边作为渐变轴，保证四段停靠点覆盖整个区域
-    val halfLength = maxOf(width, height) / 2f
-    val center = Offset(width / 2f, height / 2f)
+    return drawBehind {
+        val width = size.width
+        val height = size.height
+        if (width <= 0f || height <= 0f) return@drawBehind
 
-    drawRect(
-        brush = Brush.linearGradient(
-            colorStops = arrayOf(
-                0f to Color(colors.background),
-                BACKGROUND_STOP_MID1 to colors.backgroundGradientMid1Color,
-                BACKGROUND_STOP_MID2 to colors.backgroundGradientMid2Color,
-                1f to colors.backgroundGradientEndColor,
+        // CSS 角度 → 方向向量：0deg 指向正上方，顺时针为正
+        val radians = Math.toRadians(BACKGROUND_ANGLE_DEGREES)
+        val dx = sin(radians).toFloat()
+        val dy = -cos(radians).toFloat()
+        // 以较长边作为渐变轴，保证四段停靠点覆盖整个区域
+        val halfLength = maxOf(width, height) / 2f
+        val center = Offset(width / 2f, height / 2f)
+
+        drawRect(
+            brush = Brush.linearGradient(
+                colorStops = arrayOf(
+                    0f to base,
+                    BACKGROUND_STOP_MID1 to mid1,
+                    BACKGROUND_STOP_MID2 to mid2,
+                    1f to end,
+                ),
+                start = Offset(center.x - dx * halfLength, center.y - dy * halfLength),
+                end = Offset(center.x + dx * halfLength, center.y + dy * halfLength),
             ),
-            start = Offset(center.x - dx * halfLength, center.y - dy * halfLength),
-            end = Offset(center.x + dx * halfLength, center.y + dy * halfLength),
-        ),
-    )
+        )
+    }
 }
 
 /** 原型渐变角度（`165deg`）。 */
@@ -232,15 +261,33 @@ private const val BACKGROUND_STOP_MID2: Float = 0.62f
 /**
  * 账然主题。
  *
- * @param darkTheme 是否使用深色 token（默认 `isSystemInDarkTheme()`）
+ * @param darkTheme 显式指定明暗（测试/截图用）；为 `null` 时由 [themeMode] 决定
+ * @param themeMode 主题模式（`M4c`：跟随系统 / 浅色 / 深色）
  */
 @Composable
 fun ZhangRanTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean? = null,
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
     content: @Composable () -> Unit,
 ) {
-    val colors = if (darkTheme) DarkColors else LightColors
+    val resolvedDark = darkTheme ?: when (themeMode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    val colors = if (resolvedDark) DarkColors else LightColors
     val shapes = zhangRanShapes()
+
+    // 应用内切换主题时同步系统栏图标明暗，避免"深色页面 + 深色状态栏图标"不可读（A12）
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            view.context.findActivity()?.let { activity ->
+                WindowCompat.getInsetsController(activity.window, view)
+                    .isAppearanceLightStatusBars = !resolvedDark
+            }
+        }
+    }
 
     CompositionLocalProvider(
         LocalZhangRanColors provides colors,
@@ -252,7 +299,7 @@ fun ZhangRanTheme(
         LocalZhangRanGlow provides ZhangRanGlowTokens,
     ) {
         MaterialTheme(
-            colorScheme = if (darkTheme) {
+            colorScheme = if (resolvedDark) {
                 zhangRanDarkColorScheme(colors)
             } else {
                 zhangRanLightColorScheme(colors)
@@ -262,4 +309,33 @@ fun ZhangRanTheme(
             content = content,
         )
     }
+}
+
+/**
+ * 应用级主题（组合根，`M4c` A4）。
+ *
+ * 主题必须包在 `ZhangRanApp` 外层，因此在这里读设置：
+ * - **首帧前同步读一次**（DataStore 本地读取，毫秒级）→ 避免"先亮后暗"的主题闪烁（A10）；
+ * - 之后订阅 `settings` Flow → 设置页切换主题立即生效；
+ * - 读取失败时 `SettingsRepository` 已回退默认值，不会阻塞启动。
+ */
+@Composable
+fun ZhangRanAppTheme(content: @Composable () -> Unit) {
+    val context = LocalContext.current
+    val repository = remember(context) {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            SettingsEntryPoint::class.java,
+        ).settingsRepository()
+    }
+    val initial = remember(repository) { runBlocking { repository.settings.first() } }
+    val settings by repository.settings.collectAsState(initial = initial)
+    ZhangRanTheme(themeMode = settings.themeMode, content = content)
+}
+
+/** 从 Compose 的 `Context` 链上找到宿主 Activity（预览/测试宿主可能不是 Activity）。 */
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

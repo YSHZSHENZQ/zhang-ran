@@ -40,6 +40,7 @@ navigation = "2.9.8"
 
 # ---- 持久化（本任务只引入依赖，不建实体）----
 room = "2.8.4"
+datastore = "1.1.7"
 
 # ---- 测试 ----
 junit = "4.13.2"
@@ -77,6 +78,7 @@ hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hil
 
 # Room（本任务只引入依赖与 schema 导出参数，不建实体/DAO）
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 # T2a 追加：MigrationTestHelper 与 Room schema 校验
