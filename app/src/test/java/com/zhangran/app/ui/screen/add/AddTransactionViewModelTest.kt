@@ -437,6 +437,13 @@ private class FakeTransactionRepository : TransactionRepository {
             inserted[index] = inserted[index].copy(deletedAt = null, updatedAt = updatedAt)
         }
     }
+    override suspend fun search(
+        criteria: com.zhangran.app.domain.model.SearchCriteria,
+    ): List<TransactionEntity> = emptyList()
+
+    override suspend fun countSearch(
+        criteria: com.zhangran.app.domain.model.SearchCriteria,
+    ): Int = 0
 }
 
 private class FakeCategoryRepository(

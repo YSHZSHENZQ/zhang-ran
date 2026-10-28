@@ -17,7 +17,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.zhangran.app.data.local.entity.TransactionEntity
+import com.zhangran.app.domain.model.CaptureSource
 import com.zhangran.app.domain.model.TransactionState
+import com.zhangran.app.domain.model.TransactionType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -118,4 +120,81 @@ interface TransactionDao {
      */
     @Query("SELECT COUNT(*) FROM transactions WHERE state = :state AND deletedAt IS NULL")
     suspend fun countByState(state: TransactionState): Int
+
+    // ------------------------------------------------------------------
+    // 搜索（`M4e` §4.2；**只加不删**；不新增索引、不改 schema）。
+    //
+    // 全部条件都用 `@Bind` 命名参数，禁止拼接用户输入（SQL 注入）；
+    // `:x IS NULL OR ...` 让 9 个维度可任意组合（AND）；软删除一律排除。
+    // ------------------------------------------------------------------
+
+    /**
+     * 多条件搜索（默认 `transactionTime DESC`，分页）。
+     *
+     * @param keyword 同时匹配 merchant/note（包含、不区分大小写；由调用方归一化空串→null）
+     * @param amountExact 金额等值（分）；与 min/max 互斥（调用方保证等值优先）
+     */
+    @Query(
+        "SELECT * FROM transactions " +
+            "WHERE deletedAt IS NULL " +
+            "AND (:keyword IS NULL OR LOWER(merchant) LIKE '%' || LOWER(:keyword) || '%' " +
+            "OR LOWER(note) LIKE '%' || LOWER(:keyword) || '%') " +
+            "AND (:amountExact IS NULL OR amountMinor = :amountExact) " +
+            "AND (:amountMin IS NULL OR amountMinor >= :amountMin) " +
+            "AND (:amountMax IS NULL OR amountMinor <= :amountMax) " +
+            "AND (:dateFrom IS NULL OR transactionTime >= :dateFrom) " +
+            "AND (:dateTo IS NULL OR transactionTime < :dateTo) " +
+            "AND (:categoryId IS NULL OR categoryId = :categoryId) " +
+            "AND (:accountId IS NULL OR accountId = :accountId) " +
+            "AND (:type IS NULL OR type = :type) " +
+            "AND (:source IS NULL OR source = :source) " +
+            "AND (:state IS NULL OR state = :state) " +
+            "ORDER BY transactionTime DESC LIMIT :limit OFFSET :offset",
+    )
+    suspend fun search(
+        keyword: String?,
+        amountExact: Long?,
+        amountMin: Long?,
+        amountMax: Long?,
+        dateFrom: Long?,
+        dateTo: Long?,
+        categoryId: String?,
+        accountId: String?,
+        type: TransactionType?,
+        source: CaptureSource?,
+        state: TransactionState?,
+        limit: Int,
+        offset: Int,
+    ): List<TransactionEntity>
+
+    /** 与 [search] 完全相同的过滤条件，返回总条数（用于 `hasMore`）。 */
+    @Query(
+        "SELECT COUNT(*) FROM transactions " +
+            "WHERE deletedAt IS NULL " +
+            "AND (:keyword IS NULL OR LOWER(merchant) LIKE '%' || LOWER(:keyword) || '%' " +
+            "OR LOWER(note) LIKE '%' || LOWER(:keyword) || '%') " +
+            "AND (:amountExact IS NULL OR amountMinor = :amountExact) " +
+            "AND (:amountMin IS NULL OR amountMinor >= :amountMin) " +
+            "AND (:amountMax IS NULL OR amountMinor <= :amountMax) " +
+            "AND (:dateFrom IS NULL OR transactionTime >= :dateFrom) " +
+            "AND (:dateTo IS NULL OR transactionTime < :dateTo) " +
+            "AND (:categoryId IS NULL OR categoryId = :categoryId) " +
+            "AND (:accountId IS NULL OR accountId = :accountId) " +
+            "AND (:type IS NULL OR type = :type) " +
+            "AND (:source IS NULL OR source = :source) " +
+            "AND (:state IS NULL OR state = :state)",
+    )
+    suspend fun countSearch(
+        keyword: String?,
+        amountExact: Long?,
+        amountMin: Long?,
+        amountMax: Long?,
+        dateFrom: Long?,
+        dateTo: Long?,
+        categoryId: String?,
+        accountId: String?,
+        type: TransactionType?,
+        source: CaptureSource?,
+        state: TransactionState?,
+    ): Int
 }

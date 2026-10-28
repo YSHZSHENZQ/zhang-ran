@@ -65,6 +65,13 @@ private class DeleteFakeTransactionStore : TransactionRepository {
             if (it.id == id) it.copy(deletedAt = null, updatedAt = updatedAt) else it
         }
     }
+    override suspend fun search(
+        criteria: com.zhangran.app.domain.model.SearchCriteria,
+    ): List<TransactionEntity> = emptyList()
+
+    override suspend fun countSearch(
+        criteria: com.zhangran.app.domain.model.SearchCriteria,
+    ): Int = 0
 
     suspend fun find(id: String): TransactionEntity? = rows.first().firstOrNull { it.id == id }
 }

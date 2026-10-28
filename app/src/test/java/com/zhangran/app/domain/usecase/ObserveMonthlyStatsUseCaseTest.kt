@@ -96,6 +96,14 @@ private class StatsFakeTransactionRepository(initial: List<TransactionEntity>) :
     override suspend fun softDelete(id: String, deletedAt: Long) = Unit
 
     override suspend fun restore(id: String, updatedAt: Long) = Unit
+
+    override suspend fun search(
+        criteria: com.zhangran.app.domain.model.SearchCriteria,
+    ): List<TransactionEntity> = emptyList()
+
+    override suspend fun countSearch(
+        criteria: com.zhangran.app.domain.model.SearchCriteria,
+    ): Int = 0
 }
 
 private class StatsFakeCategoryRepository(private val items: List<CategoryEntity>) : CategoryRepository {

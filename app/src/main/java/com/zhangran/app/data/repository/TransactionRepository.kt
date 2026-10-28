@@ -14,6 +14,7 @@ package com.zhangran.app.data.repository
 
 import com.zhangran.app.data.local.dao.TransactionDao
 import com.zhangran.app.data.local.entity.TransactionEntity
+import com.zhangran.app.domain.model.SearchCriteria
 import com.zhangran.app.domain.model.TransactionState
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -65,6 +66,16 @@ interface TransactionRepository {
 
     /** 恢复软删除（清空 `deletedAt`）；恢复窗口的判定属 Domain。 */
     suspend fun restore(id: String, updatedAt: Long)
+
+    /**
+     * 多条件搜索（`M4e` §4.2；软删除排除、`transactionTime DESC`、分页）。
+     *
+     * 条件→SQL 的映射在 DAO（`@Bind` 参数，禁止拼接）；本层只做参数传递。
+     */
+    suspend fun search(criteria: SearchCriteria): List<TransactionEntity>
+
+    /** 与 [search] 同条件的总条数（供 `hasMore` 判定）。 */
+    suspend fun countSearch(criteria: SearchCriteria): Int
 }
 
 @Singleton
@@ -102,4 +113,40 @@ class RoomTransactionRepository @Inject constructor(
         dao.softDelete(id = id, deletedAt = deletedAt, updatedAt = deletedAt)
 
     override suspend fun restore(id: String, updatedAt: Long) = dao.restore(id, updatedAt)
+
+    override suspend fun search(criteria: SearchCriteria): List<TransactionEntity> {
+        val normalized = criteria.normalized()
+        return dao.search(
+            keyword = normalized.keyword,
+            amountExact = normalized.amountExactMinor,
+            amountMin = normalized.amountMinMinor,
+            amountMax = normalized.amountMaxMinor,
+            dateFrom = normalized.dateFromInclusive,
+            dateTo = normalized.dateToExclusive,
+            categoryId = normalized.categoryId,
+            accountId = normalized.accountId,
+            type = normalized.type,
+            source = normalized.source,
+            state = normalized.state,
+            limit = normalized.pageSize,
+            offset = normalized.page * normalized.pageSize,
+        )
+    }
+
+    override suspend fun countSearch(criteria: SearchCriteria): Int {
+        val normalized = criteria.normalized()
+        return dao.countSearch(
+            keyword = normalized.keyword,
+            amountExact = normalized.amountExactMinor,
+            amountMin = normalized.amountMinMinor,
+            amountMax = normalized.amountMaxMinor,
+            dateFrom = normalized.dateFromInclusive,
+            dateTo = normalized.dateToExclusive,
+            categoryId = normalized.categoryId,
+            accountId = normalized.accountId,
+            type = normalized.type,
+            source = normalized.source,
+            state = normalized.state,
+        )
+    }
 }

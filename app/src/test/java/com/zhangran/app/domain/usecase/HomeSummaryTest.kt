@@ -100,6 +100,13 @@ private class FakeSummaryTransactionRepository(
             if (it.id == id) it.copy(deletedAt = null, updatedAt = updatedAt) else it
         }
     }
+    override suspend fun search(
+        criteria: com.zhangran.app.domain.model.SearchCriteria,
+    ): List<TransactionEntity> = emptyList()
+
+    override suspend fun countSearch(
+        criteria: com.zhangran.app.domain.model.SearchCriteria,
+    ): Int = 0
 }
 
 private class FakeSummaryCategoryRepository(
