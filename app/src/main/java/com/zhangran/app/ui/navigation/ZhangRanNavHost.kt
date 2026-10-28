@@ -92,7 +92,12 @@ fun ZhangRanNavHost(
             // 首页的 5 个入口都经这一个回调出站（`M2e-1b` §4.2/§4.4/§4.6）
             HomeScreen(onNavigate = { route -> navController.navigate(route) })
         }
-        composable(Destination.Stats.route) { StatsScreen() }
+        // M2e-2：统计页 Empty 态「去记一笔」（导航层唯一改动，经批准）
+        composable(Destination.Stats.route) {
+            StatsScreen(
+                onNavigateToAdd = { navController.navigate(Destination.Add.route) },
+            )
+        }
         composable(Destination.Add.route) { AddTransactionScreen() }
         composable(Destination.Budget.route) { BudgetScreen() }
         composable(Destination.Mine.route) { MineScreen() }
