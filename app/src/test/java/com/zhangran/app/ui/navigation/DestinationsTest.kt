@@ -48,7 +48,8 @@ class DestinationsTest {
             "autoLedger", "onboard", "categories", "accounts",
             "rules", "backup", "logs", "search", "about",
         )
-        assertEquals(expected.toSet(), Destination.entries.map { it.route }.toSet())
+        // 详情路由带可选查询参数（detail?transactionId={transactionId}）：只比较路径部分。
+        assertEquals(expected.toSet(), Destination.entries.map { it.route.substringBefore('?') }.toSet())
     }
 
     @Test
