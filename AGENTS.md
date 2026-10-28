@@ -1,7 +1,7 @@
 # AGENTS.md
 
-> 面向接手本项目的 agent / 人。**先读 §0 与 §12**，再按 §2 只取本任务相关文档。
-> 本文件是唯一入口；其余细节一律**引用**对应文件，不在此重复。
+> 面向接手本项目的 agent / 人：**先读 §0 与 §12**，再按 §2 只读本任务相关文档。
+> 本文件是唯一入口；细节一律引用对应文件，不在此重复。
 
 ---
 
@@ -9,72 +9,72 @@
 
 ### 0.1 一句话
 
-「账然」是一个 **Android 本地优先**的自动记账应用：不联网、不上传、数据全在本地；
-自动识别宁可进 Pending，也不猜错入账。
+「账然」是 Android **本地优先**的自动记账应用：账务数据不出本机，自动识别宁可进 Pending，也不猜错入账。
 
-- 产品与规则：`docs/01`–`docs/03`
-- 架构：`docs/04`
-- UI：`docs/05`、`docs/06`、`prototype/账然_UI原型.html`（视觉唯一真值）
-- 自动记账：`docs/07`、`docs/10`
-- 验收：`docs/08`
-- 踩过的坑：`docs/09`（**动手前必读**）
-- 真机验证记录：`docs/11`
-
-### 0.2 当前阶段
-
-**阶段一（手工记账闭环）**，正在打磨 M2a 记账表单的视觉一致性。
-
-| 已完成 | 内容 |
+| 内容 | 唯一来源 |
 |---|---|
-| T1a / T1b | 工程骨架、单 Activity、主题骨架、18 页占位 |
-| T2a / T2b | Room v2（9 实体）+ 真实迁移 + 采集日志表 |
-| T3 / M1a / M1b | `Money` / `Normalize` / `Confidence` / `Dedup` / `Decision` |
-| U0 | 采集接入层（**进程内接口**，不再有 URI 入口） |
-| M1c' | 3 个 Repository、`AddManualTransactionUseCase`、首页真实列表 |
-| M2d-0 | 首次安装初始数据（12 支出 + 6 收入 + 1 现金账户，幂等/不复活/不重跑） |
-| UI-0 / 0b / 0c | 颜色·字号·圆角·间距·玻璃·动画 token 全部对齐原型 |
-| M2a | 记账表单（金额状态机、分类网格、数字键盘、四态） |
-| P-006～P-009 | 降级、置信度、时间口径、分类拆分、初始数据等规则 |
+| 产品、规则 | `docs/01`–`docs/03` |
+| 架构与分层 | `docs/04` |
+| UI 规范 / token | `docs/05`、`docs/06`、`prototype/账然_UI原型.html`（视觉唯一真值） |
+| 自动记账 / 采集 | `docs/07`、`docs/10` |
+| 验收判据 | `docs/08` |
+| 经验教训 | `docs/09`（**动手前必读**） |
+| 真机记录 | `docs/11` |
 
-**未做**：M2b/M2c（转账、退款）、M2d（分类/账户管理）、统计/预算/备份页、底部导航图标、属性行彩色图标块。
+### 0.2 当前状态（2026-10-28）
 
-测试现状：JVM 约 313 例、instrumented 约 102 例，见 §9.2。
+**阶段一（手工记账闭环）已完成收尾验收；阶段二（采集核心接入）尚未开始。**
 
-### 0.3 五条最容易犯错的约定（速览）
+- 18 个页面均有实现：11 个完整页（首页 / 统计 / 记一笔 / 预算 / 我的 / 详情 / 分类 / 账户 / 备份 / 搜索 / 关于），
+  7 个阶段二占位页（待确认 / 编辑后入账 / 疑似重复 / 自动记账 / 权限引导 / 解析规则 / 捕获日志）。
+- 阶段一完成脉络：T1 工程/18 页骨架 → T2 Room v2 + 迁移 → T3/M1 领域规则 → U0 采集接入层 →
+  M1c'/M2a/M2e-1 手工记账与首页 → M2b 详情/字段编辑/软删除 → M2d 分类/账户 → M4a 预算 →
+  M4b 备份/三模式恢复 → M4c 设置与主题 → M4d 关于 → M4e 搜索 → M5-1 导航与底栏 → M5 收尾验收。
+- 分支 `dev`，工作区应保持干净；最新提交即最新状态（`git log --oneline -10` 可看任务脉络）。
+- 自动化基线：**JVM 535 例（1 例失败，见 D1）**；**instrumented 256 例全过**；
+  `assembleDebug` 通过。全量命令与例外见 §9.2。
+- 性能基线（模拟器 debug）：首页冷启动约 3.2s；搜索 10,000 条约 12ms（关键字）/ 7ms（组合）；
+  滚动 Janky 约 34%。仅作基线，不是指标。
 
-1. **`review/` 只作指导，不入库、不得被引用**（§11.1）。
-2. 页面**禁止**字面色值 / 裸尺寸 / 字面时长，一律用 `ui/theme` 的 token（§7.2）。
-3. 金额全程 `Long amountMinor`，换算只经 `Money`，**禁止** `Double`/`Float`（§5）。
-4. **测试只跑受影响的部分**，不全量重跑（§9.2）。
-5. 视觉改动必须**装到设备上截图确认**，跑完测试要**重新安装保留 APK**（§9.3）。
+**已知问题（接手先看，详见 §12.4）**
+
+| # | 问题 | 下一步 |
+|---|---|---|
+| D1 | `DestinationsTest.页面清单与文档一致` 仍断言 `detail`，实际路由为 `detail?transactionId={transactionId}`；JVM 全量因此 1 红 | 只改测试期望（测试文件；不得为绿灯改产品） |
+| D2 | 关于页隐私文案称 `INTERNET` 用于本机回环，但当前 Manifest **零权限**、未声明 `INTERNET`（计划 U3 合并） | 阶段二 U3 前先裁定：改文案，或按 U3 声明权限 |
+| D3 | 搜索结果行点击无跳转（`SearchScreen` 的 `onOpenTransaction` 默认空实现，NavHost 未接线） | 导航小任务接线 |
+| D4 | 底栏进入「记一笔」时数字键盘最后一行被底栏部分遮挡 | UI 打磨：内容底部让出底栏高度 |
+| D5 | 我的页已移除「预算管理」入口（产品决定），`docs/06` §4.5 仍写有该入口 | 走文档提案流程修正 `docs/06` |
+
+**阶段二范围**：U1 上游库化 → U2 采集接入 → U3 权限合并 → U4 Room 隔离 → U5 UI 处置 → P0 覆盖率基线；
+另含 M2c（转账/退款，需先裁定 UI）、M3a/M3b（Pending / Duplicate 处理）与 7 个占位页。
+
+### 0.3 五条最容易犯错的约定
+
+1. **任务书 / 交办单由人给出，不入库**；没有交办不自行开工，冲突先报告（§11）。
+2. 页面**禁止**字面色值 / 裸尺寸 / 字面时长，统一走 `ui/theme`（§7.2）。
+3. 金额全程 `Long amountMinor`，只经 `Money`；禁止 `Double`/`Float`（§5）。
+4. **测试只跑受影响部分**；全量仅限 schema / 领域核心规则 / 全局 token 变更（§9.2）。
+5. 视觉改动必须**装到设备截图确认**；instrumented 结束会卸载 app，之后要重新安装（§9.3）。
 
 ---
 
 ## 1. 工作原则
 
-必须遵守：
+- 不猜业务规则，不自行扩展产品范围，不因实现方便改变领域模型。
+- UI 不直接操作数据库；自动识别不直接修改最终 Transaction；不覆盖用户已修改的字段。
+- 无法可靠判断时进入 Pending；不为了"自动化率"牺牲账务正确性。
+- 大改动前先读相关文档；发现任务书与代码冲突，**停下报告**。
 
-- 不猜业务规则。
-- 不自行扩展产品范围。
-- 不因为实现方便而改变领域模型。
-- 不让 UI 直接操作数据库。
-- 不让自动识别引擎直接修改最终 Transaction。
-- 不覆盖用户已经手工修改的数据。
-- 无法可靠判断时进入 Pending。
-- 不为了"自动化率"牺牲账务正确性。
-- 大改动前先检查相关文档。
-
-核心原则：
-
-> 宁可进入 Pending，也不要猜错并自动入账。
+> 核心原则：**宁可进入 Pending，也不要猜错并自动入账。**
 
 ---
 
-## 2. 按任务读取文档（只读需要的）
+## 2. 按任务读取文档
 
 | 任务类型 | 必读 |
 |---|---|
-| 所有任务 | `README.md`、本文件、`docs/09_总结经验教训.md` |
+| 所有任务 | `README.md`、本文件、`docs/09` |
 | UI / Compose | `docs/05`、`docs/06`、`prototype/账然_UI原型.html` |
 | 产品行为 | `docs/01`、`docs/02` |
 | 领域 / 数据 | `docs/02`、`docs/03` |
@@ -83,57 +83,48 @@
 | 测试 | 对应功能文档 + `docs/08` |
 | 真机 / 环境 | `docs/09`、`docs/11` |
 
-**不要**无条件读全部文档；也不要读与本任务无关的包（任务书通常会写明"不要读"清单）。
+不要无条件读全部文档；不要读与本任务无关的包（任务书通常写明"不要读"清单）。
 
 ---
 
 ## 3. 技术约束
 
-- Kotlin + Jetpack Compose + Material 3
-- compileSdk / targetSdk / minSdk、AGP / Gradle / Kotlin / KSP / Hilt / Room 的**具体版本**见
-  `app/build.gradle.kts` 与 `app/libs.versions.toml`（不在本文件重复，避免漂移）
-- Room + Hilt + Coroutines/Flow/StateFlow + WorkManager
-
-分层与数据流：
+- Kotlin + Jetpack Compose + Material 3；Room + Hilt + Coroutines/Flow/StateFlow + WorkManager。
+- 版本以 `app/build.gradle.kts`、`app/libs.versions.toml` 为准，不在本文件重复。
+- 数据流：
 
 ```text
 UI → ViewModel / StateHolder → UseCase / Domain → Repository → Room
 ```
 
-- UI 不直接访问 DAO，也不直接持有 Entity（走 Repository / 领域类型）。
-- 具体架构决策与模块边界见 `docs/04`。
+- UI 不持有 Entity、不访问 DAO；边界与模块划分见 `docs/04`。
 
 ---
 
 ## 4. 自动记账约束
 
-数据必须经过：
-
 ```text
 Capture → Candidate → Normalize → Confidence → Dedup → Decision（Pending / Confirmed）→ Transaction
 ```
 
-- v0.1 的 Capture 与识别来自**内嵌的采集核心**（AutoAccounting，GPL-3.0，个人自用、不分发），
-  作为账然的 Gradle 模块；**不另行自建第二套采集实现**。
-- 采集核心只能经 Adapter 交出候选与证据，**不得**直接写 Transaction，也**不得**决定 Pending/Confirmed。
-- 权限矩阵与集成结论见 `docs/07` §9、`docs/10`。
+- 采集核心为内嵌 Gradle 模块（AutoAccounting，GPL-3.0，个人自用、不分发）；不另建第二套采集。
+- 采集核心只能经 Adapter 交出候选与证据；不得直接写 Transaction，不得决定 Pending/Confirmed。
+- 权限矩阵与集成事实见 `docs/07` §9、`docs/10`；当前阶段尚未接入（§0.2）。
 
 ---
 
 ## 5. 数据安全
 
-- 金额使用最小货币单位：`Long amountMinor`。
-- 解析允许 `BigDecimal`，但**最终不得**用 `Double` / `Float` 保存金额。
-- 交易金额与方向分离：`EXPENSE` / `INCOME` / `TRANSFER` / `REFUND`。
-- 金额口径（含上限、币种、小数位）唯一落点：`domain/service/Money.kt`。
+- 金额用最小货币单位 `Long amountMinor`；解析可用 `BigDecimal`，**最终不得**用 `Double`/`Float` 保存。
+- 方向与金额分离：`EXPENSE` / `INCOME` / `TRANSFER` / `REFUND`。
+- 金额口径（上限、币种、小数位）唯一落点：`domain/service/Money.kt`。
 
 ---
 
 ## 6. 用户修改保护
 
-- 任何用户主动修改后的字段都必须保留用户修改结果。
-- 自动规则重新运行**不得**无条件覆盖用户修改。
-- 字段级冲突与保护字段名单见 `domain/model/Decision.kt`。
+- 用户主动修改的字段必须保留；自动规则重跑不得无条件覆盖。
+- 保护字段名单与冲突规则见 `domain/model/Decision.kt` 与 `docs/03`。
 
 ---
 
@@ -141,55 +132,41 @@ Capture → Candidate → Normalize → Confidence → Dedup → Decision（Pend
 
 ### 7.1 交互
 
-- HTML 原型是**视觉**参考；页面规格（`docs/06`）是**行为**参考。
-- 组件优先复用。
-- 普通信息：**点字段本身**修改；不要同时提供"可点字段 + 旁边的编辑按钮"。
+- HTML 原型是**视觉**参考，`docs/06` 是**行为**参考。
+- 组件优先复用（如首页 `TransactionRow` 已被搜索页复用）。
+- 普通信息点字段本身修改；不要"可点字段 + 旁边编辑按钮"。
 
 ### 7.2 token 纪律（硬约束）
 
-- 页面/组件内**禁止**：字面色值（`Color(0x…)`、`Color.White`）、裸尺寸（`12.dp`）、
-  字面时长（`tween(300)`）、内联缓动曲线。
-- token 唯一落点（都在 `ui/theme/`）：
-  | 文件 | 内容 |
-  |---|---|
-  | `Color.kt` | 亮/暗色、渐变、玻璃、光晕、遮罩（基础 14 项 + 扩展项） |
-  | `Typography.kt` | Display/Headline/Title/Body/Label/Caption/Amount |
-  | `Dimens.kt` | 间距（6 主刻度 + 扩展）、圆角（5 主项 + 扩展） |
-  | `Shape.kt` | 组件形状 |
-  | `Glass.kt` | 玻璃与光晕（`Modifier.zhangRanGlass` / `ZhangRanGlowLayer`） |
-  | `Motion.kt` | 10 个时长、3 条缓动、位移与缩放常量 |
-  | `Theme.kt` | 组装 + `Modifier.zhangRanBackground`（页面背景渐变） |
-- 页面级尺寸若确实没有对应 token（例如键盘键高、网格列数），**集中**成一个页面内
-  `object XxxLayout` 并注明原因，**不要**散落在各处。
-- 玻璃背景模糊（`backdrop-filter`）是**有意识不做**的降级，理由见 `Glass.kt` 文件头；
-  不要"顺手补上"。
+- 禁止字面色值（`Color(0x…)`、`Color.White`）、裸尺寸（`12.dp`）、
+  字面时长（`tween(300)`）与内联缓动曲线。
+- token 唯一落点见 `ui/theme/` 各文件（`Color` / `Typography` / `Dimens` / `Shape` /
+  `Glass` / `Motion` / `Theme`），文件职责见 `docs/05`。
+- 确无 token 的页面级尺寸，集中到页面内 `object XxxLayout` 并注明原因。
+- 玻璃模糊是**有意识不做**的降级（理由见 `Glass.kt` 文件头），不要顺手补。
 
 ### 7.3 字体
 
-- 正文使用**内置微软雅黑**（`ui/theme/Theme.kt` 的 `ZhangRanFontFamily`，文件在 `res/font/`）。
-- **只声明 `FontWeight.Normal` 一个条目**：多档字重指向同一文件会让 Compose 认为各字重已存在，
-  从而**不再合成加粗**（标题会退化成 Regular）。
-- 金额等宽文本用 `FontFamily.Monospace`。
+- 正文用内置微软雅黑（`Theme.kt` 的 `ZhangRanFontFamily`）。
+- **只声明 `FontWeight.Normal` 一个条目**；否则 Compose 不再合成加粗，标题会退化。
+- 金额等宽用 `FontFamily.Monospace`。
 
-### 7.4 一致性验证
+### 7.4 导航现状
 
-- 视觉改动以 `prototype/账然_UI原型.html` 为准；逐项差异记录在 `review/` 的对照表（不入库）。
-- 改动后必须在设备上截图对比（流程见 §9.3）。
+底栏规则、推入型「记一笔」、返回键与切 tab 保栈均已实现，规格见 `docs/06` §6；
+回归用例见 `BottomNavBehaviorTest` / `NavigationBehaviorTest`。
 
 ---
 
 ## 8. 修改规模
 
-以下修改**必须先说明影响范围**（`docs/04` 相关章节 + 受影响测试）：
+以下改动必须先说明影响范围（`docs/04` 对应章节 + 受影响测试）：
 
-- 修改核心领域模型
-- 修改 Transaction 状态
-- 修改自动记账 pipeline
-- 修改数据库结构（含 schema、migration）
-- 修改去重策略
-- 引入新的核心依赖
-- 修改超过 10 个核心文件
-- 改动采集核心与领域层的边界
+- 核心领域模型、Transaction 状态、去重策略；
+- 自动记账 pipeline、采集核心与领域层边界；
+- 数据库 schema / migration；
+- 新核心依赖；
+- 超过 10 个核心文件。
 
 ---
 
@@ -197,109 +174,83 @@ Capture → Candidate → Normalize → Confidence → Dedup → Decision（Pend
 
 ### 9.1 通用
 
-完成代码不等于完成任务。至少：
+完成代码 ≠ 完成任务。至少：编译通过、受影响单测通过、关键路径验证（落库/查询/状态）、
+UI 状态（空/错/加载）验证、migration 验证（若涉及）、采集路径验证（若涉及）。
 
-- 编译通过
-- 单元测试通过（受影响范围内）
-- 关键业务路径验证（落库 / 查询 / 状态）
-- UI 状态验证（含空/错误态）
-- 数据库 migration 验证（若涉及）
-- 自动记账关键路径验证（若涉及）
+### 9.2 测试策略（增量）
 
-### 9.2 测试策略（**增量**）
+```powershell
+cd app
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 
-- **只跑受本次改动影响的用例**，不做全量回归。
-- JVM：
-  ```powershell
-  cd app
-  $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
-  .\gradlew.bat testDebugUnitTest --tests "com.zhangran.app.<包>.*"
-  ```
-- Instrumented（**只指定要跑的类**）：
-  ```powershell
-  .\gradlew.bat connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.zhangran.app.<类>"
-  ```
-- 只有以下情况才全量：改数据库 schema / 改领域核心规则 / 改全局 token。
+.\gradlew.bat testDebugUnitTest --tests "com.zhangran.app.<包>.*"
+.\gradlew.bat connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=com.zhangran.app.<类>"
+.\gradlew.bat assembleDebug
+```
 
-### 9.3 视觉改动的验证流程
+- 只跑受影响用例；全量仅限改 schema / 领域核心规则 / 全局 token（收尾验收）。
+- 当前基线：JVM 535（1 红，D1）、instrumented 256；新增测试应保持增量、避免拖慢。
+- 若接口变更导致既有测试 fake 编译失败：只补空实现/适配，不改既有断言。
+
+### 9.3 视觉验证
 
 1. `.\gradlew.bat installDebug`
 2. `adb shell am start -n com.zhangran.app/.MainActivity`
 3. `adb shell screencap -p /sdcard/x.png` + `adb pull` → 自己先看图，再请人确认
-4. ⚠️ **`connectedDebugAndroidTest` 结束会自动卸载 app**：跑完测试若还要人看，必须重新 `installDebug`
-   并用 `adb shell pm list packages | findstr zhangran` 确认。
+4. ⚠️ `connectedDebugAndroidTest` 结束会卸载 app；之后必须重新 `installDebug`。
 
 ### 9.4 设备与 adb
 
-- 模拟器：`Medium_Phone_API_36`
-- `adb` 完整路径：`$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe`
-- 设备上找不到 app 时：Pixel launcher 只在**应用抽屉**里显示新装应用（桌面不显示）。
+- 模拟器：`Medium_Phone_API_36`（Android 16）。
+- adb：`$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe`。
+- 桌面找不到 app：Pixel launcher 只在应用抽屉显示新装应用。
 
 ---
 
 ## 10. 禁止事项
 
-不要：
-
-- 把业务规则写死在 Composable 中
-- 在 Activity 中保存业务状态
-- 让 Parser 访问 DAO
-- 让 UI 直接操作 Room
-- 使用 Double / Float 保存金额
-- 删除用户数据而不提供明确恢复语义
-- 用永久 FGS 作为自动记账的默认保活方案
-- 为了通过测试修改产品规则
-- 在 `docs/**`、`README.md`、本文件中引用 `review/` 下的文件
-- 自己发明任务范围（转账/退款等原型没有的界面，未经裁定不得实现）
+- 把业务规则写死在 Composable；在 Activity 保存业务状态；UI 直接操作 Room。
+- 让 Parser 访问 DAO；用 `Double`/`Float` 保存金额。
+- 删除用户数据而不提供恢复语义；用永久 FGS 作为自动记账保活方案。
+- 为通过测试改产品规则、放宽判据或删测试。
+- 在 `docs/**`、`README.md`、本文件中引用 `review/` 下的文件。
+- 自行发明任务范围（转账/退款、Pending 等未裁定界面）。
+- 修改 `versionName` / `versionCode`（除非任务书明确要求）。
 
 ---
 
-## 11. 文档纪律、变更流程与经验记录
+## 11. 文档与任务纪律
 
-### 11.1 文档引用纪律
+### 11.1 文档引用
 
-- **`review/` 下的文件仅作指导，不是冻结文档，且不属于本仓库提交对象。**
-- **禁止**在 `README.md`、本文件、`docs/**` 中引用 `review/` 下的任何文件。
-- 任何需要长期引用的结论，必须先转成 `docs/` 下的正式文档（如 `docs/10`）再被引用。
-- 除 `docs/09`、`docs/10` 外，`docs/01`–`docs/08`、`README.md`、本文件在编码期间视为冻结输入。
+- `review/` 仅作指导、不入库；**禁止**在 `README.md`、本文件、`docs/**` 引用其文件。
+- 需长期引用的结论先转入 `docs/`（如 `docs/10`）再引用。
+- `docs/01`–`docs/08`、`README.md` 在编码期视为冻结输入（`docs/09`/`docs/10` 可按规则追加）。
 
-### 11.2 文档变更流程（开发期间唯一允许改文档的路径）
+### 11.2 文档变更流程
 
 ```text
-发现文档缺口/错误
-   ↓
-写提案（现象 / 影响面 / 建议改法 / 受影响章节清单 / 需重跑的验收条目）
-   ↓
-人确认 → 改文档（单独 docs: 提交）→ 全库复查 § 引用
-   ↓
-重跑受影响验收条目 → 再改代码
+发现缺口/冲突 → 写提案（现象/影响面/建议/受影响章节/需重跑验收）
+→ 人确认 → 单独 docs: 提交 → 全库复查 § 引用 → 重跑受影响验收 → 再改代码
 ```
 
-必须写提案的典型场景：同一事实在两份文档取值不同、`§` 引用失效、`docs/08` 某条判据无法判定、
-上游能力与 `docs/07` §9 权限矩阵不符。
-
-**任务书 / 交办单**由人给出（放在 `review/`，不入库）。执行前确认：
-文件白名单、验收判据、明确禁止事项。任务书与实际代码冲突时**停下报告**，不自行裁决。
+任务书 / 交办单由人提供（不入库）。执行前确认：文件白名单、验收判据、禁止事项；
+与实际代码冲突时停下报告，不自行裁决。
 
 ### 11.3 经验记录
 
-文件：`docs/09_总结经验教训.md`
-
-- 遇到会阻塞工作、导致文件/数据损坏、或反复出现的问题，解决后必须追加"问题 + 对策"。
-- **只加不改**：只在末尾追加，不修改/删除已有条目，不重排编号。
-- 只记关键且重要的问题；每条两行（问题 / 对策），不写背景与代码示例。
-- 动手前先读它，避免重复踩坑。
+`docs/09`：只加不改、只记关键问题、每条两行（问题 / 对策），动手前先读。
 
 ---
 
-## 12. 上手手册（新接手者从这里开始）
+## 12. 上手手册
 
 ### 12.1 环境
 
 | 项 | 值 |
 |---|---|
-| 仓库根 | 本目录（含 `AGENTS.md`、`README.md`、`docs/`、`app/`、`prototype/`） |
-| Gradle 根 | **`app/`**，单模块；所有 gradle 命令在 `app/` 内执行，**不带 `:app:` 前缀** |
+| 仓库根 | 本目录（`AGENTS.md`、`README.md`、`docs/`、`app/`、`prototype/`） |
+| Gradle 根 | **`app/`**，单模块；命令在 `app/` 内执行，不带 `:app:` |
 | 包名 | `com.zhangran.app` |
 | JDK | `C:\Program Files\Android\Android Studio\jbr`（每条命令前设 `$env:JAVA_HOME`） |
 | 远程 | `git@gitee.com:KotiyaKirisame/zhang-ran.git`，分支 `dev` |
@@ -310,65 +261,64 @@ Capture → Candidate → Normalize → Confidence → Dedup → Decision（Pend
 cd app
 $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 
-.\gradlew.bat assembleDebug                  # 编译
-.\gradlew.bat installDebug                   # 装到设备（视觉改动后必做）
-.\gradlew.bat testDebugUnitTest              # JVM 全量（一般用 --tests 只跑受影响）
-.\gradlew.bat connectedDebugAndroidTest      # 设备测试（只指定 class）
+.\gradlew.bat assembleDebug
+.\gradlew.bat installDebug
+.\gradlew.bat testDebugUnitTest
+.\gradlew.bat connectedDebugAndroidTest
 ```
-
-截图与查看：
 
 ```powershell
 $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 & $adb shell am start -n com.zhangran.app/.MainActivity
-& $adb shell input tap 540 2169             # 底部「记一笔」标签
 & $adb shell screencap -p /sdcard/x.png
 & $adb pull /sdcard/x.png "$env:TEMP\x.png"
 ```
 
 ### 12.3 代码地图
 
-| 包 / 文件 | 职责（细节看文件头 KDoc） |
+| 包 / 文件 | 职责 |
 |---|---|
-| `capture/` | 采集接入层：进程内接口、事件源、处理器（U0） |
-| `data/local/` | Room：`ZhangRanDatabase`（v2，9 实体）、`entity/`、`dao/`、`Converters`、迁移、`DefaultData`、`DatabaseInitializer`、`DatabaseModule` |
-| `data/repository/` | 3 个 Repository（接口 + Room 实现） |
-| `domain/model/` | 枚举与数据类：`TransactionType`、`TransactionState`、`CaptureSource`、`PendingReason`、`Candidate`、`Decision` 等 |
-| `domain/service/` | 规则唯一落点：`Money`、`TransactionTime`、`Normalize`、`Confidence`、`Dedup`、`Decision` |
-| `domain/usecase/` | `AddManualTransactionUseCase`（手工记账唯一写入口）、`ObserveTransactionsUseCase` |
-| `ui/theme/` | 全部设计 token 与主题（§7.2） |
-| `ui/screen/home/` | 首页列表（四态） |
-| `ui/screen/add/` | 记账表单：`AddTransactionScreen`（入口）、`AddTransactionContent`（无状态）、`AddTransactionUiState`（含 `AmountInput` 金额状态机）、`AddTransactionViewModel`、`components/` |
-| `ui/common/` | `CategoryIconMapper`（语义标识 → emoji） |
-| `di/` | Hilt 模块（含 `ApplicationScope`） |
+| `capture/`、`autoaccounting/` | 采集接入层与 Adapter（U0；尚未接真实采集） |
+| `data/local/` | Room v2（9 实体）、DAO、迁移、初始数据、日志表 |
+| `data/repository/` | 交易 / 分类 / 账户 Repository（接口 + Room 实现） |
+| `data/backup/` | 备份导出、三模式恢复、原子性/不变量修复 |
+| `data/settings/` | DataStore 设置存储（主题等） |
+| `domain/model/` | 枚举与数据类（Transaction、Candidate、Decision、SearchCriteria 等） |
+| `domain/service/` | `Money`、`TransactionTime`、`Normalize`、`Confidence`、`Dedup`、`Decision` |
+| `domain/usecase/` | 手工记账、列表、统计、预算、详情编辑/删除、搜索等用例 |
+| `ui/theme/` | 全部设计 token、玻璃、动画、字体 |
+| `ui/navigation/` | Destination、NavHost、底栏显隐与返回规则、图标 |
+| `ui/screen/`（home / stats / add / budget / mine / detail / categories / accounts / backup / search / about） | 已实现页面 |
+| `ui/screen/`（pending / pendingEdit / duplicateReview / autoLedger / onboard / rules / logs） | 阶段二占位页 |
+| `ui/common/` | 分类图标映射等公共 UI |
+| `di/` | Hilt 模块（Repository、Settings、ApplicationScope） |
 
-### 12.4 当前进度与下一步
+具体文件职责以各文件头 KDoc 为准；页面规格以 `docs/06` 对应 § 为准。
 
-- 已完成见 §0.2。当前分支 `dev` 最新提交即最新状态（`git log --oneline -10` 可直接看任务脉络）。
-- 下一步候选：**M2b/M2c**（转账/退款，需先裁定 UI）、**M2d**（分类/账户管理）、
-  底部导航图标、属性行彩色图标块。
-- 已知缺口（**尚未实现，接手别当成 bug**）：
-  | 缺口 | 原因 |
-  |---|---|
-  | 「其他」分类只能复用、不能新建 | `CategoryRepository` 只有读方法，需补 `ensureCategory(...)` |
-  | 列表非响应式（`suspend` 拉取） | DAO 无 `Flow` 查询；改需动 `data/local` |
-  | 时间选择只支持"现在/按日期" | 原型无独立时间轴交互 |
-  | 底部导航无图标 | 导航层仍是占位实现 |
-  | 属性行图标为纯色块 | 缺 3 个浅色渐变 token |
-  | 转账/退款无入口 | 原型无界面，属 M2c，需另行裁定 |
+### 12.4 接手第一天怎么做
 
-### 12.5 高频坑（完整清单见 `docs/09`）
+1. 读 §0、§12，再按 §2 读本任务文档与 `docs/09`；不要在未读规格前改代码。
+2. `git status` 应干净；`git log --oneline -10` 看最近任务。
+3. `assembleDebug` + 受影响测试；装到模拟器打开首页确认环境。
+4. 等任务书（§11.2）。任务书会给出**文件白名单**与验收判据；不要越界修改。
+5. 当前没有"进行中的功能分支"；阶段二的起点是 U1/U2，但**不要自行开工**，先等人确认范围。
+6. 若先做收尾修补，按 §0.2 的 D1–D5 顺序：D1 测试期望、D2 权限/文案裁定、D3 搜索行接线、
+   D4 键盘遮挡、D5 文档提案；每项单独提交。
 
-1. **Kotlin 块注释可嵌套**：KDoc 里写 `xxx/**` 会开启第二层注释，把后续代码吞掉且**不报语法错误**
-   （表现为 KSP 报 `X could not be resolved`）。
-2. **`connectedDebugAndroidTest` 结束会卸载 app**，之后人找不到图标不是安装失败。
-3. **`fillMaxHeight` 在高度无约束的 `Row` 里**会被解析成"填满剩余屏幕"，可把整页撑爆。
-4. **结构相同的 Composable 用文本 Replace 批量改会互相污染**（已两次踩到）：按行定位。
-5. **`am start` 恒打印 `Starting:`**：判定是否生效要看库里的数据或 `query-activities`，不看这行日志。
+### 12.5 高频坑（完整见 `docs/09`）
 
-### 12.6 协作约定
+1. **Kotlin 块注释可嵌套**：KDoc 里写 `xxx/**` 会开第二层注释吞掉后续代码且不报语法错误。
+2. **`connectedDebugAndroidTest` 结束会卸载 app**，之后找不到图标不是安装失败。
+3. **`fillMaxHeight` 在高度无约束的 `Row`** 会被解析为填满屏幕，可能撑爆整页。
+4. **结构相同的 Composable 用文本 Replace 批量改会互相污染**：按行定位。
+5. **`am start` 恒打印 `Starting:`**：是否生效看数据/`query-activities`，不看日志。
+6. **给 Repository 接口加方法会打断所有测试 fake**：同步补空实现或更新 fake。
+7. **改文件注意换行符**：`Set-Content` 可能把 LF 变 CRLF，产生整文件 diff；编辑后查 `git diff --stat`。
 
-- 任务书/交办单在 `review/`（不入库）。**没有交办就不自行开工**；有冲突先报告。
-- 文档改动单独 `docs:` 提交；代码与文档不混在一个提交。
-- 每次视觉调整后：装 → 截图 → 请人确认；不要只凭代码判断"看起来对"。
-- 提交信息写清"为什么"（根因），不要只写"改了 X"。
+### 12.6 协作与提交
+
+- 没有交办不自行开工；任务书冲突先报告。
+- 文档改动单独 `docs:` 提交；代码与文档不混。
+- 提交信息写清 **为什么**（根因），不要只写"改了 X"；一个任务一个提交。
+- 视觉调整：装 → 截图 → 请人确认，不要只凭代码判断。
+- 测试后重新安装保留 APK；最终报告列明命令、输出、截图与未覆盖项。
