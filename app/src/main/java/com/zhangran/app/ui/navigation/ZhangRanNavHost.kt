@@ -6,14 +6,24 @@
  */
 package com.zhangran.app.ui.navigation
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -39,6 +49,11 @@ import com.zhangran.app.ui.screen.pendingEdit.PendingEditScreen
 import com.zhangran.app.ui.screen.rules.RulesScreen
 import com.zhangran.app.ui.screen.search.SearchScreen
 import com.zhangran.app.ui.screen.stats.StatsScreen
+import com.zhangran.app.ui.theme.MotionDuration
+import com.zhangran.app.ui.theme.primaryColor
+import com.zhangran.app.ui.theme.textDisabledColor
+import com.zhangran.app.ui.theme.MotionEasings
+import com.zhangran.app.ui.theme.ZhangRanTheme
 
 /**
  * 账然应用骨架：Scaffold + 底部导航 + NavHost。
@@ -50,19 +65,19 @@ fun ZhangRanApp(navController: NavHostController = rememberNavController()) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val current = Destination.fromRoute(backStackEntry?.destination?.route)
 
+    // M5-1：非首页的顶级页按返回 → 回首页；二级页不拦截（交给 Navigation）
+    BackHandler(enabled = backActionFor(current) is BackAction.GoHome) {
+        navController.navigate(Destination.Home.route) {
+            popUpTo(Destination.Home.route) { inclusive = false }
+            launchSingleTop = true
+        }
+    }
+
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                Destination.topLevel.forEach { destination ->
-                    NavigationBarItem(
-                        selected = current == destination,
-                        onClick = { navController.navigateToTopLevel(destination) },
-                        // 骨架期只用文字标签，不引入图标依赖；
-                        // TODO(视觉): 图标待按 05 §3 与原型确定后再补（届时可能需要新增图标依赖）
-                        icon = {},
-                        label = { Text(destination.title) },
-                    )
-                }
+            // M5-1：底栏仅顶级页显示（06 §6.1）
+            if (showsBottomBar(current)) {
+                BottomNavigationBar(current = current, navController = navController)
             }
         },
     ) { innerPadding ->
@@ -73,6 +88,53 @@ fun ZhangRanApp(navController: NavHostController = rememberNavController()) {
     }
 }
 
+/**
+ * 底部导航栏（5 项；图标来自原型 SVG，选中项用 primary、未选中用 textDisabled）。
+ */
+@Composable
+private fun BottomNavigationBar(current: Destination?, navController: NavHostController) {
+    val colors = ZhangRanTheme.colors
+    NavigationBar {
+        Destination.topLevel.forEach { destination ->
+            val selected = current == destination
+            val tint by animateColorAsState(
+                targetValue = if (selected) colors.primaryColor else colors.textDisabledColor,
+                animationSpec = tween(
+                    durationMillis = MotionDuration.fast,
+                    easing = MotionEasings.ease,
+                ),
+                label = "tabTint",
+            )
+            NavigationBarItem(
+                modifier = Modifier.semantics {
+                    contentDescription =
+                        "${destination.title}，标签页，${if (selected) "已选中" else "未选中"}"
+                },
+                selected = selected,
+                onClick = { navController.navigateToTopLevel(destination) },
+                icon = {
+                    Icon(
+                        imageVector = TabIcons.forDestination(destination, tint),
+                        contentDescription = null,
+                        modifier = Modifier.size(TAB_ICON_SIZE_DP.dp),
+                        tint = tint,
+                    )
+                },
+                label = { Text(destination.title) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = tint,
+                    selectedTextColor = tint,
+                    unselectedIconColor = tint,
+                    unselectedTextColor = tint,
+                    indicatorColor = Color.Transparent,
+                ),
+            )
+        }
+    }
+}
+
+/** 底栏图标尺寸（与原型 viewBox 一致；原型渲染 22px，任务书要求 24dp）。 */
+private const val TAB_ICON_SIZE_DP = 24
 /**
  * 导航图：把 [Destination] 的每个路由映射到对应占位页面。
  *
