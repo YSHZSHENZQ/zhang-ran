@@ -230,7 +230,14 @@ fun ZhangRanNavHost(
         composable(Destination.Rules.route) { RulesScreen() }
         composable(Destination.Backup.route) { BackupScreen() }
         composable(Destination.Logs.route) { LogsScreen() }
-        composable(Destination.Search.route) { SearchScreen() }
+        composable(Destination.Search.route) {
+            // D3：搜索结果行 → 交易详情（复用首页的 detailRoute，不另造拼接）
+            SearchScreen(
+                onOpenTransaction = { transactionId ->
+                    navController.navigate(Destination.detailRoute(transactionId))
+                },
+            )
+        }
         composable(Destination.About.route) { AboutScreen() }
     }
 }
