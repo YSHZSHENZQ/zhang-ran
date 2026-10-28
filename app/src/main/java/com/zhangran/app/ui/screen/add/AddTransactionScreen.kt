@@ -293,11 +293,12 @@ fun AddTransactionContent(
                         Spacer(modifier = Modifier.height(spacing.smDp))
                         Button(onClick = onRetry) { Text("重试") }
                     }
+
                 }
             }
 
             is AddTransactionUiState.Ready -> {
-                // 金额卡**固定**在顶部（不参与滚动），其余内容（分类 / 属性卡 / 键盘）整体可滚。
+                // 金额卡固定顶部；分类/属性卡可滚；键盘固定在滚动区之外（D4）。
                 AmountCard(state = state)
 
                 // 滚动区用 Box 明确约束高度：否则 verticalScroll + weight 的组合下，
@@ -339,22 +340,24 @@ fun AddTransactionContent(
 
                         state.error?.let { error -> FormErrorText(error) }
 
-                        NumberPad(
-                            onDigit = onDigit,
-                            onDot = onDot,
-                            onBackspace = onBackspace,
-                            onClear = onClear,
-                            onSave = onSave,
-                            saving = state.saving,
-                            modifier = Modifier.padding(
-                                start = AddLayout.cardMarginH,
-                                end = AddLayout.cardMarginH,
-                                top = spacing.smDp,
-                                bottom = spacing.mdDp,
-                            ),
-                        )
                     }
                 }
+                // 键盘固定在滚动区之外：底栏显示时最后一行不再被视口裁切（D4）。
+                NumberPad(
+                    onDigit = onDigit,
+                    onDot = onDot,
+                    onBackspace = onBackspace,
+                    onClear = onClear,
+                    onSave = onSave,
+                    saving = state.saving,
+                    modifier = Modifier.padding(
+                        start = AddLayout.cardMarginH,
+                        end = AddLayout.cardMarginH,
+                        top = spacing.smDp,
+                        bottom = spacing.mdDp,
+                    ),
+                )
+
             }
         }
     }
