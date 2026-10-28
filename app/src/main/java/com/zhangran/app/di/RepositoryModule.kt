@@ -13,10 +13,12 @@
 package com.zhangran.app.di
 
 import com.zhangran.app.data.repository.AccountRepository
+import com.zhangran.app.data.repository.BudgetRepository
 import com.zhangran.app.data.repository.CaptureEvidenceRepository
 import com.zhangran.app.data.repository.CategoryRepository
 import com.zhangran.app.data.repository.FieldEditRepository
 import com.zhangran.app.data.repository.RoomAccountRepository
+import com.zhangran.app.data.repository.RoomBudgetRepository
 import com.zhangran.app.data.repository.RoomCaptureEvidenceRepository
 import com.zhangran.app.data.repository.RoomCategoryRepository
 import com.zhangran.app.data.repository.RoomFieldEditRepository
@@ -47,9 +49,15 @@ abstract class RepositoryModule {
     @Singleton
     abstract fun bindCategoryRepository(impl: RoomCategoryRepository): CategoryRepository
 
+    /** `M2d-2`：账户读写（默认账户事务、可用默认账户）。 */
     @Binds
     @Singleton
     abstract fun bindAccountRepository(impl: RoomAccountRepository): AccountRepository
+
+    /** `M4a`：预算读写（唯一性由 `SaveBudgetUseCase` 收敛）。 */
+    @Binds
+    @Singleton
+    abstract fun bindBudgetRepository(impl: RoomBudgetRepository): BudgetRepository
 
     /** `M2b`：字段级用户修改保护（`docs/03` §11）。 */
     @Binds

@@ -54,6 +54,14 @@ interface BudgetDao {
     suspend fun countTotalByPeriodKey(periodKey: String): Int
 
     /**
+     * 物理删除预算（`M4a` §4.4.1：总预算与分类预算都可删除，删除后回到"未设置"）。
+     *
+     * 预算只是目标值，删除**不影响**交易与统计。
+     */
+    @Query("DELETE FROM budgets WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    /**
      * 插入总预算（应用层事务保证"每个 periodKey 至多一条"）。
      *
      * 若该月份已有总预算则**不插入**并返回 `false`，调用方据此判断冲突。
