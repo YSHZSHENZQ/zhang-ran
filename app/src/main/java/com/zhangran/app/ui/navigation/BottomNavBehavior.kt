@@ -5,8 +5,17 @@
  */
 package com.zhangran.app.ui.navigation
 
-/** 底栏是否显示：仅顶级页面显示（`06` §6.1）；未知路由不显示（安全默认）。 */
-fun showsBottomBar(destination: Destination?): Boolean = destination?.isTopLevel == true
+/**
+ * 底栏是否显示：仅顶级页面显示（`06` §6.1）；未知路由不显示（安全默认）。
+ *
+ * @param addOpenedAsPush 「记一笔」是从其他页面**推入**的（而非点底栏进入）。
+ * 推入时它是流程页，隐藏底栏（用户反馈：从首页进入记一笔不应显示底栏）。
+ */
+fun showsBottomBar(
+    destination: Destination?,
+    addOpenedAsPush: Boolean = false,
+): Boolean = destination?.isTopLevel == true &&
+    !(destination == Destination.Add && addOpenedAsPush)
 
 /** 系统返回键的落点。 */
 sealed interface BackAction {
@@ -32,3 +41,13 @@ fun backActionFor(current: Destination?): BackAction = when {
     current == Destination.Home -> BackAction.ExitApp
     else -> BackAction.GoHome(Destination.Home)
 }
+
+/**
+ * 系统返回键是否需要被本层拦截。
+ *
+ * 推入的「记一笔」当普通流程页处理：**不拦截**，由 Navigation 返回进入它的页面
+ * （从统计空态进入时应回统计，而不是回首页）。
+ */
+fun shouldInterceptBack(current: Destination?, addOpenedAsPush: Boolean = false): Boolean =
+    backActionFor(current) is BackAction.GoHome &&
+        !(current == Destination.Add && addOpenedAsPush)

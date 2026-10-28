@@ -19,6 +19,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
@@ -65,25 +68,50 @@ fun ZhangRanApp(navController: NavHostController = rememberNavController()) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val current = Destination.fromRoute(backStackEntry?.destination?.route)
 
-    // M5-1：非首页的顶级页按返回 → 回首页；二级页不拦截（交给 Navigation）
-    BackHandler(enabled = backActionFor(current) is BackAction.GoHome) {
+    // 「记一笔」有两种进入方式：
+    // - 点底栏 → tab（显示底栏、选中态）；
+    // - 从首页/统计的「去记一笔」推入 → 流程页（隐藏底栏，返回进入它的页面）。
+    var addOpenedAsPush by rememberSaveable { mutableStateOf(false) }
+
+    fun openAddAsPush() {
+        addOpenedAsPush = true
+        navController.navigate(Destination.Add.route)
+    }
+
+    fun backToHome() {
+        addOpenedAsPush = false
         navController.navigate(Destination.Home.route) {
             popUpTo(Destination.Home.route) { inclusive = false }
             launchSingleTop = true
         }
     }
 
+    // M5-1：非首页的顶级页按返回 → 回首页；二级页与推入型记一笔不拦截
+    BackHandler(enabled = shouldInterceptBack(current, addOpenedAsPush)) {
+        backToHome()
+    }
+
     Scaffold(
         bottomBar = {
             // M5-1：底栏仅顶级页显示（06 §6.1）
-            if (showsBottomBar(current)) {
-                BottomNavigationBar(current = current, navController = navController)
+            if (showsBottomBar(current, addOpenedAsPush)) {
+                BottomNavigationBar(
+                    current = current,
+                    navController = navController,
+                    onNavigateToTab = { destination ->
+                        // 点底栏进入记一笔时按 tab 处理（保留底栏）
+                        addOpenedAsPush = false
+                        navController.navigateToTopLevel(destination)
+                    },
+                )
             }
         },
     ) { innerPadding ->
         ZhangRanNavHost(
             navController = navController,
             modifier = Modifier.padding(innerPadding),
+            onOpenAddAsPush = ::openAddAsPush,
+            onSaved = ::backToHome,
         )
     }
 }
@@ -92,7 +120,11 @@ fun ZhangRanApp(navController: NavHostController = rememberNavController()) {
  * 底部导航栏（5 项；图标来自原型 SVG，选中项用 primary、未选中用 textDisabled）。
  */
 @Composable
-private fun BottomNavigationBar(current: Destination?, navController: NavHostController) {
+private fun BottomNavigationBar(
+    current: Destination?,
+    navController: NavHostController,
+    onNavigateToTab: (Destination) -> Unit,
+) {
     val colors = ZhangRanTheme.colors
     NavigationBar {
         Destination.topLevel.forEach { destination ->
@@ -111,7 +143,7 @@ private fun BottomNavigationBar(current: Destination?, navController: NavHostCon
                         "${destination.title}，标签页，${if (selected) "已选中" else "未选中"}"
                 },
                 selected = selected,
-                onClick = { navController.navigateToTopLevel(destination) },
+                onClick = { onNavigateToTab(destination) },
                 icon = {
                     Icon(
                         imageVector = TabIcons.forDestination(destination, tint),
@@ -144,6 +176,8 @@ private const val TAB_ICON_SIZE_DP = 24
 fun ZhangRanNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
+    onOpenAddAsPush: () -> Unit = {},
+    onSaved: () -> Unit = {},
 ) {
     NavHost(
         navController = navController,
@@ -152,15 +186,20 @@ fun ZhangRanNavHost(
     ) {
         composable(Destination.Home.route) {
             // 首页的 5 个入口都经这一个回调出站（`M2e-1b` §4.2/§4.4/§4.6）
-            HomeScreen(onNavigate = { route -> navController.navigate(route) })
+            HomeScreen(
+                onNavigate = { route ->
+                    if (route == Destination.Add.route) onOpenAddAsPush() else navController.navigate(route)
+                },
+            )
         }
         // M2e-2：统计页 Empty 态「去记一笔」（导航层唯一改动，经批准）
         composable(Destination.Stats.route) {
-            StatsScreen(
-                onNavigateToAdd = { navController.navigate(Destination.Add.route) },
-            )
+            StatsScreen(onNavigateToAdd = onOpenAddAsPush)
         }
-        composable(Destination.Add.route) { AddTransactionScreen() }
+        composable(Destination.Add.route) {
+            // 保存成功后回主界面（用户反馈：不应停留在表单页）
+            AddTransactionScreen(onSaved = onSaved)
+        }
         composable(Destination.Budget.route) { BudgetScreen() }
         // M4c：「我的」页入口跳转（导航层唯一改动，经批准）
         composable(Destination.Mine.route) {

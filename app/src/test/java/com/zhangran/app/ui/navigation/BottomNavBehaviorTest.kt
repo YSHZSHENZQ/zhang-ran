@@ -41,6 +41,23 @@ class BottomNavBehaviorTest {
     }
 
     @Test
+    fun 推入型记一笔记隐藏底栏而Tab进入显示() {
+        assertTrue(showsBottomBar(Destination.Add))
+        assertFalse(showsBottomBar(Destination.Add, addOpenedAsPush = true))
+        // 其他顶级页不受该标志影响
+        assertTrue(showsBottomBar(Destination.Home, addOpenedAsPush = true))
+        assertTrue(showsBottomBar(Destination.Stats, addOpenedAsPush = true))
+    }
+
+    @Test
+    fun 推入型记一笔不拦截返回() {
+        assertTrue(shouldInterceptBack(Destination.Stats))
+        assertTrue(shouldInterceptBack(Destination.Stats, addOpenedAsPush = true))
+        assertFalse(shouldInterceptBack(Destination.Add, addOpenedAsPush = true))
+        assertTrue(shouldInterceptBack(Destination.Add))
+    }
+
+    @Test
     fun 未知路由不显示底栏() {
         assertFalse(showsBottomBar(null))
     }

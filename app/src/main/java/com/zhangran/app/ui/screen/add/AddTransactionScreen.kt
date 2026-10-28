@@ -46,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -193,7 +194,7 @@ internal object AddLayout {
  * 记一笔页面（有状态入口；`ScreensSmokeTest` 以无参方式调用）。
  */
 @Composable
-fun AddTransactionScreen() {
+fun AddTransactionScreen(onSaved: () -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: AddTransactionViewModel = viewModel(
         factory = viewModelFactory {
@@ -211,6 +212,13 @@ fun AddTransactionScreen() {
         },
     )
     val state by viewModel.uiState.collectAsState()
+
+    // 保存成功后由调用方导航回主界面（不在 ViewModel 里碰导航）
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            if (event is AddTransactionEvent.Saved) onSaved()
+        }
+    }
 
     AddTransactionContent(
         state = state,
