@@ -146,6 +146,21 @@ private class FakeSummaryAccountRepository(
 
     override suspend fun findByName(name: String): AccountEntity? =
         rows.value.firstOrNull { it.name == name }
+
+    override suspend fun insert(account: AccountEntity) = Unit
+
+    override suspend fun update(account: AccountEntity) = Unit
+
+    override suspend fun setDefault(id: String, updatedAt: Long) = Unit
+
+    override suspend fun enable(account: AccountEntity, updatedAt: Long) = Unit
+
+    override suspend fun disable(account: AccountEntity, updatedAt: Long) = Unit
+
+    override suspend fun usableDefault(): AccountEntity? =
+        rows.value.firstOrNull { it.isDefault && it.enabled }
+
+    override suspend fun enabledCount(): Int = rows.value.count { it.enabled }
 }
 
 // ---------------------------------------------------------------------- 统计口径

@@ -281,11 +281,30 @@ class AddTransactionViewModelTest {
         assertEquals("应重新出现在启用列表", 1, ready.categories.count { it.name == "餐饮" })
     }
 
+    // ------------------------------------------------------------------ 默认账户预选（M2d-2 A8）
+
+    @Test
+    fun A8_默认账户被禁用时表单不预选任何账户() = runBlocking {
+        val base = sampleAccounts().first()
+        val viewModel = newViewModel(
+            accounts = listOf(
+                // 默认账户但已禁用（`docs/03` §8 允许保留 isDefault）
+                base.copy(enabled = false),
+                // 另一个启用账户：**不得**被 firstOrNull 兜底选中
+                base.copy(id = "acc-bank", name = "银行卡", isDefault = false, enabled = true),
+            ),
+        )
+
+        val state = viewModel.uiState.value as AddTransactionUiState.Ready
+        assertNull("禁用默认账户不得被预选（应提示用户选择）", state.selectedAccountId)
+    }
+
     // ------------------------------------------------------------------ 辅助
 
     private fun newViewModel(
         transactions: FakeTransactionRepository = FakeTransactionRepository(),
         categories: List<CategoryEntity> = sampleCategories(),
+        accounts: List<AccountEntity> = sampleAccounts(),
     ): AddTransactionViewModel {
         val categoryRepository = FakeCategoryRepository(categories)
         return AddTransactionViewModel(
@@ -300,7 +319,7 @@ class AddTransactionViewModelTest {
                 idGenerator = { "tx-1" },
             ),
             categoryRepository = categoryRepository,
-            accountRepository = FakeAccountRepository(sampleAccounts()),
+            accountRepository = FakeAccountRepository(accounts),
             clock = { NOW },
             externalScope = CoroutineScope(Dispatchers.Unconfined),
             ensureCategory = EnsureCategoryUseCase(
@@ -455,4 +474,18 @@ private class FakeAccountRepository(
     override suspend fun defaultAccount(): AccountEntity? = items.firstOrNull { it.isDefault }
 
     override suspend fun findByName(name: String): AccountEntity? = items.firstOrNull { it.name == name }
+
+    override suspend fun insert(account: AccountEntity) = Unit
+
+    override suspend fun update(account: AccountEntity) = Unit
+
+    override suspend fun setDefault(id: String, updatedAt: Long) = Unit
+
+    override suspend fun enable(account: AccountEntity, updatedAt: Long) = Unit
+
+    override suspend fun disable(account: AccountEntity, updatedAt: Long) = Unit
+
+    override suspend fun usableDefault(): AccountEntity? = items.firstOrNull { it.isDefault && it.enabled }
+
+    override suspend fun enabledCount(): Int = items.count { it.enabled }
 }

@@ -275,7 +275,9 @@ class AddTransactionViewModel(
     private suspend fun loadReady(type: TransactionType): AddTransactionUiState.Ready {
         val categories = categoriesOf(type)
         val accounts = accountRepository.all().map { AccountOption(id = it.id, name = it.name) }
-        val defaultAccountId = accountRepository.defaultAccount()?.id ?: accounts.firstOrNull()?.id
+        // M2d-2 §4.4：只预选“可用默认账户”（isDefault && enabled）；
+        // 无可用默认时不预选任何账户（不得用 accounts.firstOrNull() 兜底，可能选到禁用账户）
+        val defaultAccountId = accountRepository.usableDefault()?.id
         return AddTransactionUiState.Ready(
             type = type,
             categories = categories,
