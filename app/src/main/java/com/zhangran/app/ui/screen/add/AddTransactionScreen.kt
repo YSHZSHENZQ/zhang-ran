@@ -444,9 +444,14 @@ private fun AddTopBar(
                     ),
                 ),
             )
+            Spacer(modifier = Modifier.height(AddLayout.subtitleMarginTop))
             Text(
                 text = "MANUAL ENTRY",
-                style = MaterialTheme.typography.bodySmall,
+                // 与首页/统计/我的/预算的副标题一致：9sp + 3.2sp 字距 + textDisabled
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontSize = AddLayout.subtitleFontSize,
+                    letterSpacing = AddLayout.subtitleLetterSpacing,
+                ),
                 color = colors.textDisabledColor,
             )
         }
