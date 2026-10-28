@@ -17,9 +17,9 @@ class AboutInfoTest {
         assertEquals(
             listOf(
                 "所有数据仅存储在本地",
-                "INTERNET 仅用于与本机识别服务的回环通信，账务数据不出本机",
+                "账务数据不出本机",
                 "不收集、不上传任何信息",
-                "无障碍服务只读取可见文本",
+                "接入采集核心后，无障碍服务只读取可见文本",
             ),
             AboutInfo.PRIVACY_LINES,
         )
@@ -32,6 +32,8 @@ class AboutInfoTest {
             .forEach { forbidden ->
                 assertFalse("不得出现「$forbidden」", allText.contains(forbidden))
             }
+        // D2：U3 声明 INTERNET 前，当前文案不得出现该字样
+        assertFalse("当前文案不得出现 INTERNET", allText.contains("INTERNET"))
     }
 
     @Test
