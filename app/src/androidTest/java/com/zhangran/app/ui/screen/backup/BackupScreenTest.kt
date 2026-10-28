@@ -57,7 +57,7 @@ class BackupScreenTest {
         composeRule.onNodeWithText("说明").assertIsDisplayed()
         composeRule.onNodeWithText("导出备份").assertIsDisplayed()
         composeRule.onNodeWithText("恢复备份").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("恢复备份，不可用", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("恢复备份", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("v1").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("manifest + ${BACKUP_DATA_FILE_NAMES.size} 个数据文件")
             .performScrollTo()

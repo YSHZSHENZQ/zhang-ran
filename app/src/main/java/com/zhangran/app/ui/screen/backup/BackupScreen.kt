@@ -5,7 +5,7 @@
  * ```text
  * 数据备份与恢复
  * [说明] 备份包含…（不含截图/二进制）
- * [操作] 导出备份 → SAF 保存；恢复备份（禁用，"即将支持"）
+ * [操作] 导出备份 → SAF 保存；恢复备份 → SAF 选文件 → 校验 → 选模式 →（Replace 强确认）→ 报告
  * [格式] v1 · manifest + 11 个数据文件 · 最近一次导出
  * ```
  *
@@ -55,9 +55,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.zhangran.app.data.backup.BACKUP_DATA_FILE_NAMES
+import com.zhangran.app.data.backup.BackupReader
 import com.zhangran.app.data.backup.BACKUP_VERSION
 import com.zhangran.app.domain.usecase.ExportBackupUseCase
+import com.zhangran.app.domain.usecase.RestoreBackupUseCase
 import com.zhangran.app.ui.screen.backup.components.ExportRow
+import com.zhangran.app.ui.screen.backup.components.RestoreConfirmDialog
+import com.zhangran.app.ui.screen.backup.components.RestoreErrorDialog
+import com.zhangran.app.ui.screen.backup.components.RestoreModeSheet
+import com.zhangran.app.ui.screen.backup.components.RestoreProgressOverlay
+import com.zhangran.app.ui.screen.backup.components.RestoreReportSheet
 import com.zhangran.app.ui.screen.backup.components.RowArrow
 import com.zhangran.app.ui.theme.IconGradientGroup
 import com.zhangran.app.ui.theme.ZhangRanTheme
@@ -92,6 +99,8 @@ fun BackupScreen() {
             initializer {
                 BackupViewModel(
                     exportBackup = entryPoint.exportBackupUseCase(),
+                    restoreBackup = entryPoint.restoreBackupUseCase(),
+                    backupReader = entryPoint.backupReader(),
                     clock = entryPoint.clock(),
                     context = context.applicationContext,
                 )
@@ -99,6 +108,7 @@ fun BackupScreen() {
         },
     )
     val state by viewModel.uiState.collectAsState()
+    val restoreState by viewModel.restoreState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     val createDocument = rememberLauncherForActivityResult(
@@ -106,6 +116,13 @@ fun BackupScreen() {
     ) { uri ->
         // 用户取消 → uri == null：不报错、保持原状态（A10）
         if (uri != null) viewModel.export(uri)
+    }
+
+    val openDocument = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        // 取消选文件不报错
+        if (uri != null) viewModel.onBackupFileSelected(uri)
     }
 
     LaunchedEffect(viewModel) {
@@ -121,11 +138,43 @@ fun BackupScreen() {
             state = state,
             onExport = { createDocument.launch(viewModel.suggestedFileName()) },
             onDismissResult = viewModel::dismissResult,
+            restoreBusy = restoreState is RestoreUiState.Validating ||
+                restoreState is RestoreUiState.ModeSelection ||
+                restoreState is RestoreUiState.ConfirmReplace ||
+                restoreState is RestoreUiState.Restoring,
+            onRestoreFile = { openDocument.launch(arrayOf(RESTORE_MIME_TYPE)) },
         )
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+
+        when (val restore = restoreState) {
+            RestoreUiState.Idle -> Unit
+            is RestoreUiState.Validating -> RestoreProgressOverlay(mode = null)
+            is RestoreUiState.ModeSelection -> RestoreModeSheet(
+                summary = restore.summary,
+                onSelect = viewModel::selectMode,
+                onDismiss = viewModel::dismissRestore,
+            )
+
+            is RestoreUiState.ConfirmReplace -> RestoreConfirmDialog(
+                fileName = restore.fileName,
+                onConfirm = viewModel::confirmReplace,
+                onDismiss = viewModel::dismissRestore,
+            )
+
+            is RestoreUiState.Restoring -> RestoreProgressOverlay(mode = restore.mode)
+            is RestoreUiState.Report -> RestoreReportSheet(
+                report = restore.report,
+                onDismiss = viewModel::dismissRestore,
+            )
+
+            is RestoreUiState.Error -> RestoreErrorDialog(
+                message = restore.message,
+                onDismiss = viewModel::dismissRestore,
+            )
+        }
     }
 }
 
@@ -135,6 +184,8 @@ fun BackupContent(
     state: BackupUiState,
     onExport: () -> Unit = {},
     onDismissResult: () -> Unit = {},
+    restoreBusy: Boolean = false,
+    onRestoreFile: () -> Unit = {},
 ) {
     val colors = ZhangRanTheme.colors
     val exporting = state is BackupUiState.Exporting
@@ -166,14 +217,19 @@ fun BackupContent(
                     onClick = onExport,
                 ) { RowArrow(enabled = !exporting) }
 
-                // M4b-2：恢复入口必须存在但禁用（A11）
+                // M4b-2：恢复入口（A11/A13）
                 ExportRow(
                     icon = "📥",
                     iconGroup = IconGradientGroup.PURPLE,
                     title = "恢复备份",
-                    description = "即将支持 · 将在后续版本提供",
-                    enabled = false,
-                )
+                    description = if (restoreBusy) {
+                        "恢复流程进行中…"
+                    } else {
+                        "合并 / 替换 / 仅恢复设置"
+                    },
+                    enabled = !exporting && !restoreBusy,
+                    onClick = onRestoreFile,
+                ) { RowArrow(enabled = !exporting && !restoreBusy) }
             }
 
             when (state) {
@@ -441,13 +497,41 @@ internal object BackupLayout {
     val touchTargetDp: Dp = 48.dp
     val buttonPaddingVerticalDp: Dp = 14.dp
     val pageBottomPaddingDp: Dp = 24.dp
+
+    // M4b-2：恢复弹层/确认/报告
+    val sheetPaddingDp: Dp = 18.dp
+    val sheetHandleHeightDp: Dp = 2.dp
+    const val sheetHandleWidthFraction: Float = 0.3f
+    val sheetHandleGapDp: Dp = 10.dp
+    const val sheetSummaryFontSizeSp: Float = 10.5f
+    val modeOptionMinHeightDp: Dp = 64.dp
+    val modeOptionPaddingHorizontalDp: Dp = 6.dp
+    val modeOptionPaddingVerticalDp: Dp = 10.dp
+    const val modeTitleFontSizeSp: Float = 13.5f
+    const val modeDescFontSizeSp: Float = 10.5f
+    const val dialogWidthFraction: Float = 0.86f
+    val dialogPaddingDp: Dp = 20.dp
+    const val dialogBodyFontSizeSp: Float = 11.5f
+    val dialogActionGapDp: Dp = 14.dp
+    val reportSheetMaxHeightDp: Dp = 560.dp
+    const val reportModeFontSizeSp: Float = 10.5f
+    const val reportDetailFontSizeSp: Float = 10.5f
+    val reportCountPaddingDp: Dp = 10.dp
+    const val reportCountFontSizeSp: Float = 20f
 }
+
+/** SAF 恢复只接受 zip。 */
+private const val RESTORE_MIME_TYPE: String = "application/zip"
 
 /** Hilt 入口（不引入 `hilt-navigation-compose`）。 */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 internal interface BackupEntryPoint {
     fun exportBackupUseCase(): ExportBackupUseCase
+
+    fun restoreBackupUseCase(): RestoreBackupUseCase
+
+    fun backupReader(): BackupReader
 
     fun clock(): Clock
 }
