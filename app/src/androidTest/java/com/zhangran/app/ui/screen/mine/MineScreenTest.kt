@@ -97,7 +97,6 @@ class MineScreenTest {
             "数据管理",
             "分类管理",
             "账户管理",
-            "预算管理",
             "解析规则",
             "数据备份与恢复",
             "捕获日志",
@@ -167,13 +166,12 @@ class MineScreenTest {
 
         composeRule.onNodeWithContentDescription("分类管理", substring = true).performScrollTo().performClick()
         composeRule.onNodeWithContentDescription("账户管理", substring = true).performScrollTo().performClick()
-        composeRule.onNodeWithContentDescription("预算管理", substring = true).performScrollTo().performClick()
         composeRule.onNodeWithContentDescription("解析规则", substring = true).performScrollTo().performClick()
         composeRule.onNodeWithContentDescription("数据备份与恢复", substring = true).performScrollTo().performClick()
         composeRule.onNodeWithContentDescription("捕获日志", substring = true).performScrollTo().performClick()
 
         assertEquals(
-            listOf("categories", "accounts", "budget", "rules", "backup", "logs"),
+            listOf("categories", "accounts", "rules", "backup", "logs"),
             routes,
         )
     }

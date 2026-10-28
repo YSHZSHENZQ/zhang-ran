@@ -6,7 +6,7 @@
  * 我的                                        [采集未接入]
  * [自动记账] 权限状态（未接入）/ 总开关（禁用）/ 状态入口 / 待确认记录（N）
  * [外观]     暗色主题：跟随系统 | 浅色 | 深色
- * [数据管理] 分类 / 账户 / 预算 / 规则* / 备份* / 日志*      (*标注"即将支持")
+ * [数据管理] 分类 / 账户 / 规则* / 备份* / 日志*      (*标注"即将支持"；预算只保留底栏入口)
  * [关于]     关于账然 / 版本
  * ```
  *
@@ -348,7 +348,7 @@ private fun AppearanceSection(selected: ThemeMode, onThemeChange: (ThemeMode) ->
     }
 }
 
-/** 数据管理：分类/账户/预算可达；规则/备份/日志标注"即将支持"。 */
+/** 数据管理：分类/账户可达；规则/备份/日志标注"即将支持"；预算只保留底栏入口。 */
 @Composable
 private fun DataManagementSection(onNavigate: (String) -> Unit) {
     MineCard(title = "数据管理") {
@@ -366,13 +366,7 @@ private fun DataManagementSection(onNavigate: (String) -> Unit) {
             description = "现金、银行卡与第三方支付",
             onClick = { onNavigate(Destination.Accounts.route) },
         )
-        SettingNavRow(
-            icon = "🎯",
-            iconGroup = IconGradientGroup.ORANGE,
-            title = "预算管理",
-            description = "月度总预算与分类预算",
-            onClick = { onNavigate(Destination.Budget.route) },
-        )
+
         SettingNavRow(
             icon = "⚙",
             iconGroup = IconGradientGroup.PURPLE,
