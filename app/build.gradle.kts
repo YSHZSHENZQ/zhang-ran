@@ -14,6 +14,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -137,6 +138,8 @@ dependencies {
     // 于是运行期抛 AbstractMethodError: GeneratedSerializer.typeParametersSerializers。
     // 这里提升到与 json 同版（1.8.1）；本应用自身不含序列化业务代码，属安全的版本对齐。
     implementation(libs.kotlinx.serialization.core)
+    // M4b-1：备份 JSON（唯一新增运行时依赖；版本与 core 一致 1.8.1）
+    implementation(libs.kotlinx.serialization.json)
 
     // 单元测试
     testImplementation(libs.junit)

@@ -93,6 +93,7 @@ androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core",
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 # T2a 追加：与 room-migration 的 kotlinx-serialization-json 对齐（见 [versions] 说明）
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
@@ -101,5 +102,6 @@ androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-mani
 # （应用会直接报错）。Kotlin 版本仅由 Compose 编译器插件引用（见 kotlin 版本项）。
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
