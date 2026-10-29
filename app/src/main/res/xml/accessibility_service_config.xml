@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  无障碍采集服务配置（M6 阶段 1）。
+
+  只监听微信/支付宝；只读取窗口内容，不截图、不联网。
+  notificationTimeout 先取 100ms，阶段 1 在真机上对比 10/50/200ms。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagReportViewIds"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/accessibility_capture_description"
+    android:notificationTimeout="100"
+    android:packageNames="com.tencent.mm,com.eg.android.AlipayGphone" />

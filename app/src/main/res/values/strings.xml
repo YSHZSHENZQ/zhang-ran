@@ -2,4 +2,5 @@
 <!-- 账然 v0.1 最小字符串资源（T1a 只放启动所需项，不做设计 token） -->
 <resources>
     <string name="app_name">账然</string>
+    <string name="accessibility_capture_description">仅读取微信、支付宝的支付结果页面，用于本地识别账目；不截图、不上传任何数据。</string>
 </resources>
