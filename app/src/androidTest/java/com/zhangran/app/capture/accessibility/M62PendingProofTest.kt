@@ -53,6 +53,30 @@ class M62PendingProofTest {
         Thread.sleep(HOLD_FOR_SCREENCAP_MS)
     }
 
+    @Test
+    fun 首页正式收支不因待确认增加() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val ingest = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            AccessibilityIngestEntryPoint::class.java,
+        ).accessibilitySnapshotIngest()
+        val result = runBlocking {
+            ingest.ingest(
+                AccessibilityFixtures.wechatPaySuccess(capturedAt = System.currentTimeMillis()),
+                AccessibilityFixtures.WECHAT_PAY_SUCCESS,
+            )
+        }
+        check(result.transactionState == com.zhangran.app.domain.model.TransactionState.PENDING) {
+            "fixture 未进入待确认：${result.toProofJson()}"
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("本月支出").assertIsDisplayed()
+        composeRule.onNodeWithText("¥0.00", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("+0.00").assertIsDisplayed()
+        composeRule.waitForIdle()
+        Thread.sleep(HOLD_FOR_SCREENCAP_MS)
+    }
+
     private companion object {
         const val HOLD_FOR_SCREENCAP_MS: Long = 20_000L
     }
