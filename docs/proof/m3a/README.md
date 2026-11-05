@@ -20,7 +20,7 @@
 | `ac1.json` | AC-1。F-D `reasons` 含 `POSSIBLE_DUPLICATE`，`state=PENDING` |
 | `ac2-pending-after-confirm.png` | AC-2。确认 F-A 之后列表里没有 F-A |
 | `ac2.json` | AC-2。F-A `state=CONFIRMED`，`confirmedByUser=true`，`fieldEdits=[]` |
-| `ac3-edit-before-save.png` | AC-3。F-B 编辑页：分类「餐饮」、备注「改完再记备注」、「保存并入账」 |
+| `ac3-edit-before-save.png` | AC-3。F-B 编辑页，键盘已收起。同一屏可读分类「餐饮」、备注「改完再记备注」和「保存并入账」 |
 | `ac3-pending-after-save.png` | AC-3。保存后列表里没有 F-B |
 | `ac3.json` | AC-3。F-B `fieldEdits` 恰好 `categoryId` 与 `note` |
 | `ac4-before.json` | AC-4。忽略 F-C 之前：`state=PENDING`，`evidenceCount=1`，`captureLogCount=1` |
