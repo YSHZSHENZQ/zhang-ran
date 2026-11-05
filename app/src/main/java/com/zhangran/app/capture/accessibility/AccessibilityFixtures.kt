@@ -12,20 +12,25 @@ object AccessibilityFixtures {
     /** 2025-11-11 附近的真实毫秒时间，落在 [com.zhangran.app.domain.service.TransactionTime] 允许范围内。 */
     const val CAPTURED_AT: Long = 1_762_888_000_000L
 
-    fun wechatPaySuccess(capturedAt: Long = CAPTURED_AT): AccessibilityPageSnapshot =
-        AccessibilityPageSnapshot(
+    fun wechatPaySuccess(
+        capturedAt: Long = CAPTURED_AT,
+        merchant: String = "星巴克咖啡",
+    ): AccessibilityPageSnapshot {
+        val nodes = listOf(
+            node("支付成功", 1),
+            node(merchant, 2),
+            node("¥38.50", 2),
+            node("完成", 3),
+        )
+        return AccessibilityPageSnapshot(
             packageName = AccessibilityTargets.WECHAT_PACKAGE,
             windowId = 1,
             capturedAt = capturedAt,
-            nodes = listOf(
-                node("支付成功", 1),
-                node("星巴克咖啡", 2),
-                node("¥38.50", 2),
-                node("完成", 3),
-            ),
+            nodes = nodes,
             truncated = false,
-            textChars = 16,
+            textChars = nodes.sumOf { it.text?.length ?: 0 },
         )
+    }
 
     /** 有节点但没有金额、也没有支付结果用语。 */
     fun invalidBlank(capturedAt: Long = CAPTURED_AT): AccessibilityPageSnapshot =

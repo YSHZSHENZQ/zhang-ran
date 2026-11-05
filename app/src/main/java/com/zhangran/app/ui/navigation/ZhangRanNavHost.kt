@@ -215,8 +215,27 @@ fun ZhangRanNavHost(
                 },
             ),
         ) { TransactionDetailScreen() }
-        composable(Destination.Pending.route) { PendingScreen() }
-        composable(Destination.PendingEdit.route) { PendingEditScreen() }
+        composable(Destination.Pending.route) {
+            PendingScreen(
+                onOpenEdit = { transactionId ->
+                    navController.navigate(Destination.pendingEditRoute(transactionId))
+                },
+            )
+        }
+        composable(
+            route = Destination.PendingEdit.route,
+            arguments = listOf(
+                navArgument(Destination.ARG_TRANSACTION_ID) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) { entry ->
+            PendingEditScreen(
+                transactionId = entry.arguments?.getString(Destination.ARG_TRANSACTION_ID).orEmpty(),
+                onBooked = { navController.popBackStack() },
+            )
+        }
         composable(Destination.DuplicateReview.route) { DuplicateReviewScreen() }
         composable(Destination.AutoLedger.route) { AutoLedgerScreen() }
         composable(Destination.Onboard.route) { OnboardScreen() }

@@ -31,7 +31,11 @@ enum class Destination(
     // 详情页带可选参数 transactionId（`M2e-1b`：首页点击交易 → 详情，需带 id）
     Detail(route = "detail?transactionId={transactionId}", title = "交易详情", isTopLevel = false),
     Pending(route = "pending", title = "待确认记录", isTopLevel = false),
-    PendingEdit(route = "pendingEdit", title = "编辑后入账", isTopLevel = false),
+    PendingEdit(
+        route = "pendingEdit?transactionId={transactionId}",
+        title = "编辑后入账",
+        isTopLevel = false,
+    ),
     DuplicateReview(route = "duplicateReview", title = "疑似重复", isTopLevel = false),
     AutoLedger(route = "autoLedger", title = "自动记账", isTopLevel = false),
     Onboard(route = "onboard", title = "权限引导", isTopLevel = false),
@@ -67,5 +71,9 @@ enum class Destination(
          */
         fun detailRoute(transactionId: String): String =
             Detail.route.replace(TRANSACTION_ID_PLACEHOLDER, transactionId)
+
+        /** 待确认编辑页路由（必须带交易 id）。 */
+        fun pendingEditRoute(transactionId: String): String =
+            PendingEdit.route.replace(TRANSACTION_ID_PLACEHOLDER, transactionId)
     }
 }
