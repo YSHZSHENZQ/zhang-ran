@@ -18,11 +18,13 @@ internal object AccessibilityDiagnostics {
         nodes: Int = 0,
         elapsedMs: Long = 0,
         truncated: Boolean = false,
+        capturedAt: Long = 0,
     ) {
         val safePackage = packageName?.take(MAX_PACKAGE_CHARS)
         Log.d(
             TAG,
-            "status=$status pkg=$safePackage nodes=$nodes elapsedMs=$elapsedMs truncated=$truncated",
+            "status=$status pkg=$safePackage nodes=$nodes elapsedMs=$elapsedMs " +
+                "truncated=$truncated capturedAt=$capturedAt",
         )
     }
 

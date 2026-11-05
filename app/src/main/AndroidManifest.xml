@@ -20,7 +20,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ZhangRan">
 
-        <!-- M6 阶段 1：最小无障碍采集服务（仅白名单，不写账） -->
+        <!-- M6-2：白名单支付结果只进待确认，禁止自动写入正式账 -->
         <service
             android:name=".capture.accessibility.AccessibilityCaptureService"
             android:exported="true"

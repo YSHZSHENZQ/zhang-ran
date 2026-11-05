@@ -1,0 +1,34 @@
+{
+  "deviceTimeZone": "Etc/UTC",
+  "monthRangeUtc": {
+    "startInclusive": 1793491200000,
+    "endExclusive": 1796083200000
+  },
+  "homeSummary": {
+    "monthExpenseMinor": 0,
+    "monthIncomeMinor": 0,
+    "monthBalanceMinor": 0,
+    "pendingCount": 2
+  },
+  "confirmedCount": 0,
+  "transactions": [
+    {
+      "id": "ad3bdaae-afda-49c0-b378-25f0e8a6a787",
+      "state": "PENDING",
+      "source": "ACCESSIBILITY",
+      "type": "EXPENSE",
+      "amountMinor": 3850,
+      "merchant": "星巴克咖啡",
+      "transactionTime": 1793873750536
+    },
+    {
+      "id": "d8d2fbc9-859e-4420-8179-01b7dbda85d4",
+      "state": "PENDING",
+      "source": "ACCESSIBILITY",
+      "type": "EXPENSE",
+      "amountMinor": 3850,
+      "merchant": "星巴克咖啡",
+      "transactionTime": 1762888000000
+    }
+  ]
+}
