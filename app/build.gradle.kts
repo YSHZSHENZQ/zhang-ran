@@ -31,6 +31,8 @@ android {
         // 版本号唯一来源：app/gradle/libs.versions.toml（任务书 §4.1.1）
         versionCode = libs.versions.versionCode.get().toInt()
         versionName = libs.versions.versionName.get()
+        // 取证用：证明 APK 与 PR head 是同一次构建。不参与业务规则。
+        buildConfigField("String", "GIT_SHA", "\"${gitHeadSha(rootDir)}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -162,3 +164,13 @@ dependencies {
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.runner)
 }
+
+/** 配置期读取仓库 HEAD，写入 BuildConfig.GIT_SHA。失败时记 unknown，不阻断构建。 */
+fun gitHeadSha(appDir: java.io.File): String = runCatching {
+    val process = ProcessBuilder("git", "rev-parse", "HEAD")
+        .directory(appDir.parentFile)
+        .redirectErrorStream(true)
+        .start()
+    val text = process.inputStream.bufferedReader().readText().trim()
+    if (process.waitFor() == 0 && text.length >= 7) text else "unknown"
+}.getOrDefault("unknown")

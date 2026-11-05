@@ -22,6 +22,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zhangran.app.domain.model.CaptureSource
 import com.zhangran.app.domain.model.HomeSummary
+import com.zhangran.app.domain.model.TransactionState
 import com.zhangran.app.domain.model.TransactionType
 import com.zhangran.app.domain.usecase.DeleteTransactionUseCase
 import com.zhangran.app.domain.usecase.ObserveHomeSummaryUseCase
@@ -148,22 +149,31 @@ class HomeViewModel(
         }
     }
 
-    /** 空列表 → `Empty`；否则按日期分组映射为 `Content`（判定条件与既有实现一致）。 */
+    /**
+     * 空列表 → `Empty`；否则按日期分组映射为 `Content`。
+     *
+     * 首页账单只留待确认和已确认。忽略 / 重复不进账单列表（统计口径仍由汇总用例决定）。
+     */
     private fun toUiState(
         entries: List<TransactionListEntry>,
         summary: HomeSummary,
         nowEpochMillis: Long,
-    ): HomeUiState = if (entries.isEmpty()) {
-        HomeUiState.Empty
-    } else {
-        HomeUiState.Content(
-            sections = groupIntoSections(
-                entries = entries,
-                zoneId = ZoneId.systemDefault().id,
-                nowEpochMillis = nowEpochMillis,
-            ),
-            summary = summary,
-        )
+    ): HomeUiState {
+        val listed = entries.filter { entry ->
+            entry.state == TransactionState.PENDING || entry.state == TransactionState.CONFIRMED
+        }
+        return if (listed.isEmpty()) {
+            HomeUiState.Empty
+        } else {
+            HomeUiState.Content(
+                sections = groupIntoSections(
+                    entries = listed,
+                    zoneId = ZoneId.systemDefault().id,
+                    nowEpochMillis = nowEpochMillis,
+                ),
+                summary = summary,
+            )
+        }
     }
 
     companion object {
