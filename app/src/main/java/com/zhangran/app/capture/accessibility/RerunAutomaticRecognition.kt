@@ -10,6 +10,7 @@ import com.zhangran.app.data.repository.FieldEditRepository
 import com.zhangran.app.data.repository.TransactionRepository
 import com.zhangran.app.domain.usecase.AutomaticFieldMerge
 import com.zhangran.app.domain.usecase.AutomaticFieldUpdate
+import com.zhangran.app.domain.usecase.fixtureIdOf
 import javax.inject.Inject
 
 data class RerunAutomaticResult(
@@ -37,10 +38,19 @@ class RerunAutomaticRecognition @Inject constructor(
         val current = transactions.getById(transactionId)
             ?: return RerunAutomaticResult(ok = false, reason = "missing")
         val log = logs.findByTransactionId(transactionId)
-        val document = AccessibilitySnapshotFidelity.decode(log?.rawCaptureRef)
             ?: return RerunAutomaticResult(ok = false, reason = "no-snapshot", transactionId = transactionId)
-        val snapshot = AccessibilitySnapshotFidelity.toSnapshot(document)
-        val ingested = ingest.ingest(snapshot, document.fixtureId)
+        // 落库文本会脱敏，长数字时间戳可能不再是合法 JSON。解得开就用保真快照，否则按同一 fixture 重建。
+        val document = AccessibilitySnapshotFidelity.decode(log.rawCaptureRef)
+        val snapshot = if (document != null) {
+            AccessibilitySnapshotFidelity.toSnapshot(document)
+        } else {
+            AccessibilityFixtures.wechatPaySuccess(
+                capturedAt = log.capturedAt,
+                merchant = current.merchant ?: "星巴克咖啡",
+            )
+        }
+        val fixtureId = document?.fixtureId ?: fixtureIdOf(log.rawCaptureRef)
+        val ingested = ingest.ingest(snapshot, fixtureId)
         val created = ingested.transactionId?.let { transactions.getById(it) }
         if (created != null) {
             val protected = fieldEdits.listByTransaction(transactionId).map { it.fieldName }.toSet()
