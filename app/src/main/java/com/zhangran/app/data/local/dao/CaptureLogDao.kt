@@ -29,6 +29,16 @@ interface CaptureLogDao {
     @Query("SELECT * FROM capture_logs WHERE captureId = :captureId")
     suspend fun findByCaptureId(captureId: String): CaptureLogEntity?
 
+    /** 待确认行回查原因（一笔交易至多取最新一条日志）。 */
+    @Query(
+        "SELECT * FROM capture_logs WHERE transactionId = :transactionId " +
+            "ORDER BY capturedAt DESC LIMIT 1",
+    )
+    suspend fun findByTransactionId(transactionId: String): CaptureLogEntity?
+
+    @Query("SELECT * FROM capture_logs ORDER BY capturedAt DESC")
+    suspend fun listAll(): List<CaptureLogEntity>
+
     /** 日志页：按时间倒序分页（`02` §20）。 */
     @Query("SELECT * FROM capture_logs ORDER BY capturedAt DESC LIMIT :limit OFFSET :offset")
     suspend fun listPage(limit: Int, offset: Int): List<CaptureLogEntity>

@@ -1,25 +1,28 @@
 /**
- * 最小无障碍采集服务（`M6` 阶段 1）。
+ * 无障碍采集服务（M6 阶段 1 采样 + M6-2 待确认竖切）。
  *
- * 只做四件事：
- * 1. 过滤白名单包名与两类窗口事件；
- * 2. 300ms 延迟采样（同窗口合并，取消旧任务）；
- * 3. 读取节点文本快照（仅内存，限深/限量/限文本）；
- * 4. 输出脱敏诊断（无页面文本、无截图、无磁盘/数据库写入）。
- *
- * **不解析、不入账、不建 Pending、不调用 Decision/Dedup**——这些属阶段 2/3。
+ * 白名单支付结果页：延迟采样后交给 [AccessibilityCapturePipeline]，只写待确认。
+ * 非白名单、以及不像支付结果的页面：不落业务候选。
+ * 服务绑定时写一条连通诊断（状态 + 时间戳），不写交易。
  */
 package com.zhangran.app.capture.accessibility
 
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityEvent
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.withContext
 
+@AndroidEntryPoint
 class AccessibilityCaptureService : AccessibilityService() {
+
+    @Inject lateinit var pipeline: AccessibilityCapturePipeline
+
+    @Inject lateinit var connectivity: AccessibilityConnectivityRecorder
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val reader = NodeTreeReader()
@@ -27,7 +30,8 @@ class AccessibilityCaptureService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        AccessibilityDiagnostics.log(status = "SERVICE_CONNECTED")
+        val capturedAt = connectivity.recordConnected()
+        AccessibilityDiagnostics.log(status = "SERVICE_CONNECTED", capturedAt = capturedAt)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -78,14 +82,22 @@ class AccessibilityCaptureService : AccessibilityService() {
                         elapsedMs = elapsed,
                     )
 
-                is NodeReadResult.Success ->
+                is NodeReadResult.Success -> {
+                    val forward = AccessibilitySnapshotParser.shouldForward(result.snapshot)
                     AccessibilityDiagnostics.log(
-                        status = if (result.snapshot.truncated) "SNAPSHOT_TRUNCATED" else "SNAPSHOT_OK",
+                        status = when {
+                            !forward -> "NOT_PAYMENT_PAGE"
+                            result.snapshot.truncated -> "SNAPSHOT_TRUNCATED"
+                            else -> "SNAPSHOT_OK"
+                        },
                         packageName = packageName,
                         nodes = result.snapshot.nodes.size,
                         elapsedMs = elapsed,
                         truncated = result.snapshot.truncated,
+                        capturedAt = capturedAt,
                     )
+                    if (forward) pipeline.submit(result.snapshot)
+                }
             }
         }
     }

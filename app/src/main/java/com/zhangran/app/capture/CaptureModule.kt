@@ -15,7 +15,13 @@
  */
 package com.zhangran.app.capture
 
+import com.zhangran.app.capture.accessibility.AccessibilityCapturePipeline
+import com.zhangran.app.capture.accessibility.AccessibilityConnectivityRecorder
+import com.zhangran.app.capture.accessibility.AccessibilitySnapshotIngest
+import com.zhangran.app.data.repository.CaptureLogRepository
+import com.zhangran.app.data.repository.TransactionRepository
 import com.zhangran.app.di.ApplicationScope
+import com.zhangran.app.domain.service.Normalize
 import com.zhangran.app.log.CaptureLogSink
 import com.zhangran.app.log.RoomCaptureLogSink
 import dagger.Binds
@@ -62,5 +68,38 @@ abstract class CaptureModule {
             eventSource: CollectorEventSource,
             @ApplicationScope scope: CoroutineScope,
         ): CaptureSubmitter = CaptureSubmitter(eventSource = eventSource, scope = scope)
+
+        /** M6-2：无障碍快照只进待确认。 */
+        @Provides
+        @Singleton
+        fun provideAccessibilitySnapshotIngest(
+            normalize: Normalize,
+            transactions: TransactionRepository,
+            records: CaptureLogRepository,
+        ): AccessibilitySnapshotIngest = AccessibilitySnapshotIngest(
+            normalize = normalize,
+            transactions = transactions,
+            records = records,
+        )
+
+        @Provides
+        @Singleton
+        fun provideAccessibilityCapturePipeline(
+            ingest: AccessibilitySnapshotIngest,
+            @ApplicationScope scope: CoroutineScope,
+        ): AccessibilityCapturePipeline = AccessibilityCapturePipeline(
+            ingest = ingest,
+            scope = scope,
+        )
+
+        @Provides
+        @Singleton
+        fun provideAccessibilityConnectivityRecorder(
+            records: CaptureLogRepository,
+            @ApplicationScope scope: CoroutineScope,
+        ): AccessibilityConnectivityRecorder = AccessibilityConnectivityRecorder(
+            records = records,
+            scope = scope,
+        )
     }
 }

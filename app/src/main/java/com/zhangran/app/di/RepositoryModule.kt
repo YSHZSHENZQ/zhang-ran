@@ -15,11 +15,13 @@ package com.zhangran.app.di
 import com.zhangran.app.data.repository.AccountRepository
 import com.zhangran.app.data.repository.BudgetRepository
 import com.zhangran.app.data.repository.CaptureEvidenceRepository
+import com.zhangran.app.data.repository.CaptureLogRepository
 import com.zhangran.app.data.repository.CategoryRepository
 import com.zhangran.app.data.repository.FieldEditRepository
 import com.zhangran.app.data.repository.RoomAccountRepository
 import com.zhangran.app.data.repository.RoomBudgetRepository
 import com.zhangran.app.data.repository.RoomCaptureEvidenceRepository
+import com.zhangran.app.data.repository.RoomCaptureLogRepository
 import com.zhangran.app.data.repository.RoomCategoryRepository
 import com.zhangran.app.data.repository.RoomFieldEditRepository
 import com.zhangran.app.data.repository.RoomTransactionRepository
@@ -70,6 +72,11 @@ abstract class RepositoryModule {
     abstract fun bindCaptureEvidenceRepository(
         impl: RoomCaptureEvidenceRepository,
     ): CaptureEvidenceRepository
+
+    /** M6-2：无障碍路径写入捕获日志与证据，待确认页按交易回查原因。 */
+    @Binds
+    @Singleton
+    abstract fun bindCaptureLogRepository(impl: RoomCaptureLogRepository): CaptureLogRepository
 
     companion object {
 
