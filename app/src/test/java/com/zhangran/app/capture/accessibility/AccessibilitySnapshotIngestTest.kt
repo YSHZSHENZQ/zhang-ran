@@ -271,6 +271,7 @@ class AccessibilitySnapshotIngestTest {
         assertFalse(encoded.contains("13812345678"))
         assertTrue(encoded.contains("***"))
         assertTrue(encoded.contains(AccessibilityFixtures.WECHAT_PAY_SUCCESS))
+        assertTrue(encoded.contains("\"capturedAt\":${AccessibilityFixtures.CAPTURED_AT}"))
     }
 }
 

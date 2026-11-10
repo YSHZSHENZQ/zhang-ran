@@ -1,8 +1,9 @@
 /**
  * 无障碍快照的保真文本（M6-2）。
  *
- * 只保存解析所需的文本投影，并在落库前走 [com.zhangran.app.capture.CaptureProcessor.sanitize]。
- * 不保存截图，不保存节点对象。
+ * 只保存解析所需的文本投影。每个文本字段先走
+ * [com.zhangran.app.capture.CaptureProcessor.sanitize]，再编码成 JSON。
+ * 不保存截图，不保存节点对象。时间戳保持原值，否则无法回放。
  */
 package com.zhangran.app.capture.accessibility
 
@@ -36,25 +37,29 @@ object AccessibilitySnapshotFidelity {
         explicitNulls = false
     }
 
-    /** 编码并脱敏。脱敏失败时退回已编码文本，不抛给采集入口。 */
+    /**
+     * 先按字段脱敏，再编码。
+     *
+     * 不对整段 JSON 跑脱敏：时间戳是 13 位数字，整段替换会把 `capturedAt` 当成单号打成非法 JSON，
+     * 之后无法把这一页冻成 fixture。节点文本里的单号、手机号、姓名仍然会脱敏。
+     */
     fun encode(snapshot: AccessibilityPageSnapshot, fixtureId: String?): String {
         val document = AccessibilityFidelityDocument(
-            fixtureId = fixtureId,
-            packageName = snapshot.packageName,
+            fixtureId = CaptureProcessor.sanitize(fixtureId),
+            packageName = CaptureProcessor.sanitize(snapshot.packageName) ?: snapshot.packageName,
             windowId = snapshot.windowId,
             capturedAt = snapshot.capturedAt,
             truncated = snapshot.truncated,
             nodes = snapshot.nodes.map { node ->
                 AccessibilityFidelityNode(
-                    text = node.text,
-                    contentDescription = node.contentDescription,
-                    viewId = node.viewId,
+                    text = CaptureProcessor.sanitize(node.text),
+                    contentDescription = CaptureProcessor.sanitize(node.contentDescription),
+                    viewId = CaptureProcessor.sanitize(node.viewId),
                     depth = node.depth,
                 )
             },
         )
-        val encoded = json.encodeToString(document)
-        return CaptureProcessor.sanitize(encoded) ?: encoded
+        return json.encodeToString(document)
     }
 
     /** 从已落库的保真文本还原快照。解析失败返回 null。 */
