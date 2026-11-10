@@ -36,6 +36,10 @@ interface TransactionDao {
     @Update
     suspend fun update(transaction: TransactionEntity)
 
+    /** 调试取证前清空交易。正式页面不调用。 */
+    @Query("DELETE FROM transactions")
+    suspend fun deleteAll()
+
     /** 按 id 查询**未删除**记录。 */
     @Query("SELECT * FROM transactions WHERE id = :id AND deletedAt IS NULL")
     suspend fun findById(id: String): TransactionEntity?

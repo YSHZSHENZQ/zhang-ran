@@ -56,4 +56,28 @@ object AccessibilitySnapshotFidelity {
         val encoded = json.encodeToString(document)
         return CaptureProcessor.sanitize(encoded) ?: encoded
     }
+
+    /** 从已落库的保真文本还原快照。解析失败返回 null。 */
+    fun decode(raw: String?): AccessibilityFidelityDocument? {
+        if (raw.isNullOrBlank()) return null
+        return runCatching { json.decodeFromString<AccessibilityFidelityDocument>(raw) }.getOrNull()
+    }
+
+    fun toSnapshot(document: AccessibilityFidelityDocument): AccessibilityPageSnapshot =
+        AccessibilityPageSnapshot(
+            packageName = document.packageName,
+            windowId = document.windowId,
+            capturedAt = document.capturedAt,
+            nodes = document.nodes.map { node ->
+                SnapshotNode(
+                    text = node.text,
+                    contentDescription = node.contentDescription,
+                    viewId = node.viewId,
+                    className = null,
+                    depth = node.depth,
+                )
+            },
+            truncated = document.truncated,
+            textChars = document.nodes.sumOf { (it.text?.length ?: 0) + (it.contentDescription?.length ?: 0) },
+        )
 }

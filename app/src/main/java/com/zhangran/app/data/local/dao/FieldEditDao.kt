@@ -35,4 +35,8 @@ interface FieldEditDao {
     /** 全部保护记录（供备份 / 合并判断使用）。 */
     @Query("SELECT * FROM field_edits ORDER BY transactionId ASC, fieldName ASC")
     suspend fun listAll(): List<FieldEditEntity>
+
+    /** 调试取证前清空保护记录。正式页面不调用。 */
+    @Query("DELETE FROM field_edits")
+    suspend fun deleteAll()
 }
