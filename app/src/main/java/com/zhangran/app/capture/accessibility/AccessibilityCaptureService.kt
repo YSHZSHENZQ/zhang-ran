@@ -1,15 +1,18 @@
 /**
- * 无障碍采集服务（M6 阶段 1 采样 + M6-2 待确认竖切）。
+ * 无障碍采集服务（M6 阶段 1 采样 + M6-2 待确认竖切 + M6-3 debug 快照导出）。
  *
  * 白名单支付结果页：延迟采样后交给 [AccessibilityCapturePipeline]，只写待确认。
  * 非白名单、以及不像支付结果的页面：不落业务候选。
  * 服务绑定时写一条连通诊断（状态 + 时间戳），不写交易。
+ * debug 包额外把白名单采样写成私有目录里的脱敏 JSON，供 adb 拉出后冻 fixture；release 不写。
  */
 package com.zhangran.app.capture.accessibility
 
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityEvent
+import com.zhangran.app.BuildConfig
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,11 +30,18 @@ class AccessibilityCaptureService : AccessibilityService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val reader = NodeTreeReader()
     private val scheduler = DelayedSampleScheduler(scope)
+    private val exporter by lazy {
+        AccessibilitySnapshotExporter(
+            directory = File(filesDir, AccessibilitySnapshotExporter.DIRECTORY),
+            enabled = BuildConfig.DEBUG,
+        )
+    }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         val capturedAt = connectivity.recordConnected()
         AccessibilityDiagnostics.log(status = "SERVICE_CONNECTED", capturedAt = capturedAt)
+        AccessibilityDiagnostics.log(status = "BUILD", detail = BuildConfig.GIT_SHA)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -83,6 +93,7 @@ class AccessibilityCaptureService : AccessibilityService() {
                     )
 
                 is NodeReadResult.Success -> {
+                    exportDebugSnapshot(result.snapshot)
                     val forward = AccessibilitySnapshotParser.shouldForward(result.snapshot)
                     AccessibilityDiagnostics.log(
                         status = when {
@@ -100,6 +111,33 @@ class AccessibilityCaptureService : AccessibilityService() {
                 }
             }
         }
+    }
+
+    /**
+     * debug：无论当前解析是否认为这是支付结果页，都导出脱敏快照。
+     * 解析门槛只决定要不要进待确认，不决定这份取证文件在不在。
+     */
+    private fun exportDebugSnapshot(snapshot: AccessibilityPageSnapshot) {
+        if (!BuildConfig.DEBUG) return
+        val fileName = exporter.export(snapshot)
+        if (fileName == null) {
+            AccessibilityDiagnostics.log(
+                status = "SNAPSHOT_EXPORT_FAILED",
+                packageName = snapshot.packageName,
+                nodes = snapshot.nodes.size,
+                truncated = snapshot.truncated,
+                capturedAt = snapshot.capturedAt,
+            )
+            return
+        }
+        AccessibilityDiagnostics.log(
+            status = "SNAPSHOT_EXPORTED",
+            packageName = snapshot.packageName,
+            nodes = snapshot.nodes.size,
+            truncated = snapshot.truncated,
+            capturedAt = snapshot.capturedAt,
+            fileName = fileName,
+        )
     }
 
     override fun onInterrupt() {

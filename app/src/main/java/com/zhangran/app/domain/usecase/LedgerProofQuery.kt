@@ -37,6 +37,7 @@ class LedgerProofQuery @Inject constructor(
                     append("\"fixtureId\":${jsonString(fixtureId)}")
                     append(",\"transactionId\":${jsonString(entity.id)}")
                     append(",\"state\":${jsonString(entity.state.name)}")
+                    append(",\"source\":${jsonString(entity.source.name)}")
                     append(",\"confirmedByUser\":${entity.confirmedByUser}")
                     append(",\"amountMinor\":${entity.amountMinor}")
                     append(",\"type\":${jsonString(entity.type.name)}")

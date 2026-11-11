@@ -257,6 +257,40 @@ class AccessibilitySnapshotIngestTest {
     }
 
     @Test
+    fun 真机两页与M6_2回放只进待确认且导航金额页不入账() = runBlocking {
+        val harness = Harness()
+        val wx = harness.ingest.ingest(AccessibilityFixtures.wechatDepthSeek(), AccessibilityFixtures.F_WX)
+        val ali = harness.ingest.ingest(AccessibilityFixtures.alipayFufu(), AccessibilityFixtures.F_ALI)
+        val old = harness.ingest.ingest(
+            AccessibilityFixtures.wechatPaySuccess(),
+            AccessibilityFixtures.WECHAT_PAY_SUCCESS,
+        )
+        val ignored = harness.ingest.ingest(
+            AccessibilityFixtures.chromeAmountNotResult(),
+            "m6-3-not-11-58",
+        )
+
+        assertEquals(TransactionState.PENDING, wx.transactionState)
+        assertEquals(CaptureSource.ACCESSIBILITY, wx.captureSource)
+        assertEquals(TransactionState.PENDING, ali.transactionState)
+        assertEquals(CaptureSource.ACCESSIBILITY, ali.captureSource)
+        assertEquals(TransactionState.PENDING, old.transactionState)
+        assertEquals(CaptureSource.ACCESSIBILITY, old.captureSource)
+        assertEquals(AccessibilityIngestOutcome.IGNORED_INVALID, ignored.outcome)
+        assertEquals(null, ignored.transactionId)
+
+        val rows = harness.transactions.rows
+        assertEquals(3, rows.size)
+        assertTrue(rows.all { it.state == TransactionState.PENDING && it.source == CaptureSource.ACCESSIBILITY })
+        assertTrue(rows.all { !it.confirmedByUser && it.type == TransactionType.EXPENSE })
+        assertEquals(0, harness.transactions.countByState(TransactionState.CONFIRMED))
+        val byMerchant = rows.associate { it.merchant to it.amountMinor }
+        assertEquals(1_000L, byMerchant["杭州深度求索"])
+        assertEquals(12_999L, byMerchant["富富"])
+        assertEquals(3_850L, byMerchant["星巴克咖啡"])
+    }
+
+    @Test
     fun 保真文本会脱敏手机号() {
         val snapshot = AccessibilityFixtures.wechatPaySuccess().copy(
             nodes = AccessibilityFixtures.wechatPaySuccess().nodes + SnapshotNode(
@@ -271,6 +305,7 @@ class AccessibilitySnapshotIngestTest {
         assertFalse(encoded.contains("13812345678"))
         assertTrue(encoded.contains("***"))
         assertTrue(encoded.contains(AccessibilityFixtures.WECHAT_PAY_SUCCESS))
+        assertTrue(encoded.contains("\"capturedAt\":${AccessibilityFixtures.CAPTURED_AT}"))
     }
 }
 
