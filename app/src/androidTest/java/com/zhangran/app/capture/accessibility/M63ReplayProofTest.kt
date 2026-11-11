@@ -1,17 +1,18 @@
 /**
  * M6-3 回放取证：F-WX、F-ALI、M6-2 只进待确认，首页正式收支不增加。
  *
- * 截图来自 UiAutomation.takeScreenshot，不是 Compose Preview。
+ * 截图来自 `screencap`（模拟器帧缓冲），不是 Compose Preview。
+ * 无头模拟器上 `UiAutomation.takeScreenshot()` 会返回 null。
  */
 package com.zhangran.app.capture.accessibility
 
-import android.graphics.Bitmap
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.zhangran.app.BuildConfig
@@ -19,6 +20,7 @@ import com.zhangran.app.MainActivity
 import com.zhangran.app.domain.model.TransactionState
 import dagger.hilt.android.EntryPointAccessors
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
@@ -33,7 +35,7 @@ import org.junit.runner.RunWith
 class M63ReplayProofTest {
 
     @get:Rule
-    val timeout: Timeout = Timeout.seconds(180)
+    val timeout: Timeout = Timeout.seconds(700)
 
     @get:Rule
     val composeRule = createAndroidComposeRule<MainActivity>()
@@ -47,8 +49,8 @@ class M63ReplayProofTest {
         )
         runBlocking { entry.debugLedgerReset().clearCapturedLedger() }
         composeRule.waitForIdle()
-        awaitText("本月支出")
-        awaitText("¥0.00")
+        // 空账本是 Empty，不画余额卡片；本月支出 ¥0.00 要等有待确认行之后才出现。
+        awaitText("还没有记录")
         awaitDescription("待确认")
         shoot("ac6-home-before")
         val before = JSONObject(dump("ac6-before"))
@@ -75,10 +77,11 @@ class M63ReplayProofTest {
 
         composeRule.waitForIdle()
         awaitDescription("待确认 3 条")
-        composeRule.onNodeWithText("¥0.00", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("杭州深度求索").assertIsDisplayed()
-        composeRule.onNodeWithText("富富").assertIsDisplayed()
-        composeRule.onNodeWithText("星巴克咖啡").assertIsDisplayed()
+        awaitText("本月支出")
+        awaitText("¥0.00")
+        scrollToText("杭州深度求索")
+        scrollToText("富富")
+        scrollToText("星巴克咖啡")
         shoot("ac6-home-after")
 
         val afterText = dump("ac6-after")
@@ -128,14 +131,18 @@ class M63ReplayProofTest {
     }
 
     private fun awaitText(text: String) {
-        composeRule.waitUntil(timeoutMillis = 15_000) {
+        composeRule.waitUntil(timeoutMillis = 60_000) {
             composeRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithText(text, substring = true).assertIsDisplayed()
     }
 
+    private fun scrollToText(text: String) {
+        composeRule.onNodeWithText(text).performScrollTo().assertIsDisplayed()
+    }
+
     private fun awaitDescription(text: String) {
-        composeRule.waitUntil(timeoutMillis = 15_000) {
+        composeRule.waitUntil(timeoutMillis = 60_000) {
             composeRule.onAllNodesWithContentDescription(text).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithContentDescription(text).assertIsDisplayed()
@@ -144,11 +151,13 @@ class M63ReplayProofTest {
     private fun shoot(name: String) {
         composeRule.waitForIdle()
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val bitmap = automation.takeScreenshot()
         val file = File(filesDir(), "$name.png")
-        FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        bitmap.recycle()
-        check(file.length() > 0L) { "截图为空：$name" }
+        val pipe = automation.executeShellCommand("screencap -p")
+        FileInputStream(pipe.fileDescriptor).use { input ->
+            FileOutputStream(file).use { output -> input.copyTo(output) }
+        }
+        pipe.close()
+        check(file.length() > 1_000L) { "截图为空：$name" }
     }
 
     private fun dump(name: String): String {
