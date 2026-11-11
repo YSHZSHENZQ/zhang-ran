@@ -21,6 +21,7 @@ import com.zhangran.app.domain.model.Currency
 import com.zhangran.app.domain.model.PendingReason
 import com.zhangran.app.domain.model.RawCandidate
 import com.zhangran.app.domain.model.TransactionState
+import com.zhangran.app.domain.usecase.formatPendingReasons
 import com.zhangran.app.domain.service.CaptureDebounceResult
 import com.zhangran.app.domain.service.CaptureIdentity
 import com.zhangran.app.domain.service.Confidence
@@ -206,6 +207,7 @@ class AccessibilitySnapshotIngest(
                 createdAt = now,
                 updatedAt = now,
                 deletedAt = null,
+                pendingReasons = formatPendingReasons(pending.reasons),
             )
             transactions.insert(entity)
             id

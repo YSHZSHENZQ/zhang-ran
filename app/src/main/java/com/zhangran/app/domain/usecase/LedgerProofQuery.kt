@@ -46,7 +46,7 @@ class LedgerProofQuery @Inject constructor(
                     append(",\"accountId\":${jsonString(entity.accountId)}")
                     append(",\"note\":${jsonString(entity.note)}")
                     append(",\"transactionTime\":${entity.transactionTime}")
-                    append(",\"reasons\":${jsonString(relatedLogs.firstOrNull()?.reason)}")
+                    append(",\"reasons\":${jsonString(entity.pendingReasons)}")
                     append(",\"fieldEdits\":[")
                     append(edits.joinToString(",") { jsonString(it) })
                     append("],\"evidenceCount\":$evidenceCount")

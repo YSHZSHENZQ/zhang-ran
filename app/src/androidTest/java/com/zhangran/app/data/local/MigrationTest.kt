@@ -82,7 +82,7 @@ class MigrationTest {
         // 2) 执行真实迁移并以 2.json 校验目标 schema
         val migrated = helper.runMigrationsAndValidate(
             testDbName,
-            ZhangRanDatabase.VERSION,
+            V2,
             true,
             ZhangRanDatabase.MIGRATION_1_2,
         )
@@ -105,10 +105,12 @@ class MigrationTest {
 
     @Test
     fun `迁移注册表与数据库版本一致`() {
-        assertEquals(2, ZhangRanDatabase.VERSION)
-        assertEquals(1, ZhangRanDatabase.ALL_MIGRATIONS.size)
+        assertEquals(3, ZhangRanDatabase.VERSION)
+        assertEquals(2, ZhangRanDatabase.ALL_MIGRATIONS.size)
         assertEquals(1, ZhangRanDatabase.MIGRATION_1_2.startVersion)
         assertEquals(2, ZhangRanDatabase.MIGRATION_1_2.endVersion)
+        assertEquals(2, ZhangRanDatabase.MIGRATION_2_3.startVersion)
+        assertEquals(3, ZhangRanDatabase.MIGRATION_2_3.endVersion)
     }
 
     @Test
@@ -117,7 +119,7 @@ class MigrationTest {
         // 必须显式传入迁移：MigrationTestHelper 不会自动使用应用到 RoomDatabase 的迁移
         val db = helper.runMigrationsAndValidate(
             testDbName,
-            ZhangRanDatabase.VERSION,
+            V2,
             true,
             ZhangRanDatabase.MIGRATION_1_2,
         )
@@ -148,6 +150,9 @@ class MigrationTest {
     private companion object {
         /** v1（T2a）版本号：历史版本必须用**字面量**，不得用会漂移的 `VERSION`。 */
         const val V1 = 1
+
+        /** v2 停在加 pendingReasons 之前。1→2 的校验必须对着这一版，不能用会继续涨的 VERSION。 */
+        const val V2 = 2
 
         /** v1 的五张表。 */
         val V1_TABLES = setOf("transactions", "categories", "accounts", "budgets", "field_edits")

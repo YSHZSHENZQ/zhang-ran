@@ -66,7 +66,7 @@ class Migration1To2Test {
 
         val db = helper.runMigrationsAndValidate(
             testDbName,
-            ZhangRanDatabase.VERSION,
+            2,
             true,
             ZhangRanDatabase.MIGRATION_1_2,
         )
@@ -102,7 +102,7 @@ class Migration1To2Test {
 
         val db = helper.runMigrationsAndValidate(
             testDbName,
-            ZhangRanDatabase.VERSION,
+            2,
             true,
             ZhangRanDatabase.MIGRATION_1_2,
         )

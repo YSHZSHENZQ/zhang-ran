@@ -348,6 +348,14 @@ class AccessibilitySnapshotIngestTest {
         assertEquals(2, harness.logs.logs.size)
         assertFalse(first.reasons.contains(com.zhangran.app.domain.model.PendingReason.POSSIBLE_DUPLICATE))
         assertTrue(second.reasons.contains(com.zhangran.app.domain.model.PendingReason.POSSIBLE_DUPLICATE))
+        val storedSecond = harness.transactions.rows.single { it.id == second.transactionId }
+        val storedFirst = harness.transactions.rows.single { it.id == first.transactionId }
+        assertTrue(storedSecond.pendingReasons.orEmpty().contains("POSSIBLE_DUPLICATE"))
+        assertFalse(storedFirst.pendingReasons.orEmpty().contains("POSSIBLE_DUPLICATE"))
+        assertEquals(
+            harness.logs.logs.single { it.transactionId == storedSecond.id }.reason,
+            storedSecond.pendingReasons,
+        )
         assertTrue(harness.transactions.rows.all { it.state == TransactionState.PENDING })
         assertEquals(0, harness.transactions.countByState(TransactionState.CONFIRMED))
         assertEquals(0, harness.transactions.countByState(TransactionState.DUPLICATE))

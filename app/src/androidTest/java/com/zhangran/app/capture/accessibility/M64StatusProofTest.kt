@@ -19,6 +19,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.zhangran.app.BuildConfig
 import com.zhangran.app.MainActivity
 import com.zhangran.app.debug.DebugCaptureHealthReceiver
+import com.zhangran.app.domain.model.PendingReason
 import com.zhangran.app.domain.model.TransactionState
 import com.zhangran.app.domain.usecase.CaptureLogExport
 import com.zhangran.app.domain.usecase.EditableField
@@ -75,6 +76,7 @@ class M64StatusProofTest {
             val ingest = entry().accessibilitySnapshotIngest()
             listOf(
                 AccessibilityFixtures.F_WX to AccessibilityFixtures.wechatDepthSeek(),
+                AccessibilityFixtures.F_WX to AccessibilityFixtures.wechatDepthSeek(),
                 AccessibilityFixtures.F_ALI to AccessibilityFixtures.alipayFufu(),
             ).map { (fixtureId, snapshot) ->
                 fixtureId to ingest.ingest(snapshot, fixtureId)
@@ -85,9 +87,12 @@ class M64StatusProofTest {
                 "$fixtureId 未进入待确认：${result.toProofJson()}"
             }
         }
+        val wxResults = replay.filter { it.first == AccessibilityFixtures.F_WX }.map { it.second }
+        check(PendingReason.POSSIBLE_DUPLICATE !in wxResults[0].reasons)
+        check(PendingReason.POSSIBLE_DUPLICATE in wxResults[1].reasons)
         val ac8 = JSONObject(dump("ac8-replay"))
         assertEquals(BuildConfig.GIT_SHA, ac8.getString("gitSha"))
-        assertEquals(2, ac8.getInt("pendingCount"))
+        assertEquals(3, ac8.getInt("pendingCount"))
         assertEquals(0L, ac8.getLong("monthExpenseMinor"))
         assertFalse(ac8.toString().contains("\"state\":\"CONFIRMED\""))
         assertFalse(ac8.toString().contains("\"state\":\"DUPLICATE\""))
@@ -117,7 +122,7 @@ class M64StatusProofTest {
         openHome()
         awaitText("AUTO LEDGER · 不可用")
         val unavailable = JSONObject(dump("ac1-unavailable"))
-        assertEquals(2, unavailable.getInt("pendingCount"))
+        assertEquals(3, unavailable.getInt("pendingCount"))
         shot("ac1-unavailable-home")
         openMine()
         shot("ac1-unavailable-mine")
@@ -126,15 +131,15 @@ class M64StatusProofTest {
         shot("ac1-unavailable-auto-ledger")
 
         openLogs()
-        awaitText("11月11日 13:05")
+        awaitCount("11月11日 13:05", 2)
         awaitText("11月11日 10:09")
         awaitAny("无障碍 ACCESSIBILITY")
-        awaitText("com.tencent.mm")
+        awaitCount("com.tencent.mm", 2)
         awaitText("com.eg.android.AlipayGphone")
         awaitAny("PENDING")
         shot("ac3-logs-list")
         composeRule.onNodeWithContentDescription("按状态筛选 PENDING").performClick()
-        awaitText("11月11日 13:05")
+        awaitCount("11月11日 13:05", 2)
         awaitText("11月11日 10:09")
         shot("ac3-filter-pending")
         composeRule.onNodeWithContentDescription("按状态筛选 CONFIRMED").performClick()
@@ -169,14 +174,15 @@ class M64StatusProofTest {
             )
         }
         val beforeClear = JSONObject(dump("ac5-before-clear"))
-        assertTrue(row(beforeClear, AccessibilityFixtures.F_WX).getJSONArray("fieldEdits").toString().contains("note"))
+        val wxBefore = rows(beforeClear).single { it.getString("transactionId") == wxId }
+        assertTrue(wxBefore.getJSONArray("fieldEdits").toString().contains("note"))
 
         openPending()
         composeRule.onNodeWithContentDescription("m6-3-f-ali 忽略").performScrollTo().performClick()
         composeRule.waitForIdle()
         val ignored = JSONObject(dump("ac6-ignored"))
         assertEquals("IGNORED", row(ignored, AccessibilityFixtures.F_ALI).getString("state"))
-        assertEquals(1, ignored.getInt("pendingCount"))
+        assertEquals(2, ignored.getInt("pendingCount"))
         val expenseWhileIgnored = ignored.getLong("monthExpenseMinor")
         openLogs()
         composeRule.onNodeWithContentDescription("按状态筛选 IGNORED").performClick()
@@ -186,7 +192,7 @@ class M64StatusProofTest {
         composeRule.waitForIdle()
         val restored = JSONObject(dump("ac6-restored"))
         assertEquals("PENDING", row(restored, AccessibilityFixtures.F_ALI).getString("state"))
-        assertEquals(2, restored.getInt("pendingCount"))
+        assertEquals(3, restored.getInt("pendingCount"))
         assertEquals(expenseWhileIgnored, restored.getLong("monthExpenseMinor"))
         assertEquals(0L, restored.getLong("monthIncomeMinor"))
         openPending()
@@ -211,7 +217,7 @@ class M64StatusProofTest {
         openHome()
         awaitText("疑似失效")
         val stale = JSONObject(dump("ac7-stale"))
-        assertEquals(2, stale.getInt("pendingCount"))
+        assertEquals(3, stale.getInt("pendingCount"))
         shot("ac7-stale-home")
         openMine()
         composeRule.onNodeWithText("自动记账状态").performClick()
@@ -224,6 +230,7 @@ class M64StatusProofTest {
         openHome()
         awaitText("AUTO LEDGER · 不可用")
         assertTrue(composeRule.onAllNodesWithText("疑似失效").fetchSemanticsNodes().isEmpty())
+        waitForNextMinute()
         shot("ac7-switch-off-home")
 
         composeRule.onNodeWithContentDescription("记一笔，标签页，未选中").performClick()
@@ -233,7 +240,7 @@ class M64StatusProofTest {
         awaitText("账然")
         awaitText("¥1.00")
         val manual = JSONObject(dump("ac1-manual"))
-        assertEquals(2, manual.getInt("pendingCount"))
+        assertEquals(3, manual.getInt("pendingCount"))
         assertTrue(manual.toString().contains("\"source\":\"MANUAL\""))
         assertTrue(manual.toString().contains("\"state\":\"CONFIRMED\""))
         val manualRow = rows(manual).single { it.getString("source") == "MANUAL" }
@@ -263,7 +270,18 @@ class M64StatusProofTest {
             assertEquals(before.getString("note"), after.getString("note"))
             assertEquals(before.getBoolean("confirmedByUser"), after.getBoolean("confirmedByUser"))
             assertEquals(before.getJSONArray("fieldEdits").toString(), after.getJSONArray("fieldEdits").toString())
+            assertEquals(before.optString("reasons"), after.optString("reasons"))
         }
+        val duplicate = rows(afterClear).single { it.optString("reasons").contains("POSSIBLE_DUPLICATE") }
+        assertEquals("PENDING", duplicate.getString("state"))
+        val dupId = duplicate.getString("transactionId")
+        openPending()
+        composeRule.onNodeWithContentDescription("$dupId 查看重复").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("$dupId 忽略").assertIsDisplayed()
+        assertTrue(composeRule.onAllNodesWithContentDescription("$dupId 确认").fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodesWithContentDescription("$dupId 改完再记").fetchSemanticsNodes().isEmpty())
+        awaitText("疑似重复")
+        shot("ac5-pending-after-clear")
         val wxAfter = rows(afterClear).single { it.getString("transactionId") == wxId }
         assertTrue(wxAfter.getJSONArray("fieldEdits").toString().contains("note"))
         assertEquals("m6-4-field-edit", wxAfter.getString("note"))
@@ -329,6 +347,14 @@ class M64StatusProofTest {
             composeRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithText(text, substring = true).assertIsDisplayed()
+    }
+
+    private fun awaitCount(text: String, count: Int) {
+        composeRule.waitUntil(timeoutMillis = 30_000) {
+            composeRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().size >= count
+        }
+        val found = composeRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().size
+        assertEquals(count, found)
     }
 
     private fun awaitAny(text: String) {
@@ -402,6 +428,21 @@ class M64StatusProofTest {
     private fun row(json: JSONObject, fixtureId: String): JSONObject =
         rows(json).single { it.optString("fixtureId") == fixtureId }
 
-    private fun transactionId(json: JSONObject, fixtureId: String): String =
-        row(json, fixtureId).getString("transactionId")
+    private fun waitForNextMinute() {
+        val start = shell("date +%M").trim()
+        val deadline = System.currentTimeMillis() + 70_000
+        while (shell("date +%M").trim() == start && System.currentTimeMillis() < deadline) {
+            Thread.sleep(1_000)
+        }
+    }
+
+    private fun transactionId(json: JSONObject, fixtureId: String): String {
+        val matches = rows(json).filter { it.optString("fixtureId") == fixtureId }
+        val picked = if (matches.size == 1) {
+            matches.single()
+        } else {
+            matches.single { !it.optString("reasons").contains("POSSIBLE_DUPLICATE") }
+        }
+        return picked.getString("transactionId")
+    }
 }
