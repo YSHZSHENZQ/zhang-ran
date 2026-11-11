@@ -17,12 +17,14 @@ import com.zhangran.app.data.repository.BudgetRepository
 import com.zhangran.app.data.repository.CaptureEvidenceRepository
 import com.zhangran.app.data.repository.CaptureLogRepository
 import com.zhangran.app.data.repository.CategoryRepository
+import com.zhangran.app.data.repository.DuplicateDecisionRepository
 import com.zhangran.app.data.repository.FieldEditRepository
 import com.zhangran.app.data.repository.RoomAccountRepository
 import com.zhangran.app.data.repository.RoomBudgetRepository
 import com.zhangran.app.data.repository.RoomCaptureEvidenceRepository
 import com.zhangran.app.data.repository.RoomCaptureLogRepository
 import com.zhangran.app.data.repository.RoomCategoryRepository
+import com.zhangran.app.data.repository.RoomDuplicateDecisionRepository
 import com.zhangran.app.data.repository.RoomFieldEditRepository
 import com.zhangran.app.data.repository.RoomTransactionRepository
 import com.zhangran.app.data.repository.TransactionRepository
@@ -77,6 +79,13 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCaptureLogRepository(impl: RoomCaptureLogRepository): CaptureLogRepository
+
+    /** M3b：用户判定同一笔 / 两笔时写入 `duplicate_decisions`。 */
+    @Binds
+    @Singleton
+    abstract fun bindDuplicateDecisionRepository(
+        impl: RoomDuplicateDecisionRepository,
+    ): DuplicateDecisionRepository
 
     companion object {
 

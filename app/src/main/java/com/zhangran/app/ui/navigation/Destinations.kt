@@ -36,7 +36,11 @@ enum class Destination(
         title = "编辑后入账",
         isTopLevel = false,
     ),
-    DuplicateReview(route = "duplicateReview", title = "疑似重复", isTopLevel = false),
+    DuplicateReview(
+        route = "duplicateReview?transactionId={transactionId}",
+        title = "疑似重复",
+        isTopLevel = false,
+    ),
     AutoLedger(route = "autoLedger", title = "自动记账", isTopLevel = false),
     Onboard(route = "onboard", title = "权限引导", isTopLevel = false),
     Categories(route = "categories", title = "分类管理", isTopLevel = false),
@@ -75,5 +79,9 @@ enum class Destination(
         /** 待确认编辑页路由（必须带交易 id）。 */
         fun pendingEditRoute(transactionId: String): String =
             PendingEdit.route.replace(TRANSACTION_ID_PLACEHOLDER, transactionId)
+
+        /** 疑似重复对照页路由（必须带新记录的交易 id）。 */
+        fun duplicateReviewRoute(transactionId: String): String =
+            DuplicateReview.route.replace(TRANSACTION_ID_PLACEHOLDER, transactionId)
     }
 }

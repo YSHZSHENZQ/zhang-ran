@@ -25,6 +25,7 @@ object AccessibilitySnapshotParser {
 
     private val expenseExact = listOf("支付成功", "付款成功", "支付完成", "已支付")
     private val incomeExact = listOf("收款成功", "已收款", "收款到账")
+    private val refundExact = listOf("退款成功")
 
     /** 结果页上常见的收尾按钮或金额标签。没有这类锚点、状态节点本身也不带金额时，不当事务。 */
     private val resultAnchors = setOf("完成", "确定", "支付总额", "付款方式")
@@ -105,11 +106,12 @@ object AccessibilitySnapshotParser {
         val statuses = texts.mapNotNull { text -> statusOf(text)?.let { text to it } }
         val expense = statuses.any { it.second == TransactionType.EXPENSE }
         val income = statuses.any { it.second == TransactionType.INCOME }
+        val refund = statuses.any { it.second == TransactionType.REFUND }
         val direction = when {
-            expense && income -> return null
+            listOf(expense, income, refund).count { it } != 1 -> return null
             expense -> TransactionType.EXPENSE
             income -> TransactionType.INCOME
-            else -> return null
+            else -> TransactionType.REFUND
         }
 
         val statusAmounts = statuses.mapNotNull { (text, _) -> amountOf(text) }.distinct()
@@ -147,11 +149,15 @@ object AccessibilitySnapshotParser {
     private fun statusOf(text: String): TransactionType? {
         if (text in expenseExact) return TransactionType.EXPENSE
         if (text in incomeExact) return TransactionType.INCOME
+        if (text in refundExact) return TransactionType.REFUND
         expenseExact.firstOrNull { phrase -> isPhrasePlusAmount(text, phrase) }?.let {
             return TransactionType.EXPENSE
         }
         incomeExact.firstOrNull { phrase -> isPhrasePlusAmount(text, phrase) }?.let {
             return TransactionType.INCOME
+        }
+        refundExact.firstOrNull { phrase -> isPhrasePlusAmount(text, phrase) }?.let {
+            return TransactionType.REFUND
         }
         return null
     }

@@ -220,6 +220,9 @@ fun ZhangRanNavHost(
                 onOpenEdit = { transactionId ->
                     navController.navigate(Destination.pendingEditRoute(transactionId))
                 },
+                onOpenReview = { transactionId ->
+                    navController.navigate(Destination.duplicateReviewRoute(transactionId))
+                },
             )
         }
         composable(
@@ -236,7 +239,20 @@ fun ZhangRanNavHost(
                 onBooked = { navController.popBackStack() },
             )
         }
-        composable(Destination.DuplicateReview.route) { DuplicateReviewScreen() }
+        composable(
+            route = Destination.DuplicateReview.route,
+            arguments = listOf(
+                navArgument(Destination.ARG_TRANSACTION_ID) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) { entry ->
+            DuplicateReviewScreen(
+                transactionId = entry.arguments?.getString(Destination.ARG_TRANSACTION_ID).orEmpty(),
+                onDone = { navController.popBackStack() },
+            )
+        }
         composable(Destination.AutoLedger.route) { AutoLedgerScreen() }
         composable(Destination.Onboard.route) { OnboardScreen() }
         // M2d-1：分类管理 →「分类规则」跳转（导航层唯一改动，经批准）

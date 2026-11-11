@@ -20,6 +20,7 @@ import com.zhangran.app.ui.screen.add.CategoryOption
 import com.zhangran.app.ui.screen.home.HomeViewModel
 import java.math.BigDecimal
 import java.time.Instant
+import com.zhangran.app.ui.common.DeviceZone
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
@@ -117,7 +118,7 @@ sealed interface FieldEditorKind {
 /** 时间：`2024年6月28日 14:23`（设备时区，`docs/03` §5：展示时按设备当前时区转换）。 */
 fun formatDetailDateTime(
     epochMillis: Long,
-    zoneId: String = ZoneId.systemDefault().id,
+    zoneId: String = DeviceZone.current().id,
 ): String = DETAIL_TIME_FORMATTER.format(
     Instant.ofEpochMilli(epochMillis).atZone(ZoneId.of(zoneId)),
 )

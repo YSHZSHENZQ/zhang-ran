@@ -1,7 +1,7 @@
 /**
  * 待确认页展示模型（M3a）。
  *
- * 按 reason 给出确认 / 改完再记 / 忽略。疑似重复行只有忽略。
+ * 按 reason 给出确认 / 改完再记 / 忽略。疑似重复行是查看重复 / 忽略。
  */
 package com.zhangran.app.ui.screen.pending
 
@@ -15,6 +15,7 @@ import com.zhangran.app.domain.usecase.IgnorePendingUseCase
 import com.zhangran.app.domain.usecase.LoadPendingRecordsUseCase
 import com.zhangran.app.domain.usecase.PendingRecord
 import com.zhangran.app.ui.common.CaptureSourceText
+import com.zhangran.app.ui.common.DeviceZone
 import com.zhangran.app.ui.screen.home.AmountSign
 import com.zhangran.app.ui.screen.home.HomeViewModel
 import java.time.ZoneId
@@ -35,6 +36,7 @@ data class PendingRow(
     val canConfirm: Boolean = true,
     val canEdit: Boolean = true,
     val canIgnore: Boolean = true,
+    val canReview: Boolean = false,
 )
 
 sealed interface PendingUiState {
@@ -118,8 +120,8 @@ class PendingViewModel(
             PendingReason.UNSUPPORTED_NOTIFICATION,
         )
 
-        fun toRow(record: PendingRecord, zoneId: String = ZoneId.systemDefault().id): PendingRow {
-            val zone = runCatching { ZoneId.of(zoneId) }.getOrElse { ZoneId.systemDefault() }
+        fun toRow(record: PendingRecord, zoneId: String = DeviceZone.current().id): PendingRow {
+            val zone = runCatching { ZoneId.of(zoneId) }.getOrElse { DeviceZone.current() }
             return PendingRow(
                 transactionId = record.transactionId,
                 amountText = HomeViewModel.formatMoney(
@@ -130,11 +132,12 @@ class PendingViewModel(
                 merchantText = record.merchant?.takeIf { it.isNotBlank() } ?: UNKNOWN_MERCHANT,
                 reasonText = reasonLine(record.reasons),
                 sourceText = CaptureSourceText.of(record.source),
-                timeText = HomeViewModel.formatTimeOfDay(record.capturedAt, zone),
+                timeText = HomeViewModel.formatTimeOfDay(record.transactionTime, zone),
                 fixtureId = record.fixtureId,
                 canConfirm = record.canConfirm,
                 canEdit = record.canEdit,
                 canIgnore = record.canIgnore,
+                canReview = record.canReview,
             )
         }
 

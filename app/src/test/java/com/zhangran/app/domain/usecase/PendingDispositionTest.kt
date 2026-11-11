@@ -345,6 +345,11 @@ class PendingDispositionTest {
             logs.filter { it.transactionId == transactionId }.maxByOrNull { it.capturedAt }
         override suspend fun listAll(): List<CaptureLogEntity> = logs.toList()
         override suspend fun listEvidence(captureId: String): List<CaptureEvidenceEntity> = emptyList()
+
+        override suspend fun update(log: CaptureLogEntity) {
+            val index = logs.indexOfFirst { it.id == log.id }
+            if (index >= 0) logs[index] = log
+        }
     }
 
     private companion object {

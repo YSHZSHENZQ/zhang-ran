@@ -25,6 +25,8 @@ interface CaptureLogRepository {
     suspend fun listAll(): List<CaptureLogEntity>
 
     suspend fun listEvidence(captureId: String): List<CaptureEvidenceEntity>
+
+    suspend fun update(log: CaptureLogEntity)
 }
 
 @Singleton
@@ -53,4 +55,8 @@ class RoomCaptureLogRepository @Inject constructor(
 
     override suspend fun listEvidence(captureId: String): List<CaptureEvidenceEntity> =
         evidence.listByCaptureId(captureId)
+
+    override suspend fun update(log: CaptureLogEntity) {
+        logs.update(log)
+    }
 }

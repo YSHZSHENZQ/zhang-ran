@@ -29,6 +29,7 @@ import com.zhangran.app.domain.usecase.ObserveHomeSummaryUseCase
 import com.zhangran.app.domain.usecase.ObserveTransactionsUseCase
 import com.zhangran.app.domain.usecase.TransactionListEntry
 import com.zhangran.app.ui.common.CaptureSourceText
+import com.zhangran.app.ui.common.DeviceZone
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.ZoneId
@@ -168,7 +169,7 @@ class HomeViewModel(
             HomeUiState.Content(
                 sections = groupIntoSections(
                     entries = listed,
-                    zoneId = ZoneId.systemDefault().id,
+                    zoneId = DeviceZone.current().id,
                     nowEpochMillis = nowEpochMillis,
                 ),
                 summary = summary,

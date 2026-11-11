@@ -17,6 +17,28 @@ object AccessibilityFixtures {
     /** 支付宝支出 ¥129.99，商户「富富」。 */
     const val F_ALI: String = "m6-3-f-ali"
 
+    /** 与 [F_WX] 同页，另带通知 identity，用来验证同一事件只留一条。 */
+    const val AC1_WX: String = "m3b-ac1-wx"
+
+    /** 同一商户同一金额，交易时间比 [WX_CAPTURED_AT] 晚 181 秒。 */
+    const val AC3A_WX: String = "m3b-ac3a-wx"
+
+    /** 与 [F_WX] 同金额、180 秒内，商户换成「富富」。 */
+    const val AC3B_FUFU: String = "m3b-ac3b-fufu-1000"
+
+    /** 与 [F_WX] 同商户同金额的退款。 */
+    const val AC3C_REFUND: String = "m3b-ac3c-refund"
+
+    /** [F_ALI] 的第二份，供「两笔」后确认。 */
+    const val AC6_ALI: String = "m3b-ac6-ali"
+
+    const val AC1_NOTIFICATION_ID: String = "m3b-wx-1000"
+
+    const val AC1_POST_TIME: Long = 1_794_373_522_722L
+
+    /** 181 秒，刚好比语义窗口多 1 秒。 */
+    const val AC3A_DELTA_MILLIS: Long = 181_000L
+
     /** 2025-11-11 附近的真实毫秒时间，落在 [com.zhangran.app.domain.service.TransactionTime] 允许范围内。 */
     const val CAPTURED_AT: Long = 1_762_888_000_000L
 
@@ -180,6 +202,49 @@ object AccessibilityFixtures {
             node("我的", 4),
         ),
     )
+
+    /**
+     * 支付宝结果页，金额改成 ¥10.00，商户仍是「富富」。
+     * 用来和微信 ¥10.00 比：同金额、不同商户。
+     */
+    fun alipayFufuTenYuan(capturedAt: Long = WX_CAPTURED_AT): AccessibilityPageSnapshot {
+        val nodes = listOf(
+            described(
+                text = "回首页",
+                description = null,
+                viewId = "com.alipay.android.app:id/nav_right_textview",
+                depth = 1,
+            ),
+            node("完成", 4),
+            node("中国银行储蓄卡***", 6),
+            node("付款方式", 5),
+            node("¥10.00", 5),
+            node("富富", 5),
+            described(text = null, description = "支付成功 ¥10.00", viewId = null, depth = 5),
+        )
+        return page(
+            packageName = AccessibilityTargets.ALIPAY_PACKAGE,
+            windowId = 35_698,
+            capturedAt = capturedAt,
+            nodes = nodes,
+        )
+    }
+
+    /** 微信退款结果。只有「退款成功」，不和支出用语混在同一页。 */
+    fun wechatRefund(capturedAt: Long = WX_CAPTURED_AT): AccessibilityPageSnapshot {
+        val nodes = listOf(
+            node("退款成功", 12),
+            node("¥10.00", 19),
+            node("杭州深度求索", 19),
+            node("完成", 19),
+        )
+        return page(
+            packageName = AccessibilityTargets.WECHAT_PACKAGE,
+            windowId = 36_149,
+            capturedAt = capturedAt,
+            nodes = nodes,
+        )
+    }
 
     /** 真机证据上的采样时间（UTC epoch millis）。 */
     const val WX_CAPTURED_AT: Long = 1_794_373_522_722L

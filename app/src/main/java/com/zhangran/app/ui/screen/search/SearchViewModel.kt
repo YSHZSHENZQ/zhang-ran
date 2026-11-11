@@ -17,6 +17,7 @@ import com.zhangran.app.domain.model.TransactionType
 import com.zhangran.app.domain.usecase.SearchTransactionsUseCase
 import com.zhangran.app.domain.usecase.TransactionListEntry
 import com.zhangran.app.ui.screen.home.AmountSign
+import com.zhangran.app.ui.common.DeviceZone
 import com.zhangran.app.ui.screen.home.HomeViewModel
 import com.zhangran.app.ui.screen.home.TransactionListItem
 import java.time.ZoneId
@@ -163,7 +164,7 @@ class SearchViewModel @Inject constructor(
         searchJob = viewModelScope.launch {
             runCatching { searchTransactions(normalized) }
                 .onSuccess { result ->
-                    val zone = ZoneId.systemDefault()
+                    val zone = DeviceZone.current()
                     val newItems = result.items.map { it.toListItem(zone) }
                     if (!append && newItems.isEmpty()) {
                         _uiState.value = SearchUiState.Empty

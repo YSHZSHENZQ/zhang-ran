@@ -1,7 +1,7 @@
 /**
  * 待确认列表（M3a）。
  *
- * 普通行：确认 / 改完再记 / 忽略。含疑似重复的行只有忽略，不出现「查看重复」。
+ * 普通行：确认 / 改完再记 / 忽略。疑似重复行：查看重复 / 忽略。
  */
 package com.zhangran.app.ui.screen.pending
 
@@ -54,7 +54,10 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 
 @Composable
-fun PendingScreen(onOpenEdit: (String) -> Unit = {}) {
+fun PendingScreen(
+    onOpenEdit: (String) -> Unit = {},
+    onOpenReview: (String) -> Unit = {},
+) {
     val context = LocalContext.current
     val pendingViewModel: PendingViewModel = viewModel(
         factory = viewModelFactory {
@@ -86,6 +89,7 @@ fun PendingScreen(onOpenEdit: (String) -> Unit = {}) {
         onConfirm = pendingViewModel::confirm,
         onIgnore = pendingViewModel::ignore,
         onOpenEdit = onOpenEdit,
+        onOpenReview = onOpenReview,
     )
 }
 
@@ -96,6 +100,7 @@ fun PendingContent(
     onConfirm: (String) -> Unit = {},
     onIgnore: (String) -> Unit = {},
     onOpenEdit: (String) -> Unit = {},
+    onOpenReview: (String) -> Unit = {},
 ) {
     val colors = ZhangRanTheme.colors
     Column(
@@ -134,6 +139,7 @@ fun PendingContent(
                         onConfirm = { onConfirm(row.transactionId) },
                         onIgnore = { onIgnore(row.transactionId) },
                         onOpenEdit = { onOpenEdit(row.transactionId) },
+                        onOpenReview = { onOpenReview(row.transactionId) },
                     )
                 }
             }
@@ -147,6 +153,7 @@ private fun PendingRowCard(
     onConfirm: () -> Unit,
     onIgnore: () -> Unit,
     onOpenEdit: () -> Unit,
+    onOpenReview: () -> Unit,
 ) {
     val colors = ZhangRanTheme.colors
     val fixtureLabel = row.fixtureId ?: row.transactionId
@@ -201,6 +208,12 @@ private fun PendingRowCard(
                     onClick = onOpenEdit,
                     modifier = Modifier.semantics { contentDescription = "$fixtureLabel 改完再记" },
                 ) { Text("改完再记") }
+            }
+            if (row.canReview) {
+                TextButton(
+                    onClick = onOpenReview,
+                    modifier = Modifier.semantics { contentDescription = "$fixtureLabel 查看重复" },
+                ) { Text("查看重复") }
             }
             if (row.canIgnore) {
                 TextButton(

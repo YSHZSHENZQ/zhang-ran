@@ -64,6 +64,19 @@ class AccessibilitySnapshotParserTest {
     }
 
     @Test
+    fun 退款成功解析为退款且不和支出混在一起() {
+        val parsed = AccessibilitySnapshotParser.parse(AccessibilityFixtures.wechatRefund())
+        assertEquals(1_000L, parsed?.amountMinor)
+        assertEquals("杭州深度求索", parsed?.merchantRaw)
+        assertEquals(TransactionType.REFUND, parsed?.direction)
+        val mixed = AccessibilityFixtures.wechatRefund().copy(
+            nodes = AccessibilityFixtures.wechatRefund().nodes +
+                SnapshotNode("支付成功", null, null, null, 4),
+        )
+        assertNull(AccessibilitySnapshotParser.parse(mixed))
+    }
+
+    @Test
     fun 收支用语同时出现时不默认支出() {
         val page = AccessibilityFixtures.wechatPaySuccess().copy(
             nodes = AccessibilityFixtures.wechatPaySuccess().nodes +

@@ -8,6 +8,7 @@ package com.zhangran.app.capture.accessibility
 
 import com.zhangran.app.domain.model.DecisionResult
 import com.zhangran.app.domain.model.PendingReason
+import com.zhangran.app.domain.service.DedupResult
 
 sealed interface AccessibilityAdmission {
 
@@ -26,15 +27,30 @@ sealed interface AccessibilityAdmission {
 
 object AccessibilityPendingGate {
 
-    fun admit(decision: DecisionResult): AccessibilityAdmission = when (decision) {
-        is DecisionResult.ClearlyInvalid -> AccessibilityAdmission.Invalid
-        is DecisionResult.Confirmed -> AccessibilityAdmission.Pending(
-            reasons = setOf(PendingReason.LOW_CONFIDENCE),
-            refusedAutoConfirm = true,
-        )
-        is DecisionResult.Duplicate -> AccessibilityAdmission.Pending(
-            reasons = setOf(PendingReason.POSSIBLE_DUPLICATE),
-        )
-        is DecisionResult.Pending -> AccessibilityAdmission.Pending(reasons = decision.reasons)
+    /**
+     * @param dedup 判重结论。Duplicate / PossibleDuplicate 都只进待确认并带上疑似重复，
+     * 不在这条路径写成 DUPLICATE。其它待确认原因仍然保留。
+     */
+    fun admit(
+        decision: DecisionResult,
+        dedup: DedupResult = DedupResult.None,
+    ): AccessibilityAdmission {
+        val review = dedup is DedupResult.Duplicate || dedup is DedupResult.PossibleDuplicate
+        return when (decision) {
+            is DecisionResult.ClearlyInvalid -> AccessibilityAdmission.Invalid
+            is DecisionResult.Confirmed -> AccessibilityAdmission.Pending(
+                reasons = reviewReasons(setOf(PendingReason.LOW_CONFIDENCE), review),
+                refusedAutoConfirm = true,
+            )
+            is DecisionResult.Duplicate -> AccessibilityAdmission.Pending(
+                reasons = setOf(PendingReason.POSSIBLE_DUPLICATE),
+            )
+            is DecisionResult.Pending -> AccessibilityAdmission.Pending(
+                reasons = reviewReasons(decision.reasons, review),
+            )
+        }
     }
+
+    private fun reviewReasons(reasons: Set<PendingReason>, review: Boolean): Set<PendingReason> =
+        if (review) reasons + PendingReason.POSSIBLE_DUPLICATE else reasons
 }

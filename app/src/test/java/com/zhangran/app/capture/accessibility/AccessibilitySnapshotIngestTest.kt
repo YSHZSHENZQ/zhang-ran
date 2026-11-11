@@ -309,6 +309,74 @@ class AccessibilitySnapshotIngestTest {
     }
 }
 
+    @Test
+    fun 同一通知投递两次只留一条捕获和一条交易() = runBlocking {
+        val harness = Harness()
+        val snapshot = AccessibilityFixtures.wechatDepthSeek()
+        val first = harness.ingest.ingest(
+            snapshot,
+            AccessibilityFixtures.AC1_WX,
+            notificationId = AccessibilityFixtures.AC1_NOTIFICATION_ID,
+            postTime = AccessibilityFixtures.AC1_POST_TIME,
+        )
+        val second = harness.ingest.ingest(
+            snapshot,
+            AccessibilityFixtures.AC1_WX,
+            notificationId = AccessibilityFixtures.AC1_NOTIFICATION_ID,
+            postTime = AccessibilityFixtures.AC1_POST_TIME,
+        )
+        assertEquals(first.transactionId, second.transactionId)
+        assertEquals(first.captureId, second.captureId)
+        assertEquals(1, harness.transactions.rows.size)
+        assertEquals(1, harness.logs.logs.size)
+        assertEquals(TransactionState.PENDING, harness.transactions.rows.single().state)
+        assertFalse(harness.logs.logs.single().reason.orEmpty().contains("DUPLICATE"))
+    }
+
+    @Test
+    fun 同商户同金额一百八十秒内第二条是疑似重复且仍待确认() = runBlocking {
+        val harness = Harness()
+        val first = harness.ingest.ingest(
+            AccessibilityFixtures.wechatDepthSeek(),
+            AccessibilityFixtures.F_WX,
+        )
+        val second = harness.ingest.ingest(
+            AccessibilityFixtures.wechatDepthSeek(),
+            AccessibilityFixtures.F_WX,
+        )
+        assertEquals(2, harness.transactions.rows.size)
+        assertEquals(2, harness.logs.logs.size)
+        assertFalse(first.reasons.contains(com.zhangran.app.domain.model.PendingReason.POSSIBLE_DUPLICATE))
+        assertTrue(second.reasons.contains(com.zhangran.app.domain.model.PendingReason.POSSIBLE_DUPLICATE))
+        assertTrue(harness.transactions.rows.all { it.state == TransactionState.PENDING })
+        assertEquals(0, harness.transactions.countByState(TransactionState.CONFIRMED))
+        assertEquals(0, harness.transactions.countByState(TransactionState.DUPLICATE))
+    }
+
+    @Test
+    fun 一百八十一秒或不同商户或退款都不标疑似重复() = runBlocking {
+        val harness = Harness()
+        harness.ingest.ingest(AccessibilityFixtures.wechatDepthSeek(), AccessibilityFixtures.F_WX)
+        harness.ingest.ingest(
+            AccessibilityFixtures.wechatDepthSeek(
+                AccessibilityFixtures.WX_CAPTURED_AT + AccessibilityFixtures.AC3A_DELTA_MILLIS,
+            ),
+            AccessibilityFixtures.AC3A_WX,
+        )
+        harness.ingest.ingest(
+            AccessibilityFixtures.alipayFufuTenYuan(),
+            AccessibilityFixtures.AC3B_FUFU,
+        )
+        harness.ingest.ingest(
+            AccessibilityFixtures.wechatRefund(),
+            AccessibilityFixtures.AC3C_REFUND,
+        )
+        assertEquals(4, harness.transactions.rows.size)
+        assertTrue(harness.logs.logs.none { it.reason.orEmpty().contains("POSSIBLE_DUPLICATE") })
+        assertTrue(harness.transactions.rows.all { it.state == TransactionState.PENDING })
+        assertEquals(1, harness.transactions.rows.count { it.type == com.zhangran.app.domain.model.TransactionType.REFUND })
+    }
+
 private class Harness {
     val transactions = MemoryTransactions()
     val logs = MemoryLogs()
@@ -404,4 +472,9 @@ private class MemoryLogs : CaptureLogRepository {
 
     override suspend fun listEvidence(captureId: String): List<CaptureEvidenceEntity> =
         evidence.filter { it.captureId == captureId }
+
+    override suspend fun update(log: CaptureLogEntity) {
+        val index = logs.indexOfFirst { it.id == log.id }
+        if (index >= 0) logs[index] = log
+    }
 }
