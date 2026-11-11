@@ -11,7 +11,9 @@ package com.zhangran.app.capture.accessibility
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityEvent
 import com.zhangran.app.BuildConfig
+import com.zhangran.app.data.settings.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +28,8 @@ class AccessibilityCaptureService : AccessibilityService() {
     @Inject lateinit var pipeline: AccessibilityCapturePipeline
 
     @Inject lateinit var connectivity: AccessibilityConnectivityRecorder
+
+    @Inject lateinit var settings: SettingsRepository
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val reader = NodeTreeReader()
@@ -107,7 +111,17 @@ class AccessibilityCaptureService : AccessibilityService() {
                         truncated = result.snapshot.truncated,
                         capturedAt = capturedAt,
                     )
-                    if (forward) pipeline.submit(result.snapshot)
+                    if (forward) {
+                        val enabled = settings.settings.first().autoLedgerEnabled
+                        if (!enabled) {
+                            AccessibilityDiagnostics.log(
+                                status = "SWITCH_OFF",
+                                packageName = packageName,
+                            )
+                        } else {
+                            pipeline.submit(result.snapshot)
+                        }
+                    }
                 }
             }
         }

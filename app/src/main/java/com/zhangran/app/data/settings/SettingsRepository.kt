@@ -9,6 +9,7 @@ package com.zhangran.app.data.settings
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
@@ -54,12 +55,20 @@ interface SettingsRepository {
         overallConfidenceThreshold: Double,
         fieldConfidenceThreshold: Double,
     ): SettingsWriteResult
+
+    /** 自动记账总开关。只存值，打开时的计时由调用方另外记下。 */
+    suspend fun setAutoLedgerEnabled(enabled: Boolean)
+
+    /** 权限引导完成一次之后不再在冷启动强制进入。 */
+    suspend fun setOnboardCompleted(completed: Boolean)
 }
 
 // 键定义唯一落点（类与读取映射共用）。
 private val THEME_MODE_KEY = stringPreferencesKey(SettingsKeys.THEME_MODE)
 private val OVERALL_THRESHOLD_KEY = doublePreferencesKey(SettingsKeys.OVERALL_CONFIDENCE_THRESHOLD)
 private val FIELD_THRESHOLD_KEY = doublePreferencesKey(SettingsKeys.FIELD_CONFIDENCE_THRESHOLD)
+private val AUTO_LEDGER_ENABLED_KEY = booleanPreferencesKey(SettingsKeys.AUTO_LEDGER_ENABLED)
+private val ONBOARD_COMPLETED_KEY = booleanPreferencesKey(SettingsKeys.ONBOARD_COMPLETED)
 
 /**
  * DataStore 实现。
@@ -109,6 +118,18 @@ class DataStoreSettingsRepository @Inject constructor(
         }
         return SettingsWriteResult.Success
     }
+
+    override suspend fun setAutoLedgerEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[AUTO_LEDGER_ENABLED_KEY] = enabled
+        }
+    }
+
+    override suspend fun setOnboardCompleted(completed: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[ONBOARD_COMPLETED_KEY] = completed
+        }
+    }
 }
 
 /** 默认值 + 已持久化值；未知/越界的持久化值回退默认值。 */
@@ -126,6 +147,8 @@ internal fun Preferences.toAppSettings(): AppSettings {
         themeMode = themeMode,
         overallConfidenceThreshold = overall,
         fieldConfidenceThreshold = field,
+        autoLedgerEnabled = this[AUTO_LEDGER_ENABLED_KEY] ?: false,
+        onboardCompleted = this[ONBOARD_COMPLETED_KEY] ?: false,
     )
 }
 

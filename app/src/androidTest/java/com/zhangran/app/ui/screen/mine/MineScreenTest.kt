@@ -115,17 +115,19 @@ class MineScreenTest {
     fun A2_采集未接入项禁用但可见且说明原因() {
         setContent(content())
 
-        composeRule.onNodeWithContentDescription("自动记账，当前已关闭，不可用").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("自动记账，当前已关闭").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("记账提醒，当前已关闭，不可用").assertIsDisplayed()
-        composeRule.onNodeWithText("需先接入采集核心（阶段二），当前开关不生效").assertIsDisplayed()
-        composeRule.onNodeWithText("采集核心未接入，权限状态与授权入口将在阶段二提供").assertIsDisplayed()
+        composeRule.onNodeWithText("总开关只在本页。关闭后不再自动记，已有待确认保留").assertIsDisplayed()
+        composeRule.onNodeWithText("无障碍未授权").assertIsDisplayed()
+        composeRule.onAllNodesWithText("未接入").assertCountEquals(0)
     }
 
     @Test
     fun A2_页头不伪装已连接() {
         setContent(content())
-        composeRule.onNodeWithContentDescription("采集核心未接入").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("自动记账状态：不可用").assertIsDisplayed()
         composeRule.onAllNodesWithText("已连接").assertCountEquals(0)
+        composeRule.onAllNodesWithText("未接入").assertCountEquals(0)
     }
 
     @Test
@@ -134,7 +136,7 @@ class MineScreenTest {
 
         composeRule.onNodeWithText("即将支持 · 采集核心接入后可用").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("即将支持 · 本地备份与 settings.json").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("即将支持 · 需要采集核心").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("时间、来源、包名、状态和原因").performScrollTo().assertIsDisplayed()
     }
 
     // ------------------------------------------------------------------ 主题

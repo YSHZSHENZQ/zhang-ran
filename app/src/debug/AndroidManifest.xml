@@ -22,6 +22,15 @@
         <receiver
             android:name="androidx.profileinstaller.ProfileInstallReceiver"
             tools:node="remove" />
+
+        <!-- debug：把上次捕获时间拨回去，用来看「疑似失效」。release 没有这个接收器。 -->
+        <receiver
+            android:name=".debug.DebugCaptureHealthReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.zhangran.app.debug.BACKDATE_LAST_CAPTURE" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

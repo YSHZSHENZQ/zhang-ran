@@ -92,6 +92,7 @@ class AccessibilitySnapshotIngest(
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val newId: () -> String = { UUID.randomUUID().toString() },
     private val decision: Decision = Decision(supportedPackages = AccessibilityTargets.packages),
+    private val onCaptured: suspend (Long) -> Unit = {},
 ) {
 
     suspend fun ingest(
@@ -229,6 +230,7 @@ class AccessibilitySnapshotIngest(
                 confidence = candidate.overallConfidence,
             ),
         )
+        onCaptured(snapshot.capturedAt)
         return AccessibilityIngestResult(
             captureId = captureId,
             outcome = AccessibilityIngestOutcome.PENDING,
@@ -272,6 +274,7 @@ class AccessibilitySnapshotIngest(
                 confidence = null,
             ),
         )
+        onCaptured(snapshot.capturedAt)
         return AccessibilityIngestResult(
             captureId = captureId,
             outcome = outcome,

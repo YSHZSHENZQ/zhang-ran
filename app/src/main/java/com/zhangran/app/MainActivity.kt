@@ -8,6 +8,8 @@ package com.zhangran.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.navigation.compose.rememberNavController
+import com.zhangran.app.ui.navigation.ColdStartOnboard
 import com.zhangran.app.ui.navigation.ZhangRanApp
 import com.zhangran.app.ui.theme.ZhangRanAppTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,7 +21,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             // 主题由设置驱动（M4c）：DataStore 首读后再渲染，避免先亮后暗
             ZhangRanAppTheme {
-                ZhangRanApp()
+                val navController = rememberNavController()
+                ColdStartOnboard(navController)
+                ZhangRanApp(navController)
             }
         }
     }

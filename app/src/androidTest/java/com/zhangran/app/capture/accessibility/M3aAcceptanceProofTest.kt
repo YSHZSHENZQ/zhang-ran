@@ -20,6 +20,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.zhangran.app.BuildConfig
 import com.zhangran.app.MainActivity
+import com.zhangran.app.dismissColdStartOnboard
 import com.zhangran.app.domain.model.CategoryType
 import com.zhangran.app.domain.model.TransactionState
 import dagger.hilt.android.EntryPointAccessors
@@ -47,6 +48,7 @@ class M3aAcceptanceProofTest {
 
     @Test
     fun 待确认三种处置与统计保护取证() {
+        dismissColdStartOnboard(composeRule)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val entry = EntryPointAccessors.fromApplication(
             context.applicationContext,

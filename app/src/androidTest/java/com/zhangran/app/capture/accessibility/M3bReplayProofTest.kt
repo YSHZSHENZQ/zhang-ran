@@ -19,6 +19,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import com.zhangran.app.BuildConfig
 import com.zhangran.app.MainActivity
+import com.zhangran.app.dismissColdStartOnboard
 import com.zhangran.app.domain.model.DuplicateVerdict
 import com.zhangran.app.domain.model.TransactionState
 import dagger.hilt.android.EntryPointAccessors
@@ -52,6 +53,7 @@ class M3bReplayProofTest {
 
     @Test
     fun 回放去重与时区() {
+        dismissColdStartOnboard(composeRule)
         ac1()
         ac2()
         ac3()

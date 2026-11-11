@@ -9,12 +9,12 @@ package com.zhangran.app.ui.screen.mine
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.zhangran.app.data.autoledger.AutoLedgerStatusSource
 import com.zhangran.app.data.repository.TransactionRepository
-import com.zhangran.app.data.settings.AppSettings
 import com.zhangran.app.data.settings.SettingsRepository
 import com.zhangran.app.data.settings.ThemeMode
 import com.zhangran.app.domain.model.TransactionState
-import javax.inject.Inject
+import com.zhangran.app.domain.usecase.SetAutoLedgerEnabledUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -35,9 +35,11 @@ import kotlinx.coroutines.launch
  * @param settingsRepository 设置读写（DataStore）
  * @param transactions 待确认数量
  */
-class MineViewModel @Inject constructor(
+class MineViewModel(
     private val settingsRepository: SettingsRepository,
     private val transactions: TransactionRepository,
+    private val status: AutoLedgerStatusSource,
+    private val setEnabled: SetAutoLedgerEnabledUseCase,
 ) : ViewModel() {
 
     private val refreshTrigger = MutableStateFlow(0)
@@ -50,11 +52,17 @@ class MineViewModel @Inject constructor(
         flow { emit(transactions.countByState(TransactionState.PENDING)) }
     }
 
-    val uiState: StateFlow<MineUiState> = combine<AppSettings, Int, MineUiState>(
+    val uiState: StateFlow<MineUiState> = combine(
         settingsRepository.settings,
         pendingCount,
-    ) { settings, count ->
-        MineUiState.Content(settings = settings, pendingCount = count)
+        status.snapshots,
+    ) { settings, count, snapshot ->
+        MineUiState.Content(
+            settings = settings,
+            pendingCount = count,
+            availability = snapshot.availability,
+            accessibilityGranted = snapshot.accessibilityGranted,
+        ) as MineUiState
     }
         .catch { throwable ->
             emit(MineUiState.Error(throwable.message ?: "读取设置失败"))
@@ -66,12 +74,24 @@ class MineViewModel @Inject constructor(
             initialValue = MineUiState.Loading,
         )
 
-    /** 切换主题（持久化到 DataStore；失败给出提示，不静默）。 */
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             runCatching { settingsRepository.setThemeMode(mode) }
                 .onFailure { _events.emit(MineEvent.Message("主题保存失败，请重试")) }
         }
+    }
+
+    fun setAutoLedgerEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            runCatching { setEnabled(enabled) }
+                .onFailure { _events.emit(MineEvent.Message("自动记账开关保存失败，请重试")) }
+        }
+    }
+
+    /** 从系统设置返回后重读权限。 */
+    fun refreshPermissions() {
+        status.refreshPermissions()
+        refresh()
     }
 
     /** 错误态重试 / 刷新待确认数量。 */

@@ -3,8 +3,8 @@
  *
  * 结构（底部导航顶级页，无返回键）：
  * ```text
- * 我的                                        [采集未接入]
- * [自动记账] 权限状态（未接入）/ 总开关（禁用）/ 状态入口 / 待确认记录（N）
+ * 我的
+ * [自动记账] 权限状态 / 总开关 / 状态入口 / 待确认记录（N）
  * [外观]     暗色主题：跟随系统 | 浅色 | 深色
  * [数据管理] 分类 / 账户 / 规则* / 备份* / 日志*      (*标注"即将支持"；预算只保留底栏入口)
  * [关于]     关于账然 / 版本
@@ -55,9 +55,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.zhangran.app.BuildConfig
+import com.zhangran.app.data.autoledger.AutoLedgerStatusSource
 import com.zhangran.app.data.repository.TransactionRepository
 import com.zhangran.app.data.settings.SettingsRepository
 import com.zhangran.app.data.settings.ThemeMode
+import com.zhangran.app.domain.usecase.SetAutoLedgerEnabledUseCase
+import com.zhangran.app.ui.common.RefreshOnResume
 import com.zhangran.app.ui.navigation.Destination
 import com.zhangran.app.ui.screen.mine.components.SettingInfoRow
 import com.zhangran.app.ui.screen.mine.components.SettingNavRow
@@ -99,11 +102,14 @@ fun MineScreen(onNavigate: (String) -> Unit = {}) {
                 MineViewModel(
                     settingsRepository = entryPoint.settingsRepository(),
                     transactions = entryPoint.transactionRepository(),
+                    status = entryPoint.autoLedgerStatusSource(),
+                    setEnabled = entryPoint.setAutoLedgerEnabledUseCase(),
                 )
             }
         },
     )
     val state by viewModel.uiState.collectAsState()
+    RefreshOnResume(viewModel::refreshPermissions)
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(viewModel) {
@@ -120,6 +126,7 @@ fun MineScreen(onNavigate: (String) -> Unit = {}) {
             onThemeChange = viewModel::setThemeMode,
             onNavigate = onNavigate,
             onRetry = viewModel::refresh,
+            onAutoLedgerEnabled = viewModel::setAutoLedgerEnabled,
         )
         SnackbarHost(
             hostState = snackbarHostState,
@@ -135,6 +142,7 @@ fun MineContent(
     onThemeChange: (ThemeMode) -> Unit = {},
     onNavigate: (String) -> Unit = {},
     onRetry: () -> Unit = {},
+    onAutoLedgerEnabled: (Boolean) -> Unit = {},
 ) {
     val colors = ZhangRanTheme.colors
     Box(
@@ -143,7 +151,7 @@ fun MineContent(
             .zhangRanBackground(colors),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            MineHead()
+            MineHead(statusLabel = (state as? MineUiState.Content)?.statusLabel)
 
             when (state) {
                 MineUiState.Loading -> MineSkeleton()
@@ -174,7 +182,11 @@ fun MineContent(
                 ) {
                     AutoLedgerSection(
                         pendingCount = state.pendingCount,
+                        statusLabel = state.statusLabel,
+                        masterEnabled = state.settings.autoLedgerEnabled,
+                        accessibilityGranted = state.accessibilityGranted,
                         onNavigate = onNavigate,
+                        onAutoLedgerEnabled = onAutoLedgerEnabled,
                     )
                     AppearanceSection(
                         selected = state.settings.themeMode,
@@ -189,9 +201,9 @@ fun MineContent(
     }
 }
 
-/** 页头：我的 / SETTINGS + 采集状态胶囊（不伪装"已连接"）。 */
+/** 页头：我的 / SETTINGS + 自动记账状态胶囊。 */
 @Composable
-private fun MineHead() {
+private fun MineHead(statusLabel: String?) {
     val colors = ZhangRanTheme.colors
     Row(
         modifier = Modifier
@@ -226,57 +238,63 @@ private fun MineHead() {
                 color = colors.textDisabledColor,
             )
         }
-        // 原型此处是"已连接"；采集核心未接入，不得伪装，改为中性状态标签
-        Row(
-            modifier = Modifier
-                .heightIn(min = MineLayout.pillMinHeightDp)
-                .clip(ZhangRanTheme.shapes.badge)
-                .zhangRanGlass(colors = colors, shape = ZhangRanTheme.shapes.badge)
-                .padding(
-                    horizontal = MineLayout.pillPaddingHorizontalDp,
-                    vertical = MineLayout.pillPaddingVerticalDp,
-                )
-                .semantics { contentDescription = "采集核心未接入" },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MineLayout.pillDotGapDp),
-        ) {
-            Box(
+        if (statusLabel != null) {
+            Row(
                 modifier = Modifier
-                    .size(MineLayout.pillDotSizeDp)
+                    .heightIn(min = MineLayout.pillMinHeightDp)
                     .clip(ZhangRanTheme.shapes.badge)
-                    .background(color = colors.textDisabledColor),
-            )
-            Text(
-                text = "采集未接入",
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontSize = MineLayout.pillFontSizeSp.sp,
-                ),
-                color = colors.textSecondaryColor,
-            )
+                    .zhangRanGlass(colors = colors, shape = ZhangRanTheme.shapes.badge)
+                    .padding(
+                        horizontal = MineLayout.pillPaddingHorizontalDp,
+                        vertical = MineLayout.pillPaddingVerticalDp,
+                    )
+                    .semantics { contentDescription = "自动记账状态：$statusLabel" },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MineLayout.pillDotGapDp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(MineLayout.pillDotSizeDp)
+                        .clip(ZhangRanTheme.shapes.badge)
+                        .background(color = colors.textSecondaryColor),
+                )
+                Text(
+                    text = statusLabel,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontSize = MineLayout.pillFontSizeSp.sp,
+                    ),
+                    color = colors.textSecondaryColor,
+                )
+            }
         }
     }
 }
 
-/** 自动记账：不可用项显式禁用（A2），待确认可进入（A5）。 */
 @Composable
-private fun AutoLedgerSection(pendingCount: Int, onNavigate: (String) -> Unit) {
+private fun AutoLedgerSection(
+    pendingCount: Int,
+    statusLabel: String,
+    masterEnabled: Boolean,
+    accessibilityGranted: Boolean,
+    onNavigate: (String) -> Unit,
+    onAutoLedgerEnabled: (Boolean) -> Unit,
+) {
     MineCard(title = "自动记账") {
         SettingNavRow(
             icon = "🔐",
             iconGroup = IconGradientGroup.BLUE,
             title = "权限状态",
-            description = "采集核心未接入，权限状态与授权入口将在阶段二提供",
-            enabled = false,
+            description = permissionStatusText(accessibilityGranted),
             onClick = { onNavigate(Destination.Onboard.route) },
         )
         SettingSwitchRow(
             icon = "⚡",
             iconGroup = IconGradientGroup.BLUE,
             title = "自动记账",
-            description = "需先接入采集核心（阶段二），当前开关不生效",
-            checked = false,
-            enabled = false,
-            onCheckedChange = {},
+            description = "总开关只在本页。关闭后不再自动记，已有待确认保留",
+            checked = masterEnabled,
+            enabled = true,
+            onCheckedChange = onAutoLedgerEnabled,
         )
         SettingSwitchRow(
             icon = "🔔",
@@ -291,7 +309,7 @@ private fun AutoLedgerSection(pendingCount: Int, onNavigate: (String) -> Unit) {
             icon = "📡",
             iconGroup = IconGradientGroup.GREEN,
             title = "自动记账状态",
-            description = "采集核心接入了什么、当前是否在运行",
+            description = statusLabel,
             onClick = { onNavigate(Destination.AutoLedger.route) },
         )
         SettingNavRow(
@@ -385,7 +403,7 @@ private fun DataManagementSection(onNavigate: (String) -> Unit) {
             icon = "📋",
             iconGroup = IconGradientGroup.GREEN,
             title = "捕获日志",
-            description = "即将支持 · 需要采集核心",
+            description = "时间、来源、包名、状态和原因",
             onClick = { onNavigate(Destination.Logs.route) },
         )
     }
@@ -540,4 +558,8 @@ internal interface MineEntryPoint {
     fun settingsRepository(): SettingsRepository
 
     fun transactionRepository(): TransactionRepository
+
+    fun autoLedgerStatusSource(): AutoLedgerStatusSource
+
+    fun setAutoLedgerEnabledUseCase(): SetAutoLedgerEnabledUseCase
 }

@@ -70,6 +70,16 @@ internal class FakeSettingsRepository : SettingsRepository {
         state.value = current
         return SettingsWriteResult.Success
     }
+
+    override suspend fun setAutoLedgerEnabled(enabled: Boolean) {
+        current = current.copy(autoLedgerEnabled = enabled)
+        state.value = current
+    }
+
+    override suspend fun setOnboardCompleted(completed: Boolean) {
+        current = current.copy(onboardCompleted = completed)
+        state.value = current
+    }
 }
 
 internal fun openTestDatabase(context: Context): ZhangRanDatabase =

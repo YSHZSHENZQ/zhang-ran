@@ -27,6 +27,13 @@ interface CaptureLogRepository {
     suspend fun listEvidence(captureId: String): List<CaptureEvidenceEntity>
 
     suspend fun update(log: CaptureLogEntity)
+
+    suspend fun findById(id: String): CaptureLogEntity?
+
+    /** 只删 `capture_logs` 和 `capture_evidence`。 */
+    suspend fun clearLogsAndEvidence()
+
+    suspend fun countEvidence(): Int
 }
 
 @Singleton
@@ -59,4 +66,15 @@ class RoomCaptureLogRepository @Inject constructor(
     override suspend fun update(log: CaptureLogEntity) {
         logs.update(log)
     }
+
+    override suspend fun findById(id: String): CaptureLogEntity? = logs.findById(id)
+
+    override suspend fun clearLogsAndEvidence() {
+        database.withTransaction {
+            logs.clearAll()
+            evidence.clearAll()
+        }
+    }
+
+    override suspend fun countEvidence(): Int = evidence.count()
 }

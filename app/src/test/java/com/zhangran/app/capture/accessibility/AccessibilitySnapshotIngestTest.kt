@@ -477,4 +477,13 @@ private class MemoryLogs : CaptureLogRepository {
         val index = logs.indexOfFirst { it.id == log.id }
         if (index >= 0) logs[index] = log
     }
+
+    override suspend fun findById(id: String): CaptureLogEntity? = logs.firstOrNull { it.id == id }
+
+    override suspend fun clearLogsAndEvidence() {
+        logs.clear()
+        evidence.clear()
+    }
+
+    override suspend fun countEvidence(): Int = evidence.size
 }

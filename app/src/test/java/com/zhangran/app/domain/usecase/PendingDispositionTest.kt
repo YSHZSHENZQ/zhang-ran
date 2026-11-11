@@ -22,6 +22,8 @@ import com.zhangran.app.domain.model.Currency
 import com.zhangran.app.domain.model.PendingReason
 import com.zhangran.app.domain.model.TransactionState
 import com.zhangran.app.domain.model.TransactionType
+import com.zhangran.app.domain.usecase.RestoreIgnoredCaptureUseCase
+import com.zhangran.app.domain.usecase.RestoreIgnoredResult
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -163,6 +165,37 @@ class PendingDispositionTest {
     }
 
     @Test
+    fun 忽略后捕获日志记为IGNORED() = runBlocking {
+        val harness = Harness()
+        harness.transactions.insert(pending())
+        harness.logs.put(log(reason = "CATEGORY_UNCERTAIN"))
+
+        assertEquals(IgnorePendingResult.Ignored, harness.ignore.invoke(TX))
+        assertEquals(CaptureLogStatus.IGNORED, harness.logs.logs.single().status)
+    }
+
+    @Test
+    fun 从日志恢复忽略记录回到待确认且不改金额() = runBlocking {
+        val harness = Harness()
+        harness.transactions.insert(pending())
+        harness.logs.put(log(reason = "CATEGORY_UNCERTAIN"))
+        harness.ignore.invoke(TX)
+
+        val restore = RestoreIgnoredCaptureUseCase(
+            transactions = harness.transactions,
+            logs = harness.logs,
+            clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneId.of(ZONE)),
+        )
+        assertEquals(RestoreIgnoredResult.Restored, restore.invoke("log-1"))
+
+        val saved = harness.transactions.getById(TX)!!
+        assertEquals(TransactionState.PENDING, saved.state)
+        assertEquals(3_850L, saved.amountMinor)
+        assertFalse(saved.confirmedByUser)
+        assertEquals(CaptureLogStatus.PENDING, harness.logs.logs.single().status)
+    }
+
+    @Test
     fun 自动合并不覆盖受保护字段且不回退确认标记() {
         val current = pending().copy(
             state = TransactionState.CONFIRMED,
@@ -248,7 +281,7 @@ class PendingDispositionTest {
         val logs = MemoryLogs()
         private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneId.of(ZONE))
         val confirm = ConfirmPendingUseCase(transactions, logs, clock)
-        val ignore = IgnorePendingUseCase(transactions, clock)
+        val ignore = IgnorePendingUseCase(transactions, logs, clock)
         val save = SavePendingAndBookUseCase(transactions, categories, accounts, edits, logs, clock)
     }
 
@@ -350,6 +383,14 @@ class PendingDispositionTest {
             val index = logs.indexOfFirst { it.id == log.id }
             if (index >= 0) logs[index] = log
         }
+
+        override suspend fun findById(id: String): CaptureLogEntity? = logs.firstOrNull { it.id == id }
+
+        override suspend fun clearLogsAndEvidence() {
+            logs.clear()
+        }
+
+        override suspend fun countEvidence(): Int = 0
     }
 
     private companion object {

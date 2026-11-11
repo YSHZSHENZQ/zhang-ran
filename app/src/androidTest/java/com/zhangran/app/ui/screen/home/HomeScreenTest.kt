@@ -14,6 +14,7 @@ package com.zhangran.app.ui.screen.home
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -201,10 +202,10 @@ class HomeScreenTest {
                 HomeContent(state = content(), onNavigate = { navigated = it })
             }
         }
-        // A11：采集未接入 → 只能显示"未接入"
-        composeRule.onNodeWithText("AUTO LEDGER · 未接入").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("自动记账状态：未接入").performClick()
+        composeRule.onNodeWithText("AUTO LEDGER · 不可用").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("自动记账状态：不可用").performClick()
         assertEquals(Destination.AutoLedger.route, navigated)
+        assertTrue(composeRule.onAllNodesWithText("未接入").fetchSemanticsNodes().isEmpty())
     }
 
     @Test

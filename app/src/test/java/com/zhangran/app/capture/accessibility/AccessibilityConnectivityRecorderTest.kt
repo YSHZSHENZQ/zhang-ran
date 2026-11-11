@@ -56,4 +56,12 @@ private class ConnectivityLogs : CaptureLogRepository {
     override suspend fun listEvidence(captureId: String): List<CaptureEvidenceEntity> = emptyList()
 
     override suspend fun update(log: CaptureLogEntity) = Unit
+
+    override suspend fun findById(id: String): CaptureLogEntity? = logs.firstOrNull { it.id == id }
+
+    override suspend fun clearLogsAndEvidence() {
+        logs.clear()
+    }
+
+    override suspend fun countEvidence(): Int = 0
 }

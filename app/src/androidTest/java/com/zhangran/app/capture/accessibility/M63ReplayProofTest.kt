@@ -17,6 +17,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.zhangran.app.BuildConfig
 import com.zhangran.app.MainActivity
+import com.zhangran.app.dismissColdStartOnboard
 import com.zhangran.app.domain.model.TransactionState
 import dagger.hilt.android.EntryPointAccessors
 import java.io.File
@@ -42,6 +43,7 @@ class M63ReplayProofTest {
 
     @Test
     fun 回放三笔待确认且正式收支不变() {
+        dismissColdStartOnboard(composeRule)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val entry = EntryPointAccessors.fromApplication(
             context.applicationContext,
