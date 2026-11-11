@@ -1,6 +1,6 @@
-file: zhangran-logs-20261111-165121.json
-gitSha: 0910af02f4a924140e6709e4befa239b08191cee
-string-field scan (phone / 18-digit id / 16-19 digit card / 12+ digit runs):
 no plaintext sensitive fields
-whole-file digit runs of length >= 12 (timestamps, not string fields):
-1794373522722, 1794362941004
+JSON string-field scan (phone, 18-digit id, 16-19 digit card, 12+ digit run): no hits
+whole-file \d{12,} matches only capturedAt timestamps:
+1794373522722
+1794373522722
+1794362941004
