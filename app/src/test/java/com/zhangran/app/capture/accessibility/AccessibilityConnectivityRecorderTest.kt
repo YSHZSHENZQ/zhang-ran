@@ -54,4 +54,6 @@ private class ConnectivityLogs : CaptureLogRepository {
     override suspend fun listAll(): List<CaptureLogEntity> = logs
 
     override suspend fun listEvidence(captureId: String): List<CaptureEvidenceEntity> = emptyList()
+
+    override suspend fun update(log: CaptureLogEntity) = Unit
 }

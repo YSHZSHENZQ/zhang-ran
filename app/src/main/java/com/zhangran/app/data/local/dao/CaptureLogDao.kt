@@ -13,6 +13,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.zhangran.app.data.local.entity.CaptureLogEntity
 import com.zhangran.app.domain.model.CaptureLogStatus
 import com.zhangran.app.domain.model.CaptureSource
@@ -22,6 +23,9 @@ interface CaptureLogDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(log: CaptureLogEntity)
+
+    @Update
+    suspend fun update(log: CaptureLogEntity)
 
     @Query("SELECT * FROM capture_logs WHERE id = :id")
     suspend fun findById(id: String): CaptureLogEntity?

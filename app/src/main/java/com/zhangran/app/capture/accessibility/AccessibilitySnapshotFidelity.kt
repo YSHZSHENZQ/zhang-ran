@@ -28,6 +28,10 @@ data class AccessibilityFidelityDocument(
     val capturedAt: Long,
     val truncated: Boolean = false,
     val nodes: List<AccessibilityFidelityNode> = emptyList(),
+    /** 通知 id。旧保真文本没有这个字段时为 null。 */
+    val notificationId: String? = null,
+    /** 通知投递时间。旧保真文本没有这个字段时为 null。 */
+    val postTime: Long? = null,
 )
 
 object AccessibilitySnapshotFidelity {
@@ -43,13 +47,20 @@ object AccessibilitySnapshotFidelity {
      * 不对整段 JSON 跑脱敏：时间戳是 13 位数字，整段替换会把 `capturedAt` 当成单号打成非法 JSON，
      * 之后无法把这一页冻成 fixture。节点文本里的单号、手机号、姓名仍然会脱敏。
      */
-    fun encode(snapshot: AccessibilityPageSnapshot, fixtureId: String?): String {
+    fun encode(
+        snapshot: AccessibilityPageSnapshot,
+        fixtureId: String?,
+        notificationId: String? = null,
+        postTime: Long? = null,
+    ): String {
         val document = AccessibilityFidelityDocument(
             fixtureId = CaptureProcessor.sanitize(fixtureId),
             packageName = CaptureProcessor.sanitize(snapshot.packageName) ?: snapshot.packageName,
             windowId = snapshot.windowId,
             capturedAt = snapshot.capturedAt,
             truncated = snapshot.truncated,
+            notificationId = CaptureProcessor.sanitize(notificationId),
+            postTime = postTime,
             nodes = snapshot.nodes.map { node ->
                 AccessibilityFidelityNode(
                     text = CaptureProcessor.sanitize(node.text),

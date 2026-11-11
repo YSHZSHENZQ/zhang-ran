@@ -199,12 +199,23 @@ object Dedup {
                 if (transaction.amountMinor != amountMinor) continue
                 if (abs(transaction.transactionTime - candidate.transactionTime) > SEMANTIC_WINDOW_MILLIS) continue
 
-                val sameMerchant = candidateMerchant != null && candidateMerchant == merchantKey(transaction.merchant)
+                val existingMerchant = merchantKey(transaction.merchant)
+                val sameMerchant = candidateMerchant != null && candidateMerchant == existingMerchant
                 val sameAccount = candidate.accountId != null && candidate.accountId == transaction.accountId
                 if (sameMerchant || sameAccount) {
                     return DedupResult.Duplicate(transaction.id)
                 }
-                // 金额与时间窗都命中，但两个语义限定条件都不满足 → 疑似，进 Pending。
+                val merchantsKnownAndDifferent = candidateMerchant != null &&
+                    existingMerchant != null &&
+                    candidateMerchant != existingMerchant
+                val accountsBothMissing = candidate.accountId == null && transaction.accountId == null
+                if (merchantsKnownAndDifferent && accountsBothMissing) {
+                    // 商户两边都有而且不同，账户又都空：商户比较已经否掉了，
+                    // 没有账户能把它们再对齐成同一笔。这不是“条件缺失”，不标疑似。
+                    // 账户都在但不相同的情况仍落到下面，标 POSSIBLE_DUPLICATE。
+                    continue
+                }
+                // 金额与时间窗都命中，但商户或账户对不上、又缺了能下结论的字段 → 疑似。
                 possibleIds += transaction.id
             }
         }

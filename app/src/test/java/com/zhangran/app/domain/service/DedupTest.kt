@@ -168,6 +168,15 @@ class DedupTest {
     }
 
     @Test
+    fun `同金额同时间但商户不同且都没有账户时不标疑似`() {
+        val result = Dedup.check(
+            candidate(merchant = "杭州深度求索", accountId = null),
+            listOf(existing(merchant = "富富", accountId = null)),
+        )
+        assertEquals(DedupResult.None, result)
+    }
+
+    @Test
     fun `金额相同时间差不超过 180 秒但商户与账户都不同时为 POSSIBLE_DUPLICATE`() {
         val result = Dedup.check(
             candidate(merchant = "星巴克", accountId = "acc-alipay"),

@@ -19,6 +19,9 @@ interface DuplicateDecisionDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(decision: DuplicateDecisionEntity)
 
+    @Query("SELECT * FROM duplicate_decisions ORDER BY decidedAt ASC")
+    suspend fun listAll(): List<DuplicateDecisionEntity>
+
     @Query("SELECT * FROM duplicate_decisions WHERE id = :id")
     suspend fun findById(id: String): DuplicateDecisionEntity?
 
@@ -44,4 +47,8 @@ interface DuplicateDecisionDao {
     /** 撤销判定：写 `revokedAt`，**不删除**记录。 */
     @Query("UPDATE duplicate_decisions SET revokedAt = :revokedAt WHERE id = :id")
     suspend fun revoke(id: String, revokedAt: Long)
+
+    /** 调试清账。产品撤销走 [revoke]，不走物理删除。 */
+    @Query("DELETE FROM duplicate_decisions")
+    suspend fun clearAll()
 }

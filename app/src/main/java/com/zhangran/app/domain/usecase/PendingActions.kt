@@ -1,8 +1,7 @@
 /**
- * 待确认行的操作集（M3a；`docs/02` §5 按 reason 决定）。
+ * 待确认行的操作集（`docs/02` §5 按 reason 决定）。
  *
- * 含 [com.zhangran.app.domain.model.PendingReason.POSSIBLE_DUPLICATE] 时本刀只允许忽略。
- * 「查看重复」属 M3b，这里不提供。
+ * 含 [com.zhangran.app.domain.model.PendingReason.POSSIBLE_DUPLICATE] 时只能查看重复或忽略。
  */
 package com.zhangran.app.domain.usecase
 
@@ -12,13 +11,14 @@ data class PendingActionFlags(
     val canConfirm: Boolean,
     val canEdit: Boolean,
     val canIgnore: Boolean,
+    val canReview: Boolean,
 )
 
 fun pendingActionFlags(reasons: Collection<PendingReason>): PendingActionFlags =
     if (PendingReason.POSSIBLE_DUPLICATE in reasons) {
-        PendingActionFlags(canConfirm = false, canEdit = false, canIgnore = true)
+        PendingActionFlags(canConfirm = false, canEdit = false, canIgnore = true, canReview = true)
     } else {
-        PendingActionFlags(canConfirm = true, canEdit = true, canIgnore = true)
+        PendingActionFlags(canConfirm = true, canEdit = true, canIgnore = true, canReview = false)
     }
 
 /** 从保真 JSON 里取出 fixture id。没有该字段时返回 null。 */

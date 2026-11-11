@@ -17,6 +17,7 @@ import com.zhangran.app.domain.usecase.PendingFieldErrors
 import com.zhangran.app.domain.usecase.SavePendingAndBookUseCase
 import com.zhangran.app.domain.usecase.SavePendingResult
 import com.zhangran.app.domain.usecase.fixtureIdOf
+import com.zhangran.app.ui.common.DeviceZone
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.ZoneId
@@ -156,7 +157,7 @@ class PendingEditViewModel(
             } else if (entity.type != TransactionType.EXPENSE && entity.type != TransactionType.INCOME) {
                 PendingEditUiState.Missing("这条记录不是支出或收入")
             } else {
-                val zone = entity.transactionTimeZone.ifBlank { ZoneId.systemDefault().id }
+                val zone = DeviceZone.current().id
                 PendingEditUiState.Ready(
                     PendingEditForm(
                         fixtureId = fixtureIdOf(logs.findByTransactionId(entity.id)?.rawCaptureRef),
@@ -194,7 +195,7 @@ class PendingEditViewModel(
     private fun resolveTime(form: PendingEditForm): TimeResolution {
         if (!form.timeDirty) return TimeResolution.Ok(form.originalTimeEpochMillis)
         if (form.timeText.isBlank()) return TimeResolution.Ok(null)
-        val zone = runCatching { ZoneId.of(form.timeZoneId) }.getOrElse { ZoneId.systemDefault() }
+        val zone = runCatching { ZoneId.of(form.timeZoneId) }.getOrElse { DeviceZone.current() }
         return try {
             val local = java.time.LocalDateTime.parse(form.timeText.trim(), TIME_FORMAT)
             TimeResolution.Ok(local.atZone(zone).toInstant().toEpochMilli())
@@ -204,7 +205,7 @@ class PendingEditViewModel(
     }
 
     private fun formatTime(epochMillis: Long, zoneId: String): String {
-        val zone = runCatching { ZoneId.of(zoneId) }.getOrElse { ZoneId.systemDefault() }
+        val zone = runCatching { ZoneId.of(zoneId) }.getOrElse { DeviceZone.current() }
         return Instant.ofEpochMilli(epochMillis).atZone(zone).format(TIME_FORMAT)
     }
 

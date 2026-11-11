@@ -3,7 +3,10 @@
  */
 package com.zhangran.app.capture.accessibility
 
+import com.zhangran.app.data.repository.CaptureLogRepository
 import com.zhangran.app.data.repository.CategoryRepository
+import com.zhangran.app.data.repository.DuplicateDecisionRepository
+import com.zhangran.app.data.repository.TransactionRepository
 import com.zhangran.app.domain.usecase.LedgerProofQuery
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -21,4 +24,10 @@ interface M3aDebugEntryPoint {
     fun accessibilitySnapshotIngest(): AccessibilitySnapshotIngest
 
     fun categoryRepository(): CategoryRepository
+
+    fun captureLogRepository(): CaptureLogRepository
+
+    fun duplicateDecisionRepository(): DuplicateDecisionRepository
+
+    fun transactionRepository(): TransactionRepository
 }

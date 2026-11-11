@@ -21,6 +21,8 @@ import com.zhangran.app.domain.model.Currency
 import com.zhangran.app.domain.model.PendingReason
 import com.zhangran.app.domain.model.RawCandidate
 import com.zhangran.app.domain.model.TransactionState
+import com.zhangran.app.domain.service.CaptureDebounceResult
+import com.zhangran.app.domain.service.CaptureIdentity
 import com.zhangran.app.domain.service.Confidence
 import com.zhangran.app.domain.service.Decision
 import com.zhangran.app.domain.service.Dedup
@@ -95,11 +97,24 @@ class AccessibilitySnapshotIngest(
     suspend fun ingest(
         snapshot: AccessibilityPageSnapshot,
         fixtureId: String? = null,
+        notificationId: String? = null,
+        postTime: Long? = null,
     ): AccessibilityIngestResult {
         if (snapshot.packageName !in AccessibilityTargets.packages) {
             return AccessibilityIngestResult.notWhitelist(fixtureId)
         }
-        val fidelity = AccessibilitySnapshotFidelity.encode(snapshot, fixtureId)
+        val identity = CaptureIdentity(
+            packageName = snapshot.packageName,
+            notificationId = notificationId,
+            postTime = postTime,
+        )
+        findSameEvent(identity)?.let { return it }
+        val fidelity = AccessibilitySnapshotFidelity.encode(
+            snapshot = snapshot,
+            fixtureId = fixtureId,
+            notificationId = notificationId,
+            postTime = postTime,
+        )
         return try {
             val parsed = AccessibilitySnapshotParser.parse(snapshot)
             if (parsed == null) {
@@ -116,7 +131,7 @@ class AccessibilitySnapshotIngest(
             val normalized = normalize.normalize(raw)
             val candidate = Confidence.derive(normalized)
             val dedup = Dedup.check(candidate, loadExisting())
-            val admission = AccessibilityPendingGate.admit(decision.decide(candidate, dedup))
+            val admission = AccessibilityPendingGate.admit(decision.decide(candidate, dedup), dedup)
             persist(
                 snapshot = snapshot,
                 fixtureId = fixtureId,
@@ -305,6 +320,50 @@ class AccessibilitySnapshotIngest(
         }
     }
 
+    /**
+     * 同一 `packageName + notificationId + postTime` 已经落过库时，不再写第二条捕获或交易。
+     * 三要素缺一就不在这里合并。
+     */
+    private suspend fun findSameEvent(identity: CaptureIdentity): AccessibilityIngestResult? {
+        if (identity.packageName.isNullOrBlank() ||
+            identity.notificationId.isNullOrBlank() ||
+            identity.postTime == null
+        ) {
+            return null
+        }
+        val match = records.listAll().firstOrNull { log ->
+            val stored = identityOf(log) ?: return@firstOrNull false
+            Dedup.checkCaptureDebounce(stored, identity) == CaptureDebounceResult.SameEvent
+        } ?: return null
+        val transaction = match.transactionId?.let { transactions.getById(it) }
+        return AccessibilityIngestResult(
+            captureId = match.captureId,
+            outcome = when (match.status) {
+                CaptureLogStatus.IGNORED_INVALID -> AccessibilityIngestOutcome.IGNORED_INVALID
+                CaptureLogStatus.FAILED -> AccessibilityIngestOutcome.FAILED
+                else -> AccessibilityIngestOutcome.PENDING
+            },
+            status = match.status,
+            captureSource = match.captureSource,
+            capturedAt = match.capturedAt,
+            fixtureId = fixtureIdOfRaw(match.rawCaptureRef),
+            transactionId = match.transactionId,
+            transactionState = transaction?.state,
+            reasons = reasonsOf(match.reason),
+            evidenceWritten = false,
+            refusedAutoConfirm = false,
+        )
+    }
+
+    private fun identityOf(log: CaptureLogEntity): CaptureIdentity? {
+        val document = AccessibilitySnapshotFidelity.decode(log.rawCaptureRef) ?: return null
+        return CaptureIdentity(
+            packageName = log.packageName ?: document.packageName,
+            notificationId = document.notificationId,
+            postTime = document.postTime,
+        )
+    }
+
     private suspend fun loadExisting(): List<ExistingTransaction> =
         transactions.listVisible().map { entity ->
             ExistingTransaction(
@@ -389,6 +448,20 @@ class AccessibilitySnapshotIngest(
         capturedAt = snapshot.capturedAt,
     )
 
+    private fun reasonsOf(raw: String?): Set<PendingReason> =
+        raw.orEmpty()
+            .split(',', '、', ' ')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .mapNotNull { token -> PendingReason.entries.firstOrNull { it.name == token } }
+            .toSet()
+
+    private fun fixtureIdOfRaw(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+        val match = FIXTURE_ID.find(raw) ?: return null
+        return match.groupValues[1].takeIf { it.isNotEmpty() }
+    }
+
     private fun channelOf(packageName: String): String? = when (packageName) {
         AccessibilityTargets.WECHAT_PACKAGE -> "wechat"
         AccessibilityTargets.ALIPAY_PACKAGE -> "alipay"
@@ -397,6 +470,7 @@ class AccessibilitySnapshotIngest(
 
     private companion object {
         const val ENGINE_VERSION = "m6-2"
+        val FIXTURE_ID = Regex("\"fixtureId\"\\s*:\\s*\"([^\"]*)\"")
     }
 }
 

@@ -20,11 +20,13 @@ data class PendingRecord(
     val merchant: String?,
     val reasons: List<PendingReason>,
     val capturedAt: Long,
+    val transactionTime: Long = capturedAt,
     val source: CaptureSource,
     val fixtureId: String? = null,
     val canConfirm: Boolean = true,
     val canEdit: Boolean = true,
     val canIgnore: Boolean = true,
+    val canReview: Boolean = false,
 )
 
 class LoadPendingRecordsUseCase @Inject constructor(
@@ -45,11 +47,13 @@ class LoadPendingRecordsUseCase @Inject constructor(
                     merchant = entity.merchant,
                     reasons = reasons,
                     capturedAt = log?.capturedAt ?: entity.transactionTime,
+                    transactionTime = entity.transactionTime,
                     source = entity.source,
                     fixtureId = fixtureIdOf(log?.rawCaptureRef),
                     canConfirm = actions.canConfirm,
                     canEdit = actions.canEdit,
                     canIgnore = actions.canIgnore,
+                    canReview = actions.canReview,
                 )
             }
             .sortedByDescending { it.capturedAt }

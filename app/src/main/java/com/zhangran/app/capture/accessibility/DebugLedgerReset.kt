@@ -1,5 +1,5 @@
 /**
- * 调试取证前清掉交易、字段保护和捕获日志。不删分类与账户。正式页面不调用。
+ * 调试取证前清掉交易、字段保护、捕获日志和重复判定。不删分类与账户。正式页面不调用。
  */
 package com.zhangran.app.capture.accessibility
 
@@ -17,6 +17,7 @@ class DebugLedgerReset @Inject constructor(
             database.transactionDao().deleteAll()
             database.captureLogDao().clearAll()
             database.captureEvidenceDao().clearAll()
+            database.duplicateDecisionDao().clearAll()
         }
     }
 }
