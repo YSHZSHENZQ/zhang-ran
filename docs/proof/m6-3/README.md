@@ -2,7 +2,9 @@
 
 功能提交（解析收窄，debug APK 的 `BuildConfig.GIT_SHA`）是 `3467840a91d61793a369d3000f99151ba632192e`，与 `git-sha.txt`、`ac4` / `ac5` / `ac6` JSON 里的 `gitSha` 相同。APK 从这次提交打出。后面的取证测试提交和本目录证明提交没有重打 APK。用证明提交重新 `assembleDebug` 会改掉 `GIT_SHA`，和 `git-sha.txt`、回放 JSON 对不上。QA 以 APK 里的 `BuildConfig.GIT_SHA`、`git-sha.txt`、回放 JSON 的 `gitSha` 三者一致为准。
 
-AC-1 当时装到模拟器上的包是更早的 `0bcfc84b3c1747051ccba1e7da3ce84562118b11`（Owner 真机上的那一版）。那一版的开关和连通证明仍然有效，但解析是旧的：真机上已经进待确认的三笔标题不对，不会被新包改写。AC-2 / AC-3 要等 Owner 换上 `3467840` 这只 debug APK 再付或再打开结果页之后才能判。本目录不把它们标成通过。
+AC-1 当时装到模拟器上的包是更早的 `0bcfc84b3c1747051ccba1e7da3ce84562118b11`（Owner 真机上的那一版）。那一版的开关和连通证明仍然有效，但解析是旧的：真机上已经进待确认的三笔标题不对，不会被新包改写。
+
+2026-11-11 Owner 改定：AC-2 / AC-3 改为回放 `m6-3-f-wx` 与 `m6-3-f-ali`，不再要求新的真机付款。方向用现成的「改完再记」页，没有改产品，功能 SHA 仍是 `3467840…`。没有点「保存并入账」，两笔保持待确认。
 
 模拟器：Android 14（API 34，1080×2400）。截图来自 `screencap` 帧缓冲，不是 Compose Preview。回放当时系统界面弹过「System UI isn't responding」，测试进程里落下的两张图被这层挡住。提交的 `ac6-home-*.png` 是同一台模拟器、同一套账本状态下补拍的：先拍有三笔待确认的首页，再清空数据库拍空首页。JSON 仍是仪器测试当场写的，没有手改。
 
@@ -11,6 +13,10 @@ AC-1 当时装到模拟器上的包是更早的 `0bcfc84b3c1747051ccba1e7da3ce84
 | `git-sha.txt` | 所验 debug APK 的 `BuildConfig.GIT_SHA`（`3467840…`） |
 | `ac1-accessibility-settings.png` | AC-1。系统设置里「账然」无障碍已打开。对应旧包 `0bcfc84` |
 | `ac1-connectivity-log.png` | AC-1。同一次绑定的 logcat 与 `capture_logs`。`capturedAt=1794324648399` 与 `1794324651226`；`transactionId=null`；`transactions` 行数为 0。`detail` 为 `0bcfc84…` |
+| `ac2-f-wx-pending-list.png` | AC-2 / AC-3。同一屏「待确认记录」：`m6-3-f-wx` 杭州深度求索 ¥10.00，`m6-3-f-ali` 富富 ¥129.99。没有键盘 |
+| `ac2-f-wx-edit-direction.png` | AC-2。`m6-3-f-wx` 的「改完再记」：商户杭州深度求索、金额 10.00、类型「支出」（选中）。未保存 |
+| `ac3-f-ali-edit-direction.png` | AC-3。`m6-3-f-ali` 的「改完再记」：商户富富、金额 129.99、类型「支出」（选中）。未保存 |
+| `ac2-ac3-replay.json` | AC-2 / AC-3。与上图同一回放：两笔 `PENDING` / `EXPENSE` / `ACCESSIBILITY`，`booked=false`，正式收支 0，`gitSha` 为 `3467840…` |
 | `ac4-f-wx.json` | AC-4。fixture `m6-3-f-wx`。`amountMinor=1000`，商户「杭州深度求索」，`EXPENSE`，`PENDING`，`ACCESSIBILITY`，`confirmedByUser=false`。正式收支 0 |
 | `ac4-f-ali.json` | AC-4。fixture `m6-3-f-ali`。`amountMinor=12999`，商户「富富」，`EXPENSE`，`PENDING`，`ACCESSIBILITY`。正式收支 0 |
 | `ac5-m6-2.json` | AC-5。fixture `m6-2-wechat-pay-success`。`amountMinor=3850`，商户「星巴克咖啡」，`EXPENSE`，`PENDING`，`ACCESSIBILITY` |
@@ -18,7 +24,7 @@ AC-1 当时装到模拟器上的包是更早的 `0bcfc84b3c1747051ccba1e7da3ce84
 | `ac6-after.json` | AC-6。三笔都在 `rows` 里，状态全是 `PENDING`，没有 `CONFIRMED`。`pendingCount=3`，本月支出/收入仍是 0 |
 | `ac6-home-before.png` | AC-6。空首页：「还没有记录」，待确认角标没有数字。空列表不画余额卡片，所以图上没有「本月支出」；数字以 `ac6-before.json` 为准 |
 | `ac6-home-after.png` | AC-6。「本月支出 ¥0.00」，INCOME `+0.00`，BALANCE `0.00`，角标 3。今天下列「杭州深度求索 -10.00」「富富 -129.99」，其下「星巴克咖啡 -38.50」。没有键盘 |
-| `owner-2026-11-11/` | AC-2 / AC-3 的上下文（Owner 2026-11-11 小米 14，旧包 `0bcfc84`）。不是通过证明 |
+| `owner-2026-11-11/` | 旧包 `0bcfc84` 的真机上下文（小米 14）。不是这次回放证明 |
 
 ## AC-4 fixture
 
@@ -29,7 +35,17 @@ AC-1 当时装到模拟器上的包是更早的 `0bcfc84b3c1747051ccba1e7da3ce84
 
 商户只从结果页上剩下的名字取。导航和按钮（更多信息、回首页、完成、我的、返回、付款等）不能当商户。找不到就留空，界面显示「未知」，不拿按钮凑。两个方向的结果用语同时出现时不解析，不把未知方向收成支出。
 
-Owner 换上这只 APK 再打开同一类结果页之后，设备上的 JSON 应与上表一致：金额、商户、`type`、`state`、`source`。对上之前 AC-2 / AC-3 仍是待复验。旧包已经写入的待确认行不会被新包改掉。
+旧包已经写入的待确认行不会被新包改掉。
+
+## AC-2 / AC-3（2026-11-11 改定：回放，不再新付款）
+
+在 `3467840` 这只 debug APK 上只回放 `m6-3-f-wx` 与 `m6-3-f-ali`。
+
+`ac2-f-wx-pending-list.png` 同一屏能读到两行：杭州深度求索 ¥10.00，富富 ¥129.99。
+
+方向没有改列表行。两行各自打开「改完再记」（页面标题「编辑后入账」），金额、商户和类型「支出」在同一屏，键盘没有挡住。「支出」是选中项，「收入」在旁边未选。然后返回，没有点「保存并入账」。
+
+`ac2-ac3-replay.json` 与这三张图是同一次回放：`amountMinor` 1000 / 12999，商户杭州深度求索 / 富富，`type=EXPENSE`，`state=PENDING`，`source=ACCESSIBILITY`，`confirmedByUser=false`，`booked=false`，本月支出和收入为 0。
 
 ## AC-6 正式账
 
