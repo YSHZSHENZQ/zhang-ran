@@ -1,7 +1,8 @@
 /**
  * 交易表实体（`transactions`）。
  *
- * 字段逐字对齐 `docs/03` §5 的 Transaction 清单（25 个字段，不增不减）。
+ * 字段对齐 `docs/03` §5 的 Transaction 清单。`pendingReasons` 是待确认原因，
+ * 存在交易自己身上，清空捕获日志不会把它清掉。
  * 金额为最小货币单位 `Long amountMinor`，方向由 `type` 表达（`docs/03` §4）；
  * **禁止 `Double`/`Float`**（`AGENTS.md` §5）。
  *
@@ -72,4 +73,9 @@ data class TransactionEntity(
     val updatedAt: Long,
     /** 软删除时间；非空即视为已删除。 */
     val deletedAt: Long? = null,
+    /**
+     * 待确认原因，逗号分隔的 [com.zhangran.app.domain.model.PendingReason] 名。
+     * 与捕获日志分开存：清空日志后，疑似重复仍然不能直接确认。
+     */
+    val pendingReasons: String? = null,
 )

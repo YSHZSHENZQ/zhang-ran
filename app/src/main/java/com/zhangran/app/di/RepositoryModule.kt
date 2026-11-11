@@ -12,7 +12,11 @@
  */
 package com.zhangran.app.di
 
+import com.zhangran.app.data.device.AndroidDevicePermissionProbe
+import com.zhangran.app.data.device.DevicePermissionProbe
 import com.zhangran.app.data.repository.AccountRepository
+import com.zhangran.app.data.settings.CaptureHealthStore
+import com.zhangran.app.data.settings.DataStoreCaptureHealthStore
 import com.zhangran.app.data.repository.BudgetRepository
 import com.zhangran.app.data.repository.CaptureEvidenceRepository
 import com.zhangran.app.data.repository.CaptureLogRepository
@@ -79,6 +83,14 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCaptureLogRepository(impl: RoomCaptureLogRepository): CaptureLogRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCaptureHealthStore(impl: DataStoreCaptureHealthStore): CaptureHealthStore
+
+    @Binds
+    @Singleton
+    abstract fun bindDevicePermissionProbe(impl: AndroidDevicePermissionProbe): DevicePermissionProbe
 
     /** M3b：用户判定同一笔 / 两笔时写入 `duplicate_decisions`。 */
     @Binds

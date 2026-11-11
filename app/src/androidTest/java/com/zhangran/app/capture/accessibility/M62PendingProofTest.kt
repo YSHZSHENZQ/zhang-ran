@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.zhangran.app.MainActivity
+import com.zhangran.app.dismissColdStartOnboard
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -29,6 +30,7 @@ class M62PendingProofTest {
 
     @Test
     fun 待确认页展示支付结果fixture() {
+        dismissColdStartOnboard(composeRule)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val ingest = EntryPointAccessors.fromApplication(
             context.applicationContext,
@@ -55,6 +57,7 @@ class M62PendingProofTest {
 
     @Test
     fun 首页正式收支不因待确认增加() {
+        dismissColdStartOnboard(composeRule)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val ingest = EntryPointAccessors.fromApplication(
             context.applicationContext,

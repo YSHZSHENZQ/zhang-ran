@@ -8,6 +8,8 @@ import com.zhangran.app.data.repository.CategoryRepository
 import com.zhangran.app.data.repository.DuplicateDecisionRepository
 import com.zhangran.app.data.repository.TransactionRepository
 import com.zhangran.app.domain.usecase.LedgerProofQuery
+import com.zhangran.app.domain.usecase.SetAutoLedgerEnabledUseCase
+import com.zhangran.app.domain.usecase.UpdateTransactionFieldUseCase
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -30,4 +32,8 @@ interface M3aDebugEntryPoint {
     fun duplicateDecisionRepository(): DuplicateDecisionRepository
 
     fun transactionRepository(): TransactionRepository
+
+    fun setAutoLedgerEnabledUseCase(): SetAutoLedgerEnabledUseCase
+
+    fun updateTransactionFieldUseCase(): UpdateTransactionFieldUseCase
 }

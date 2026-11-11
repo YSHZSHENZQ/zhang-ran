@@ -68,9 +68,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.zhangran.app.data.autoledger.AutoLedgerStatusSource
+import com.zhangran.app.domain.service.AutoLedgerAvailability
+import com.zhangran.app.domain.service.AutoLedgerHealth
 import com.zhangran.app.domain.usecase.DeleteTransactionUseCase
 import com.zhangran.app.domain.usecase.ObserveHomeSummaryUseCase
 import com.zhangran.app.domain.usecase.ObserveTransactionsUseCase
+import com.zhangran.app.ui.common.RefreshOnResume
 import com.zhangran.app.ui.common.TransactionDeletionEvents
 import com.zhangran.app.ui.navigation.Destination
 import com.zhangran.app.ui.screen.home.components.BalanceCard
@@ -117,6 +121,15 @@ fun HomeScreen(onNavigate: (String) -> Unit = {}) {
         },
     )
     val state by homeViewModel.uiState.collectAsState()
+    val statusSource = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            HomeEntryPoint::class.java,
+        ).autoLedgerStatusSource()
+    }
+    val snapshot by statusSource.snapshots.collectAsState(initial = null)
+    RefreshOnResume(statusSource::refreshPermissions)
+    val statusLabel = snapshot?.label ?: AutoLedgerHealth.label(AutoLedgerAvailability.UNAVAILABLE)
 
     // 「已删除，可撤销」（`M2b` §1.2）：详情页删除成功后返回首页，在这里弹一次性 SnackBar。
     val snackbarHostState = remember { SnackbarHostState() }
@@ -140,6 +153,7 @@ fun HomeScreen(onNavigate: (String) -> Unit = {}) {
     Box(modifier = Modifier.fillMaxSize()) {
         HomeContent(
             state = state,
+            statusLabel = statusLabel,
             onNavigate = onNavigate,
             onRetry = homeViewModel::refresh,
         )
@@ -160,6 +174,7 @@ fun HomeScreen(onNavigate: (String) -> Unit = {}) {
 @Composable
 fun HomeContent(
     state: HomeUiState,
+    statusLabel: String = AutoLedgerHealth.label(AutoLedgerAvailability.UNAVAILABLE),
     onNavigate: (String) -> Unit = {},
     onRetry: () -> Unit = {},
 ) {
@@ -175,19 +190,23 @@ fun HomeContent(
             .zhangRanBackground(colors),
     ) {
         when (state) {
-            is HomeUiState.Content -> HomeContentBody(state = state, onNavigate = onNavigate)
+            is HomeUiState.Content -> HomeContentBody(
+                state = state,
+                statusLabel = statusLabel,
+                onNavigate = onNavigate,
+            )
 
             HomeUiState.Loading -> Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
             ) {
-                HomeHeader(pendingCount = 0, onNavigate = onNavigate)
+                HomeHeader(pendingCount = 0, statusLabel = statusLabel, onNavigate = onNavigate)
                 HomeSkeleton()
             }
 
             HomeUiState.Empty -> Column(modifier = Modifier.fillMaxSize()) {
-                HomeHeader(pendingCount = 0, onNavigate = onNavigate)
+                HomeHeader(pendingCount = 0, statusLabel = statusLabel, onNavigate = onNavigate)
                 HomeEmptyState(
                     onAddTransaction = { onNavigate(Destination.Add.route) },
                     onCheckAutoLedger = { onNavigate(Destination.AutoLedger.route) },
@@ -196,7 +215,7 @@ fun HomeContent(
             }
 
             is HomeUiState.Error -> Column(modifier = Modifier.fillMaxSize()) {
-                HomeHeader(pendingCount = 0, onNavigate = onNavigate)
+                HomeHeader(pendingCount = 0, statusLabel = statusLabel, onNavigate = onNavigate)
                 HomeErrorState(
                     message = state.message,
                     onRetry = onRetry,
@@ -211,6 +230,7 @@ fun HomeContent(
 @Composable
 private fun HomeContentBody(
     state: HomeUiState.Content,
+    statusLabel: String,
     onNavigate: (String) -> Unit,
 ) {
     // 入场动效（原型 `fadeInUp`）：卡片与各行**同时**淡入上浮，无错峰、无延迟
@@ -219,7 +239,11 @@ private fun HomeContentBody(
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item(key = "home-header") {
-            HomeHeader(pendingCount = state.summary.pendingCount, onNavigate = onNavigate)
+            HomeHeader(
+                pendingCount = state.summary.pendingCount,
+                statusLabel = statusLabel,
+                onNavigate = onNavigate,
+            )
         }
         item(key = "home-balance-card") {
             HomeEntrance(visible = entered) {
@@ -425,4 +449,6 @@ interface HomeEntryPoint {
 
     /** `M2b`：首页「已删除，可撤销」SnackBar 的撤销入口。 */
     fun deleteTransactionUseCase(): DeleteTransactionUseCase
+
+    fun autoLedgerStatusSource(): AutoLedgerStatusSource
 }

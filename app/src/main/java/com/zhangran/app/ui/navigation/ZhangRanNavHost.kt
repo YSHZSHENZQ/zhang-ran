@@ -253,8 +253,15 @@ fun ZhangRanNavHost(
                 onDone = { navController.popBackStack() },
             )
         }
-        composable(Destination.AutoLedger.route) { AutoLedgerScreen() }
-        composable(Destination.Onboard.route) { OnboardScreen() }
+        composable(Destination.AutoLedger.route) {
+            AutoLedgerScreen(
+                onOpenLogs = { navController.navigate(Destination.Logs.route) },
+                onOpenPending = { navController.navigate(Destination.Pending.route) },
+            )
+        }
+        composable(Destination.Onboard.route) {
+            OnboardScreen(onCompleted = { navController.popBackStack() })
+        }
         // M2d-1：分类管理 →「分类规则」跳转（导航层唯一改动，经批准）
         composable(Destination.Categories.route) {
             CategoriesScreen(

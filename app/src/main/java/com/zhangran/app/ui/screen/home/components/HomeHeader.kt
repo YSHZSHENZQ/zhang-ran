@@ -4,9 +4,7 @@
  * 结构：左侧「账然」渐变标题 + 「AUTO LEDGER · 状态」副标题；右侧两个玻璃圆钮
  * （搜索 / 待确认）。副标题与待确认圆钮都可点，分别进「自动记账」与「待确认」。
  *
- * 自动记账状态（`M2e-1b` §4.5）：采集核心**尚未接入**，因此只能显示"未接入"，
- * **不得**显示"正常运行"（`docs/07` §19：不得静默表现为正常）。文案集中在
- * [HomeAutoLedgerStatus]，接入后改这一处即可。
+ * 副标题是真实的自动记账状态：可用、不可用或疑似失效。
  *
  * 待确认红点（§4.2）：原型 `.dot` 只是一个 7px 无数字的小点；任务书要求"内含数量"，
  * 故此处做成**带数字的小徽标**（> 99 显示 `99+`），属任务书 §4.2 明确要求，
@@ -63,9 +61,6 @@ import com.zhangran.app.ui.theme.zhangRanGlass
 object HomeAutoLedgerStatus {
     /** 副标题前缀（原型 `.app-sub` 的 `AUTO LEDGER · `）。 */
     const val SUBTITLE_PREFIX: String = "AUTO LEDGER · "
-
-    /** 采集未接入时的状态文案。 */
-    const val LABEL: String = "未接入"
 }
 
 /**
@@ -77,6 +72,7 @@ object HomeAutoLedgerStatus {
 @Composable
 fun HomeHeader(
     pendingCount: Int,
+    statusLabel: String,
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -111,11 +107,11 @@ fun HomeHeader(
             Spacer(modifier = Modifier.height(HomeLayout.subtitleTopPaddingDp))
             // 副标题同时是「自动记账」入口（`docs/06` §4.1：点击自动记账状态 → AutoLedger）
             Text(
-                text = HomeAutoLedgerStatus.SUBTITLE_PREFIX + HomeAutoLedgerStatus.LABEL,
+                text = HomeAutoLedgerStatus.SUBTITLE_PREFIX + statusLabel,
                 modifier = Modifier
                     .clickable { onNavigate(Destination.AutoLedger.route) }
                     .semantics {
-                        contentDescription = "自动记账状态：" + HomeAutoLedgerStatus.LABEL
+                        contentDescription = "自动记账状态：$statusLabel"
                     },
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontSize = HomeLayout.subtitleFontSizeSp.sp,

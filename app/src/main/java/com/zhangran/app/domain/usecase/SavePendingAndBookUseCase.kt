@@ -8,7 +8,6 @@ package com.zhangran.app.domain.usecase
 
 import com.zhangran.app.data.local.entity.FieldEditEntity
 import com.zhangran.app.data.repository.AccountRepository
-import com.zhangran.app.data.repository.CaptureLogRepository
 import com.zhangran.app.data.repository.CategoryRepository
 import com.zhangran.app.data.repository.FieldEditRepository
 import com.zhangran.app.data.repository.TransactionRepository
@@ -62,7 +61,6 @@ class SavePendingAndBookUseCase @Inject constructor(
     private val categories: CategoryRepository,
     private val accounts: AccountRepository,
     private val fieldEdits: FieldEditRepository,
-    private val logs: CaptureLogRepository,
     private val clock: Clock,
 ) {
 
@@ -72,7 +70,7 @@ class SavePendingAndBookUseCase @Inject constructor(
         if (current.state != TransactionState.PENDING) {
             return SavePendingResult.Rejected("只能入账待确认记录")
         }
-        val reasons = parsePendingReasons(logs.findByTransactionId(transactionId)?.reason)
+        val reasons = parsePendingReasons(current.pendingReasons)
         if (PendingReason.POSSIBLE_DUPLICATE in reasons) {
             return SavePendingResult.Rejected("疑似重复不能直接入账")
         }

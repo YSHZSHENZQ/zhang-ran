@@ -67,6 +67,7 @@ data class TransactionDto(
     val createdAt: Long,
     val updatedAt: Long,
     val deletedAt: Long? = null,
+    val pendingReasons: String? = null,
 )
 
 @Serializable
@@ -215,6 +216,7 @@ fun TransactionEntity.toDto(): TransactionDto = TransactionDto(
     createdAt = createdAt,
     updatedAt = updatedAt,
     deletedAt = deletedAt,
+    pendingReasons = pendingReasons,
 )
 
 fun CategoryEntity.toDto(): CategoryDto = CategoryDto(

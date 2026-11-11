@@ -10,6 +10,7 @@
  * - **v1**（T2a）：`transactions` / `categories` / `accounts` / `budgets` / `field_edits`
  * - **v2**（T2b）：新增 `capture_evidence`（`03` §10）、`parsing_rules`（`02` §16 + `03` §3.1）、
  *   `capture_logs`（`03` §19）、`duplicate_decisions`（`03` §20）
+ * - **v3**（M6-4）：`transactions.pendingReasons`，并从已有捕获日志回填
  *
  * 纪律：
  * - **禁止** `fallbackToDestructiveMigration`；
@@ -80,7 +81,7 @@ abstract class ZhangRanDatabase : RoomDatabase() {
 
     companion object {
         /** 当前 schema 版本。 */
-        const val VERSION: Int = 2
+        const val VERSION: Int = 3
 
         /** 数据库文件名（测试与生产共用同一常量，避免文件名写错导致 schema 校验失配）。 */
         const val DATABASE_NAME: String = "zhangran.db"
@@ -195,7 +196,29 @@ abstract class ZhangRanDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v2 → v3：待确认原因改存在交易上，并按最新一条非空日志回填。
+         *
+         * 新列追加在表尾，与 Room 生成的 `3.json` 列序一致。
+         */
+        val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `transactions` ADD COLUMN `pendingReasons` TEXT")
+                db.execSQL(
+                    "UPDATE `transactions` SET `pendingReasons` = (" +
+                        "SELECT `reason` FROM `capture_logs` " +
+                        "WHERE `capture_logs`.`transactionId` = `transactions`.`id` " +
+                        "AND `reason` IS NOT NULL " +
+                        "ORDER BY `capturedAt` DESC LIMIT 1) " +
+                        "WHERE `pendingReasons` IS NULL AND EXISTS (" +
+                        "SELECT 1 FROM `capture_logs` " +
+                        "WHERE `capture_logs`.`transactionId` = `transactions`.`id` " +
+                        "AND `reason` IS NOT NULL)",
+                )
+            }
+        }
+
         /** 全部迁移（顺序即执行顺序）。 */
-        val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2)
+        val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
     }
 }

@@ -22,6 +22,8 @@ import com.zhangran.app.domain.model.Currency
 import com.zhangran.app.domain.model.PendingReason
 import com.zhangran.app.domain.model.TransactionState
 import com.zhangran.app.domain.model.TransactionType
+import com.zhangran.app.domain.usecase.RestoreIgnoredCaptureUseCase
+import com.zhangran.app.domain.usecase.RestoreIgnoredResult
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -73,7 +75,7 @@ class PendingDispositionTest {
     @Test
     fun 疑似重复不能直接确认() = runBlocking {
         val harness = Harness()
-        harness.transactions.insert(pending())
+        harness.transactions.insert(pending(reasons = "POSSIBLE_DUPLICATE,CATEGORY_UNCERTAIN"))
         harness.logs.put(log(reason = "POSSIBLE_DUPLICATE,CATEGORY_UNCERTAIN"))
 
         val result = harness.confirm.invoke(TX)
@@ -81,6 +83,29 @@ class PendingDispositionTest {
         assertTrue(result is ConfirmPendingResult.Rejected)
         assertEquals(TransactionState.PENDING, harness.transactions.getById(TX)!!.state)
         assertTrue(harness.edits.records.isEmpty())
+    }
+
+    @Test
+    fun 清空日志后疑似重复仍不能直接确认() = runBlocking {
+        val harness = Harness()
+        harness.transactions.insert(pending(reasons = "POSSIBLE_DUPLICATE,CATEGORY_UNCERTAIN"))
+        harness.logs.put(log(reason = "POSSIBLE_DUPLICATE,CATEGORY_UNCERTAIN"))
+        harness.logs.clearLogsAndEvidence()
+
+        val loaded = LoadPendingRecordsUseCase(harness.transactions, harness.logs).invoke()
+        assertEquals(
+            listOf(PendingReason.POSSIBLE_DUPLICATE, PendingReason.CATEGORY_UNCERTAIN),
+            loaded.single().reasons,
+        )
+        assertFalse(loaded.single().canConfirm)
+        assertTrue(loaded.single().canReview)
+        assertTrue(loaded.single().canIgnore)
+
+        val result = harness.confirm.invoke(TX)
+        assertTrue(result is ConfirmPendingResult.Rejected)
+        assertEquals(TransactionState.PENDING, harness.transactions.getById(TX)!!.state)
+        val booked = harness.save.invoke(TX, draft())
+        assertTrue(booked is SavePendingResult.Rejected)
     }
 
     @Test
@@ -160,6 +185,37 @@ class PendingDispositionTest {
         assertEquals(1, harness.logs.logs.size)
         assertEquals(TX, harness.logs.logs.single().transactionId)
         assertTrue(harness.edits.records.isEmpty())
+    }
+
+    @Test
+    fun 忽略后捕获日志记为IGNORED() = runBlocking {
+        val harness = Harness()
+        harness.transactions.insert(pending())
+        harness.logs.put(log(reason = "CATEGORY_UNCERTAIN"))
+
+        assertEquals(IgnorePendingResult.Ignored, harness.ignore.invoke(TX))
+        assertEquals(CaptureLogStatus.IGNORED, harness.logs.logs.single().status)
+    }
+
+    @Test
+    fun 从日志恢复忽略记录回到待确认且不改金额() = runBlocking {
+        val harness = Harness()
+        harness.transactions.insert(pending())
+        harness.logs.put(log(reason = "CATEGORY_UNCERTAIN"))
+        harness.ignore.invoke(TX)
+
+        val restore = RestoreIgnoredCaptureUseCase(
+            transactions = harness.transactions,
+            logs = harness.logs,
+            clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneId.of(ZONE)),
+        )
+        assertEquals(RestoreIgnoredResult.Restored, restore.invoke("log-1"))
+
+        val saved = harness.transactions.getById(TX)!!
+        assertEquals(TransactionState.PENDING, saved.state)
+        assertEquals(3_850L, saved.amountMinor)
+        assertFalse(saved.confirmedByUser)
+        assertEquals(CaptureLogStatus.PENDING, harness.logs.logs.single().status)
     }
 
     @Test
@@ -247,9 +303,9 @@ class PendingDispositionTest {
         val edits = MemoryFieldEdits()
         val logs = MemoryLogs()
         private val clock = Clock.fixed(Instant.ofEpochMilli(NOW), ZoneId.of(ZONE))
-        val confirm = ConfirmPendingUseCase(transactions, logs, clock)
-        val ignore = IgnorePendingUseCase(transactions, clock)
-        val save = SavePendingAndBookUseCase(transactions, categories, accounts, edits, logs, clock)
+        val confirm = ConfirmPendingUseCase(transactions, clock)
+        val ignore = IgnorePendingUseCase(transactions, logs, clock)
+        val save = SavePendingAndBookUseCase(transactions, categories, accounts, edits, clock)
     }
 
     private class MemoryTransactions : TransactionRepository {
@@ -350,6 +406,14 @@ class PendingDispositionTest {
             val index = logs.indexOfFirst { it.id == log.id }
             if (index >= 0) logs[index] = log
         }
+
+        override suspend fun findById(id: String): CaptureLogEntity? = logs.firstOrNull { it.id == id }
+
+        override suspend fun clearLogsAndEvidence() {
+            logs.clear()
+        }
+
+        override suspend fun countEvidence(): Int = 0
     }
 
     private companion object {
@@ -357,7 +421,7 @@ class PendingDispositionTest {
         const val ZONE = "Asia/Shanghai"
         const val NOW = 1_762_888_000_000L
 
-        fun pending() = TransactionEntity(
+        fun pending(reasons: String? = "CATEGORY_UNCERTAIN") = TransactionEntity(
             id = TX,
             type = TransactionType.EXPENSE,
             amountMinor = 3_850L,
@@ -373,6 +437,7 @@ class PendingDispositionTest {
             confirmedByUser = false,
             createdAt = NOW,
             updatedAt = NOW,
+            pendingReasons = reasons,
         )
 
         fun log(reason: String) = CaptureLogEntity(

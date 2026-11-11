@@ -5,7 +5,6 @@
  */
 package com.zhangran.app.domain.usecase
 
-import com.zhangran.app.data.repository.CaptureLogRepository
 import com.zhangran.app.data.repository.TransactionRepository
 import com.zhangran.app.domain.model.PendingReason
 import com.zhangran.app.domain.model.TransactionState
@@ -21,7 +20,6 @@ sealed interface ConfirmPendingResult {
 
 class ConfirmPendingUseCase @Inject constructor(
     private val transactions: TransactionRepository,
-    private val logs: CaptureLogRepository,
     private val clock: Clock,
 ) {
 
@@ -31,7 +29,7 @@ class ConfirmPendingUseCase @Inject constructor(
         if (current.state != TransactionState.PENDING) {
             return ConfirmPendingResult.Rejected("只能确认待确认记录")
         }
-        val reasons = parsePendingReasons(logs.findByTransactionId(transactionId)?.reason)
+        val reasons = parsePendingReasons(current.pendingReasons)
         if (PendingReason.POSSIBLE_DUPLICATE in reasons) {
             return ConfirmPendingResult.Rejected("疑似重复不能直接确认")
         }

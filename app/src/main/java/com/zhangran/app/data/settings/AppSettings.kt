@@ -22,11 +22,15 @@ enum class ThemeMode {
  * @property themeMode 主题模式；默认跟随系统
  * @property overallConfidenceThreshold 整体置信度阈值；默认 0.8（`03` §16 规则 3）
  * @property fieldConfidenceThreshold 字段置信度阈值；默认 0.5（`03` §16 规则 2）
+ * @property autoLedgerEnabled 自动记账总开关。只在「我的」页写入，默认关
+ * @property onboardCompleted 权限引导是否已经完成过一次。完成后冷启动不再强制进入
  */
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val overallConfidenceThreshold: Double = SettingsDefaults.OVERALL_CONFIDENCE_THRESHOLD,
     val fieldConfidenceThreshold: Double = SettingsDefaults.FIELD_CONFIDENCE_THRESHOLD,
+    val autoLedgerEnabled: Boolean = false,
+    val onboardCompleted: Boolean = false,
 )
 
 /** 设置项的默认值（唯一来源）。 */
@@ -43,4 +47,6 @@ object SettingsKeys {
     const val THEME_MODE: String = "theme_mode"
     const val OVERALL_CONFIDENCE_THRESHOLD: String = "overall_confidence_threshold"
     const val FIELD_CONFIDENCE_THRESHOLD: String = "field_confidence_threshold"
+    const val AUTO_LEDGER_ENABLED: String = "auto_ledger_enabled"
+    const val ONBOARD_COMPLETED: String = "onboard_completed"
 }

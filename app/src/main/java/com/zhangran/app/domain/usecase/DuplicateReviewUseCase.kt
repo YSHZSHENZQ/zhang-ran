@@ -69,7 +69,7 @@ class DuplicateReviewUseCase @Inject constructor(
         if (fresh.state != TransactionState.PENDING) {
             return DuplicateActionResult.Rejected("只能处理待确认记录")
         }
-        val reasons = parsePendingReasons(logs.findByTransactionId(transactionId)?.reason)
+        val reasons = parsePendingReasons(fresh.pendingReasons)
         if (PendingReason.POSSIBLE_DUPLICATE !in reasons) {
             return DuplicateActionResult.Rejected("这条不是疑似重复")
         }
@@ -92,17 +92,18 @@ class DuplicateReviewUseCase @Inject constructor(
         if (fresh.state != TransactionState.PENDING) {
             return DuplicateActionResult.Rejected("只能处理待确认记录")
         }
-        val log = logs.findByTransactionId(transactionId)
-            ?: return DuplicateActionResult.Rejected("找不到捕获记录")
-        val reasons = parsePendingReasons(log.reason)
+        val reasons = parsePendingReasons(fresh.pendingReasons)
         if (PendingReason.POSSIBLE_DUPLICATE !in reasons) {
             return DuplicateActionResult.Rejected("这条不是疑似重复")
         }
         val matched = matchedTransaction(fresh)
             ?: return DuplicateActionResult.Rejected("没有找到被比对的记录")
-        val kept = reasons.filter { it != PendingReason.POSSIBLE_DUPLICATE }
-        logs.update(log.copy(reason = kept.joinToString(",") { it.name }.ifEmpty { null }))
+        val kept = formatPendingReasons(reasons.filter { it != PendingReason.POSSIBLE_DUPLICATE })
         val now = clock.millis()
+        transactions.update(fresh.copy(pendingReasons = kept, updatedAt = now))
+        logs.findByTransactionId(transactionId)?.let { log ->
+            logs.update(log.copy(reason = kept))
+        }
         decisions.insert(decision(fresh, matched.id, DuplicateVerdict.DIFFERENT_TRANSACTION, now))
         return DuplicateActionResult.Done
     }

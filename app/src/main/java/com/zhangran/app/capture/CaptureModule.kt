@@ -19,6 +19,7 @@ import com.zhangran.app.capture.accessibility.AccessibilityCapturePipeline
 import com.zhangran.app.capture.accessibility.AccessibilityConnectivityRecorder
 import com.zhangran.app.capture.accessibility.AccessibilitySnapshotIngest
 import com.zhangran.app.data.repository.CaptureLogRepository
+import com.zhangran.app.data.settings.CaptureHealthStore
 import com.zhangran.app.data.repository.TransactionRepository
 import com.zhangran.app.di.ApplicationScope
 import com.zhangran.app.domain.service.Normalize
@@ -76,10 +77,12 @@ abstract class CaptureModule {
             normalize: Normalize,
             transactions: TransactionRepository,
             records: CaptureLogRepository,
+            health: CaptureHealthStore,
         ): AccessibilitySnapshotIngest = AccessibilitySnapshotIngest(
             normalize = normalize,
             transactions = transactions,
             records = records,
+            onCaptured = { at -> health.recordCapture(at) },
         )
 
         @Provides

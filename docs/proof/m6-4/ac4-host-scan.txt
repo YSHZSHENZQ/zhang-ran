@@ -1,0 +1,6 @@
+no plaintext sensitive fields
+JSON string-field scan (phone, 18-digit id, 16-19 digit card, 12+ digit run): no hits
+whole-file \d{12,} matches only capturedAt timestamps:
+1794373522722
+1794373522722
+1794362941004

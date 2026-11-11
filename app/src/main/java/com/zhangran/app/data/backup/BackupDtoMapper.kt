@@ -90,6 +90,7 @@ fun TransactionDto.toEntity(): TransactionEntity {
         createdAt = createdAt,
         updatedAt = updatedAt,
         deletedAt = deletedAt,
+        pendingReasons = pendingReasons,
     )
 }
 

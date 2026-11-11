@@ -1,7 +1,8 @@
 /**
  * 读取待确认列表（M6-2）。
  *
- * 交易来自 `state = PENDING`；原因来自关联捕获日志，页面不再自行推断。
+ * 交易来自 `state = PENDING`。原因读交易上的 `pendingReasons`，不读捕获日志，
+ * 所以清空日志之后疑似重复仍然不能直接确认。
  */
 package com.zhangran.app.domain.usecase
 
@@ -38,7 +39,7 @@ class LoadPendingRecordsUseCase @Inject constructor(
         transactions.listByState(TransactionState.PENDING)
             .map { entity ->
                 val log = logs.findByTransactionId(entity.id)
-                val reasons = parsePendingReasons(log?.reason)
+                val reasons = parsePendingReasons(entity.pendingReasons)
                 val actions = pendingActionFlags(reasons)
                 PendingRecord(
                     transactionId = entity.id,
@@ -59,7 +60,11 @@ class LoadPendingRecordsUseCase @Inject constructor(
             .sortedByDescending { it.capturedAt }
 }
 
-/** 日志里的 reason 是逗号分隔的 [PendingReason] 名；无法识别的片段忽略。 */
+/** 把原因集合写成交易列上的逗号分隔文本。空集合写成 null。 */
+fun formatPendingReasons(reasons: Iterable<PendingReason>): String? =
+    reasons.map { it.name }.distinct().joinToString(",").ifEmpty { null }
+
+/** 交易列或日志里的 reason 是逗号分隔的 [PendingReason] 名；无法识别的片段忽略。 */
 fun parsePendingReasons(raw: String?): List<PendingReason> =
     raw.orEmpty()
         .split(',', '、', ' ')

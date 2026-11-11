@@ -21,6 +21,7 @@ import com.zhangran.app.domain.model.Currency
 import com.zhangran.app.domain.model.PendingReason
 import com.zhangran.app.domain.model.RawCandidate
 import com.zhangran.app.domain.model.TransactionState
+import com.zhangran.app.domain.usecase.formatPendingReasons
 import com.zhangran.app.domain.service.CaptureDebounceResult
 import com.zhangran.app.domain.service.CaptureIdentity
 import com.zhangran.app.domain.service.Confidence
@@ -92,6 +93,7 @@ class AccessibilitySnapshotIngest(
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val newId: () -> String = { UUID.randomUUID().toString() },
     private val decision: Decision = Decision(supportedPackages = AccessibilityTargets.packages),
+    private val onCaptured: suspend (Long) -> Unit = {},
 ) {
 
     suspend fun ingest(
@@ -205,6 +207,7 @@ class AccessibilitySnapshotIngest(
                 createdAt = now,
                 updatedAt = now,
                 deletedAt = null,
+                pendingReasons = formatPendingReasons(pending.reasons),
             )
             transactions.insert(entity)
             id
@@ -229,6 +232,7 @@ class AccessibilitySnapshotIngest(
                 confidence = candidate.overallConfidence,
             ),
         )
+        onCaptured(snapshot.capturedAt)
         return AccessibilityIngestResult(
             captureId = captureId,
             outcome = AccessibilityIngestOutcome.PENDING,
@@ -272,6 +276,7 @@ class AccessibilitySnapshotIngest(
                 confidence = null,
             ),
         )
+        onCaptured(snapshot.capturedAt)
         return AccessibilityIngestResult(
             captureId = captureId,
             outcome = outcome,

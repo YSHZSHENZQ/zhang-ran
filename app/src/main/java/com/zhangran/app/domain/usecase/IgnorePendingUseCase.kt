@@ -5,7 +5,9 @@
  */
 package com.zhangran.app.domain.usecase
 
+import com.zhangran.app.data.repository.CaptureLogRepository
 import com.zhangran.app.data.repository.TransactionRepository
+import com.zhangran.app.domain.model.CaptureLogStatus
 import com.zhangran.app.domain.model.TransactionState
 import java.time.Clock
 import javax.inject.Inject
@@ -18,6 +20,7 @@ sealed interface IgnorePendingResult {
 
 class IgnorePendingUseCase @Inject constructor(
     private val transactions: TransactionRepository,
+    private val logs: CaptureLogRepository,
     private val clock: Clock,
 ) {
 
@@ -34,6 +37,10 @@ class IgnorePendingUseCase @Inject constructor(
                 updatedAt = now,
             ),
         )
+        val log = logs.findByTransactionId(transactionId)
+        if (log != null) {
+            logs.update(log.copy(status = CaptureLogStatus.IGNORED))
+        }
         return IgnorePendingResult.Ignored
     }
 }

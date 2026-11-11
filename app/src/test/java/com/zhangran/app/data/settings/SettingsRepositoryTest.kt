@@ -171,4 +171,17 @@ class SettingsRepositoryTest {
         assertFalse(values.isEmpty())
         assertEquals(ThemeMode.DARK, values.last())
     }
+
+    @Test
+    fun 自动记账总开关默认关闭且可持久化() = runBlocking {
+        val (repository, _) = repository()
+        assertFalse(repository.settings.first().autoLedgerEnabled)
+        assertFalse(repository.settings.first().onboardCompleted)
+
+        repository.setAutoLedgerEnabled(true)
+        repository.setOnboardCompleted(true)
+
+        assertTrue(repository.settings.first().autoLedgerEnabled)
+        assertTrue(repository.settings.first().onboardCompleted)
+    }
 }
