@@ -29,14 +29,17 @@
 | `ac3-yuebao-ledger.json` | 两笔待确认，2510，EXPENSE，商户 null，ACCESSIBILITY，confirmedByUser false |
 | `ac3-yuebao-pending.png` | 待确认页 ¥25.10，商户显示「未知」 |
 | `ac3-before-wrong.json` / `ac3-after-wrong.json` | 看错窗口回放前后 Pending 条数不变 |
+| `ac3-after-wrong-pending.png` | 看错窗口回放后的待确认页：只有两笔 ¥25.10（余额宝），没有新增待确认。出处见下方说明 |
 | `ac3-wrong-window-logs.json` | 导出含 WRONG_WINDOW 与 `fx-1-f-wrong-window`，不含页面正文 |
 | `ac3-regression.json` | m6-3-f-wx 1000/杭州深度求索，m6-3-f-ali 12999/富富，m6-2-wechat-pay-success 3850/星巴克咖啡。全部 PENDING，没有 CONFIRMED / DUPLICATE |
+
+`ac3-after-wrong-pending.png` 的出处：2026-11-18 11:27–11:30（HKT）在模拟器 qj1（TCG）上重跑 `Fx1ProofTest`，被测应用是功能提交 `c77428730c79f5e8ff3ee985e3d3d0cf9c8381e8` 的 debug 构建（sha256 与交付的 APK 相同，9258e3bc…）。为了多截这一张，我在本地给测试加了 3 行（看错窗口回放后再 `openPending()` 并 `shot("ac3-after-wrong-pending")`），这 3 行没有提交，仓库里的测试文件没变。这次重跑里 `ac3-before-wrong` 和 `ac3-after-wrong` 的 `pendingCount` 都是 2，行数都是 2，测试通过（OK (1 test)）。其余的 JSON 和 PNG 仍是原来那次取证的，这次没有替换。截图本身看不出回放发生过，它只证明回放之后待确认还是这两笔；回放前后条数不变看 `ac3-before-wrong.json` / `ac3-after-wrong.json`。
 
 ## AC-4 疑似失效
 
 | 文件 | 内容 |
 |---|---|
-| `suspected-stale-root-cause.md` | 代码路径和 11-13 时间线 |
+| `suspected-stale-root-cause.md` | 代码路径和 11-13 时间线（翻转发生在 11-13 09:00 到 14:45 之间） |
 | `ac4-broadcast.txt` | 把上次捕获和开始监听一起拨回 25 小时 |
 | `ac4-stale-home.png` | 首页 `AUTO LEDGER · 疑似失效` |
 | `ac4-stale-auto-ledger.png` | 自动记账页「总状态 疑似失效」，一条翻转日志 |
