@@ -307,7 +307,6 @@ class AccessibilitySnapshotIngestTest {
         assertTrue(encoded.contains(AccessibilityFixtures.WECHAT_PAY_SUCCESS))
         assertTrue(encoded.contains("\"capturedAt\":${AccessibilityFixtures.CAPTURED_AT}"))
     }
-}
 
     @Test
     fun 同一通知投递两次只留一条捕获和一条交易() = runBlocking {
@@ -385,9 +384,60 @@ class AccessibilitySnapshotIngestTest {
         assertEquals(1, harness.transactions.rows.count { it.type == com.zhangran.app.domain.model.TransactionType.REFUND })
     }
 
+    @Test
+    fun 余额宝和拆分金额都只进待确认且商户为空() = runBlocking {
+        val harness = Harness()
+        val first = harness.ingest.ingest(
+            AccessibilityFixtures.alipayYuebao(capturedAt = 1_800_000_000_000L),
+            AccessibilityFixtures.F_YUEBAO,
+        )
+        val second = harness.ingest.ingest(
+            AccessibilityFixtures.alipayYuebaoSplit(capturedAt = 1_800_000_001_000L),
+            AccessibilityFixtures.F_YUEBAO_SPLIT,
+        )
+        assertEquals(AccessibilityIngestOutcome.PENDING, first.outcome)
+        assertEquals(AccessibilityIngestOutcome.PENDING, second.outcome)
+        assertEquals(2, harness.transactions.rows.size)
+        assertTrue(harness.transactions.rows.all { it.state == TransactionState.PENDING })
+        assertTrue(harness.transactions.rows.all { it.amountMinor == 2_510L })
+        assertTrue(harness.transactions.rows.all { it.type == TransactionType.EXPENSE })
+        assertTrue(harness.transactions.rows.all { it.merchant == null })
+        assertTrue(harness.transactions.rows.all { it.confirmedByUser == false })
+        assertTrue(harness.transactions.rows.all { it.source == CaptureSource.ACCESSIBILITY })
+        assertEquals(0, harness.transactions.countByState(TransactionState.CONFIRMED))
+        assertEquals(0, harness.transactions.countByState(TransactionState.DUPLICATE))
+    }
+
+    @Test
+    fun 看错窗口不入账且不更新上次捕获时间() = runBlocking {
+        val harness = Harness()
+        harness.health.setLastCaptureAt(1_700_000_000_000L)
+        val calls = harness.health.captureCalls
+        val result = harness.ingest.ingest(
+            AccessibilityFixtures.wrongWindowHome(),
+            AccessibilityFixtures.F_WRONG_WINDOW,
+        )
+        assertEquals(AccessibilityIngestOutcome.IGNORED_INVALID, result.outcome)
+        assertEquals(CaptureLogStatus.IGNORED_INVALID, result.status)
+        assertEquals(0, harness.transactions.rows.size)
+        assertEquals(1_700_000_000_000L, harness.health.current.lastCaptureAtMillis)
+        assertEquals(calls, harness.health.captureCalls)
+        assertTrue(harness.health.current.rejectedSamplesSinceCapture)
+        val log = harness.logs.logs.single()
+        assertEquals("WRONG_WINDOW", log.reason)
+        assertTrue(log.rawCaptureRef.orEmpty().contains(AccessibilityFixtures.F_WRONG_WINDOW))
+        assertTrue(log.rawCaptureRef.orEmpty().contains("com.zhangran.app"))
+        assertFalse(log.rawCaptureRef.orEmpty().contains("我的"))
+        assertFalse(log.rawCaptureRef.orEmpty().contains("还没有记录"))
+        assertFalse(log.rawCaptureRef.orEmpty().contains("疑似失效"))
+    }
+}
+
 private class Harness {
     val transactions = MemoryTransactions()
     val logs = MemoryLogs()
+    val health = MemoryHealth()
+    private val ids = IdSeq()
     val ingest = AccessibilitySnapshotIngest(
         normalize = Normalize(
             categoryResolver = CategoryResolver { null },
@@ -397,11 +447,17 @@ private class Harness {
         transactions = transactions,
         records = logs,
         clock = { 1_762_900_000_000L },
-        newId = IdSeq()::next,
+        newId = ids::next,
+        onCaptured = { at -> health.recordCapture(at) },
+        rejections = AccessibilityRejectionLog(
+            records = logs,
+            health = health,
+            newId = { "rej-${ids.next()}" },
+        ),
     )
 }
 
-private class IdSeq {
+internal class IdSeq {
     private var n = 0
     fun next(): String = "m6-${++n}"
 }
@@ -457,7 +513,58 @@ private class MemoryTransactions : TransactionRepository {
     override suspend fun countSearch(criteria: SearchCriteria): Int = 0
 }
 
-private class MemoryLogs : CaptureLogRepository {
+internal class MemoryHealth : com.zhangran.app.data.settings.CaptureHealthStore {
+    var current = com.zhangran.app.data.settings.CaptureHealth()
+    var captureCalls = 0
+
+    override val state = kotlinx.coroutines.flow.MutableStateFlow(current)
+
+    private fun publish() {
+        state.value = current
+    }
+
+    override suspend fun recordCapture(atMillis: Long) {
+        captureCalls += 1
+        val last = current.lastCaptureAtMillis
+        current = current.copy(
+            lastCaptureAtMillis = if (last == null || atMillis > last) atMillis else last,
+            rejectedSamplesSinceCapture = false,
+        )
+        publish()
+    }
+
+    override suspend fun setLastCaptureAt(atMillis: Long) {
+        current = current.copy(lastCaptureAtMillis = atMillis)
+        publish()
+    }
+
+    override suspend fun markWatchStarted(atMillis: Long) {
+        current = current.copy(watchStartedAtMillis = atMillis)
+        publish()
+    }
+
+    override suspend fun clearWatchStarted() {
+        current = current.copy(watchStartedAtMillis = null)
+        publish()
+    }
+
+    override suspend fun recordRejectedSample() {
+        current = current.copy(rejectedSamplesSinceCapture = true)
+        publish()
+    }
+
+    override suspend fun markStaleFlip(marker: String) {
+        current = current.copy(staleFlipMarker = marker)
+        publish()
+    }
+
+    override suspend fun clearStaleFlipMarker() {
+        current = current.copy(staleFlipMarker = null)
+        publish()
+    }
+}
+
+internal class MemoryLogs : CaptureLogRepository {
     val logs = mutableListOf<CaptureLogEntity>()
     val evidence = mutableListOf<CaptureEvidenceEntity>()
 

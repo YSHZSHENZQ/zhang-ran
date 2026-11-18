@@ -28,6 +28,7 @@ class NodeTreeReader(
         packageName: String,
         windowId: Int,
         capturedAt: Long,
+        rootPackageName: String? = null,
     ): NodeReadResult {
         if (root == null) return NodeReadResult.WindowUnavailable
 
@@ -94,6 +95,7 @@ class NodeTreeReader(
                 nodes = nodes,
                 truncated = truncated,
                 textChars = chars,
+                rootPackageName = rootPackageName,
             ),
         )
     }

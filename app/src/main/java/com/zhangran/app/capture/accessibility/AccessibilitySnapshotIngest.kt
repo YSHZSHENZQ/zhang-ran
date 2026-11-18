@@ -94,6 +94,7 @@ class AccessibilitySnapshotIngest(
     private val newId: () -> String = { UUID.randomUUID().toString() },
     private val decision: Decision = Decision(supportedPackages = AccessibilityTargets.packages),
     private val onCaptured: suspend (Long) -> Unit = {},
+    private val rejections: AccessibilityRejectionLog,
 ) {
 
     suspend fun ingest(
@@ -105,12 +106,29 @@ class AccessibilitySnapshotIngest(
         if (snapshot.packageName !in AccessibilityTargets.packages) {
             return AccessibilityIngestResult.notWhitelist(fixtureId)
         }
+        if (PaymentWindowResolver.snapshotMismatch(snapshot)) {
+            return rejected(
+                snapshot = snapshot,
+                fixtureId = fixtureId,
+                reason = AccessibilityRejectReason.WRONG_WINDOW,
+                rootPackage = snapshot.rootPackageName,
+            )
+        }
         val identity = CaptureIdentity(
             packageName = snapshot.packageName,
             notificationId = notificationId,
             postTime = postTime,
         )
         findSameEvent(identity)?.let { return it }
+        val parsed = AccessibilitySnapshotParser.parse(snapshot)
+        if (parsed == null) {
+            return rejected(
+                snapshot = snapshot,
+                fixtureId = fixtureId,
+                reason = AccessibilityRejectReason.NOT_PAYMENT_PAGE,
+                rootPackage = snapshot.rootPackageName,
+            )
+        }
         val fidelity = AccessibilitySnapshotFidelity.encode(
             snapshot = snapshot,
             fixtureId = fixtureId,
@@ -118,17 +136,6 @@ class AccessibilitySnapshotIngest(
             postTime = postTime,
         )
         return try {
-            val parsed = AccessibilitySnapshotParser.parse(snapshot)
-            if (parsed == null) {
-                return writeLogOnly(
-                    snapshot = snapshot,
-                    fixtureId = fixtureId,
-                    fidelity = fidelity,
-                    status = CaptureLogStatus.IGNORED_INVALID,
-                    reason = "快照缺少可用的支付结果字段",
-                    outcome = AccessibilityIngestOutcome.IGNORED_INVALID,
-                )
-            }
             val raw = rawCandidate(snapshot, parsed)
             val normalized = normalize.normalize(raw)
             val candidate = Confidence.derive(normalized)
@@ -245,6 +252,37 @@ class AccessibilitySnapshotIngest(
             reasons = pending.reasons,
             evidenceWritten = true,
             refusedAutoConfirm = pending.refusedAutoConfirm,
+        )
+    }
+
+    /**
+     * 看错窗口或不是支付页。只写原因码，不写页面正文，不更新上次捕获时间。
+     */
+    private suspend fun rejected(
+        snapshot: AccessibilityPageSnapshot,
+        fixtureId: String?,
+        reason: AccessibilityRejectReason,
+        rootPackage: String?,
+    ): AccessibilityIngestResult {
+        val captureId = rejections.record(
+            reason = reason,
+            eventPackage = snapshot.packageName,
+            rootPackage = rootPackage,
+            fixtureId = fixtureId,
+            capturedAt = snapshot.capturedAt,
+        )
+        return AccessibilityIngestResult(
+            captureId = captureId,
+            outcome = AccessibilityIngestOutcome.IGNORED_INVALID,
+            status = CaptureLogStatus.IGNORED_INVALID,
+            captureSource = CaptureSource.ACCESSIBILITY,
+            capturedAt = snapshot.capturedAt,
+            fixtureId = fixtureId,
+            transactionId = null,
+            transactionState = null,
+            reasons = emptySet(),
+            evidenceWritten = false,
+            refusedAutoConfirm = false,
         )
     }
 

@@ -6,6 +6,7 @@ package com.zhangran.app.capture.accessibility
 import com.zhangran.app.domain.model.TransactionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -94,6 +95,56 @@ class AccessibilitySnapshotParserTest {
         assertFalse(AccessibilitySnapshotParser.shouldForward(AccessibilityFixtures.chromeAmountNotResult()))
         assertFalse(AccessibilitySnapshotParser.shouldForward(AccessibilityFixtures.wechatBillDetail()))
         assertFalse(AccessibilitySnapshotParser.shouldForward(AccessibilityFixtures.alipayTradeSuccessBill()))
+    }
+
+    @Test
+    fun 余额宝结果页金额2510支出且商户为空() {
+        val parsed = AccessibilitySnapshotParser.parse(AccessibilityFixtures.alipayYuebao())
+        assertEquals(2_510L, parsed?.amountMinor)
+        assertEquals(TransactionType.EXPENSE, parsed?.direction)
+        assertNull(parsed?.merchantRaw)
+        assertNotEquals(1_000L, parsed?.amountMinor)
+        assertNotEquals(200L, parsed?.amountMinor)
+        assertNotEquals(1_200L, parsed?.amountMinor)
+    }
+
+    @Test
+    fun 货币符号和数字拆开时仍是2510() {
+        val parsed = AccessibilitySnapshotParser.parse(AccessibilityFixtures.alipayYuebaoSplit())
+        assertEquals(2_510L, parsed?.amountMinor)
+        assertEquals(TransactionType.EXPENSE, parsed?.direction)
+        assertNull(parsed?.merchantRaw)
+    }
+
+    @Test
+    fun 订单金额和交易方式不能当商户() {
+        val page = AccessibilityPageSnapshot(
+            packageName = AccessibilityTargets.ALIPAY_PACKAGE,
+            windowId = 21,
+            capturedAt = AccessibilityFixtures.YUEBAO_CAPTURED_AT,
+            nodes = listOf(
+                SnapshotNode("支付成功", null, null, null, 1),
+                SnapshotNode("订单金额", null, null, null, 2),
+                SnapshotNode("交易方式", null, null, null, 3),
+                SnapshotNode("¥25.10", null, null, null, 4),
+                SnapshotNode("完成", null, null, null, 5),
+            ),
+            truncated = false,
+            textChars = 20,
+            rootPackageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        )
+        val parsed = AccessibilitySnapshotParser.parse(page)
+        assertEquals(2_510L, parsed?.amountMinor)
+        assertNull(parsed?.merchantRaw)
+        assertNotEquals("订单金额", parsed?.merchantRaw)
+        assertNotEquals("交易方式", parsed?.merchantRaw)
+    }
+
+    @Test
+    fun 事件包名是支付宝但树是账然时不解析() {
+        val page = AccessibilityFixtures.wrongWindowHome()
+        assertNull(AccessibilitySnapshotParser.parse(page))
+        assertFalse(AccessibilitySnapshotParser.shouldForward(page))
     }
 
 }

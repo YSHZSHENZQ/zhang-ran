@@ -8,8 +8,10 @@ package com.zhangran.app.data.settings
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +20,10 @@ import kotlinx.coroutines.flow.map
 data class CaptureHealth(
     val lastCaptureAtMillis: Long? = null,
     val watchStartedAtMillis: Long? = null,
+    /** 上次成功捕获之后有没有被拒绝的采样。成功捕获会清掉。 */
+    val rejectedSamplesSinceCapture: Boolean = false,
+    /** 已经为哪一次静默写过「疑似失效」日志。离开该状态后清掉。 */
+    val staleFlipMarker: String? = null,
 )
 
 interface CaptureHealthStore {
@@ -33,10 +39,19 @@ interface CaptureHealthStore {
     suspend fun markWatchStarted(atMillis: Long)
 
     suspend fun clearWatchStarted()
+
+    /** 记下出现过被拒绝的采样。不改上次捕获时间。 */
+    suspend fun recordRejectedSample()
+
+    suspend fun markStaleFlip(marker: String)
+
+    suspend fun clearStaleFlipMarker()
 }
 
 private val LAST_CAPTURE_AT = longPreferencesKey("auto_ledger_last_capture_at")
 private val WATCH_STARTED_AT = longPreferencesKey("auto_ledger_watch_started_at")
+private val REJECTED_SAMPLES = booleanPreferencesKey("auto_ledger_rejected_samples")
+private val STALE_FLIP_MARKER = stringPreferencesKey("auto_ledger_stale_flip_marker")
 
 @Singleton
 class DataStoreCaptureHealthStore @Inject constructor(
@@ -47,6 +62,8 @@ class DataStoreCaptureHealthStore @Inject constructor(
         CaptureHealth(
             lastCaptureAtMillis = preferences[LAST_CAPTURE_AT],
             watchStartedAtMillis = preferences[WATCH_STARTED_AT],
+            rejectedSamplesSinceCapture = preferences[REJECTED_SAMPLES] == true,
+            staleFlipMarker = preferences[STALE_FLIP_MARKER],
         )
     }
 
@@ -56,6 +73,25 @@ class DataStoreCaptureHealthStore @Inject constructor(
             if (current == null || atMillis > current) {
                 preferences[LAST_CAPTURE_AT] = atMillis
             }
+            preferences[REJECTED_SAMPLES] = false
+        }
+    }
+
+    override suspend fun recordRejectedSample() {
+        dataStore.edit { preferences ->
+            preferences[REJECTED_SAMPLES] = true
+        }
+    }
+
+    override suspend fun markStaleFlip(marker: String) {
+        dataStore.edit { preferences ->
+            preferences[STALE_FLIP_MARKER] = marker
+        }
+    }
+
+    override suspend fun clearStaleFlipMarker() {
+        dataStore.edit { preferences ->
+            preferences.remove(STALE_FLIP_MARKER)
         }
     }
 

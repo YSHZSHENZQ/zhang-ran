@@ -5,7 +5,8 @@
  * 结果用语必须是节点全文（或节点全文就是「结果用语 + 金额」），嵌在长句里不算。
  * 账单详情、多金额列表、只有导航/按钮文案的页面不是结果页。
  * 商户不得取导航、按钮、字段标签或支付方式。找不到商户就留空，不拿这些词充数。
- * 不猜分类、不猜账户、不把方向缺省成支出。
+ * 金额优先取「支付成功」或「订单金额」旁边的那一笔；优惠券上的金额不算。
+ * 「¥」和数字拆在两个节点时仍拼成一笔。不猜分类、不猜账户、不把方向缺省成支出。
  */
 package com.zhangran.app.capture.accessibility
 
@@ -28,7 +29,7 @@ object AccessibilitySnapshotParser {
     private val refundExact = listOf("退款成功")
 
     /** 结果页上常见的收尾按钮或金额标签。没有这类锚点、状态节点本身也不带金额时，不当事务。 */
-    private val resultAnchors = setOf("完成", "确定", "支付总额", "付款方式")
+    private val resultAnchors = setOf("完成", "确定", "支付总额", "付款方式", "订单金额")
 
     /** 导航、按钮、底栏。这些词不能当商户。 */
     private val chromeExact = setOf(
@@ -70,6 +71,11 @@ object AccessibilitySnapshotParser {
         "收款方全称",
         "付款方式",
         "支付方式",
+        "交易方式",
+        "订单金额",
+        "实付金额",
+        "付款金额",
+        "优惠金额",
         "订单号",
         "商户单号",
         "交易单号",
@@ -91,7 +97,9 @@ object AccessibilitySnapshotParser {
 
     private val symbolAmount = Regex("""[¥￥]\s*[0-9][0-9,，]*(?:\.[0-9]{1,2})?""")
 
-    private val yuanAmount = Regex("""[0-9][0-9,，]*\.[0-9]{1,2}\s*元""")
+    private val yuanAmount = Regex("""[0-9][0-9,，]*(?:\.[0-9]{1,2})?\s*元""")
+
+    private val bareNumber = Regex("""^[0-9][0-9,，]*(?:\.[0-9]{1,2})?$""")
 
     private val paymentInstrument = Regex("""储蓄卡|信用卡|银行卡|借记卡|花呗|余额宝|零钱""")
 
@@ -99,6 +107,7 @@ object AccessibilitySnapshotParser {
     fun shouldForward(snapshot: AccessibilityPageSnapshot): Boolean = parse(snapshot) != null
 
     fun parse(snapshot: AccessibilityPageSnapshot): AccessibilityParsedFields? {
+        if (PaymentWindowResolver.snapshotMismatch(snapshot)) return null
         val texts = visibleTexts(snapshot)
         if (texts.isEmpty()) return null
         if (texts.any { it in billDetailMarkers }) return null
@@ -115,13 +124,7 @@ object AccessibilitySnapshotParser {
         }
 
         val statusAmounts = statuses.mapNotNull { (text, _) -> amountOf(text) }.distinct()
-        val pageAmounts = texts.mapNotNull { amountOf(it) }.distinct()
-        val amountMinor = when {
-            statusAmounts.size == 1 -> statusAmounts.single()
-            statusAmounts.size > 1 -> return null
-            pageAmounts.size == 1 -> pageAmounts.single()
-            else -> return null
-        }
+        val amountMinor = selectAmount(texts) ?: return null
         if (amountMinor <= 0L) return null
         val anchored = statusAmounts.isNotEmpty() || texts.any { it in resultAnchors }
         if (!anchored) return null
@@ -175,11 +178,83 @@ object AccessibilitySnapshotParser {
 
     private fun amountOf(text: String): Long? {
         val token = symbolAmount.find(text)?.value ?: yuanAmount.find(text)?.value ?: return null
-        return when (val parsed = Money.fromText(token)) {
-            is MoneyResult.Success -> parsed.amountMinor.takeIf { it > 0L }
-            else -> null
-        }
+        return minorOf(token.removeSuffix("元"))
     }
+
+    /**
+     * 优先「支付成功 / 订单金额」旁边的金额。旁边有多笔不同金额时不猜。
+     * 没有这种锚点时，退回「整页只剩一笔、且不是优惠券」的旧规则。
+     */
+    private fun selectAmount(texts: List<String>): Long? {
+        val located = locateAmounts(texts)
+        if (located.isEmpty()) return null
+        val preferred = mutableListOf<Long>()
+        texts.forEachIndexed { index, text ->
+            if (!isAmountAnchor(text)) return@forEachIndexed
+            amountOf(text)?.let { preferred += it }
+            located.filter { it.index != index && (it.index == index + 1 || it.index == index + 2) }
+                .filter { !isCouponAmount(texts, it.index) }
+                .forEach { preferred += it.minor }
+        }
+        val distinctPreferred = preferred.distinct()
+        if (distinctPreferred.size == 1) return distinctPreferred.single()
+        if (distinctPreferred.size > 1) return null
+        val page = located.filter { !isCouponAmount(texts, it.index) }.map { it.minor }.distinct()
+        return if (page.size == 1) page.single() else null
+    }
+
+    private fun locateAmounts(texts: List<String>): List<LocatedAmount> {
+        val found = mutableListOf<LocatedAmount>()
+        texts.forEachIndexed { index, text ->
+            amountOf(text)?.let { found += LocatedAmount(index, it) }
+        }
+        texts.forEachIndexed { index, text ->
+            if (found.any { it.index == index }) return@forEachIndexed
+            val minor = bareMinor(text) ?: return@forEachIndexed
+            val previous = texts.getOrNull(index - 1)
+            val beforeThat = texts.getOrNull(index - 2)
+            val currencyBefore = previous != null && isCurrencyOnly(previous)
+            val anchorBefore = previous != null && isAmountAnchor(previous)
+            val anchorThenCurrency = beforeThat != null && isAmountAnchor(beforeThat) && currencyBefore
+            val decimal = text.contains('.')
+            if (currencyBefore || anchorThenCurrency || (anchorBefore && decimal)) {
+                found += LocatedAmount(index, minor)
+            }
+        }
+        return found
+    }
+
+    private fun isAmountAnchor(text: String): Boolean {
+        if (text == "订单金额" || text.startsWith("订单金额")) return true
+        return statusOf(text) != null || text in expenseExact || text in incomeExact || text in refundExact
+    }
+
+    private fun isCouponAmount(texts: List<String>, index: Int): Boolean {
+        if (isCouponText(texts[index])) return true
+        val start = (index - 2).coerceAtLeast(0)
+        val end = (index + 2).coerceAtMost(texts.lastIndex)
+        for (cursor in start..end) {
+            if (cursor != index && isCouponText(texts[cursor])) return true
+        }
+        return false
+    }
+
+    private fun isCouponText(text: String): Boolean =
+        text.contains("券") || text.contains("红包") || text.contains("立减") || text.contains("抵扣")
+
+    private fun isCurrencyOnly(text: String): Boolean = text == "¥" || text == "￥"
+
+    private fun bareMinor(text: String): Long? {
+        if (!bareNumber.matches(text)) return null
+        return minorOf(text)
+    }
+
+    private fun minorOf(token: String): Long? = when (val parsed = Money.fromText(token.trim())) {
+        is MoneyResult.Success -> parsed.amountMinor.takeIf { it > 0L }
+        else -> null
+    }
+
+    private data class LocatedAmount(val index: Int, val minor: Long)
 
     private fun merchantOf(texts: List<String>): String? {
         for (text in texts) {
@@ -199,6 +274,8 @@ object AccessibilitySnapshotParser {
         if (text.all { it.isDigit() }) return true
         if (statusOf(text) != null) return true
         if (text in chromeExact || text in fieldLabels) return true
+        if (isCouponText(text)) return true
+        if (bareNumber.matches(text)) return true
         if (isAmount(text)) return true
         if (paymentInstrument.containsMatchIn(text)) return true
         if (text.startsWith("使用") && text.contains("付")) return true

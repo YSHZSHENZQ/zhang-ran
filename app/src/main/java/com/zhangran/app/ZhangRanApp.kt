@@ -7,7 +7,17 @@
 package com.zhangran.app
 
 import android.app.Application
+import com.zhangran.app.data.autoledger.AutoLedgerStaleFlipMonitor
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 
 @HiltAndroidApp
-class ZhangRanApp : Application()
+class ZhangRanApp : Application() {
+
+    @Inject lateinit var staleFlip: AutoLedgerStaleFlipMonitor
+
+    override fun onCreate() {
+        super.onCreate()
+        staleFlip.start()
+    }
+}

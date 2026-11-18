@@ -17,7 +17,9 @@ package com.zhangran.app.capture
 
 import com.zhangran.app.capture.accessibility.AccessibilityCapturePipeline
 import com.zhangran.app.capture.accessibility.AccessibilityConnectivityRecorder
+import com.zhangran.app.capture.accessibility.AccessibilityRejectionLog
 import com.zhangran.app.capture.accessibility.AccessibilitySnapshotIngest
+import com.zhangran.app.capture.accessibility.RejectionRateLimiter
 import com.zhangran.app.data.repository.CaptureLogRepository
 import com.zhangran.app.data.settings.CaptureHealthStore
 import com.zhangran.app.data.repository.TransactionRepository
@@ -70,7 +72,23 @@ abstract class CaptureModule {
             @ApplicationScope scope: CoroutineScope,
         ): CaptureSubmitter = CaptureSubmitter(eventSource = eventSource, scope = scope)
 
-        /** M6-2：无障碍快照只进待确认。 */
+        @Provides
+        @Singleton
+        fun provideRejectionRateLimiter(): RejectionRateLimiter = RejectionRateLimiter()
+
+        @Provides
+        @Singleton
+        fun provideAccessibilityRejectionLog(
+            records: CaptureLogRepository,
+            health: CaptureHealthStore,
+            limiter: RejectionRateLimiter,
+        ): AccessibilityRejectionLog = AccessibilityRejectionLog(
+            records = records,
+            health = health,
+            rateLimiter = limiter,
+        )
+
+        /** M6-2：无障碍快照只进待确认。被拒的采样不更新上次捕获时间。 */
         @Provides
         @Singleton
         fun provideAccessibilitySnapshotIngest(
@@ -78,11 +96,13 @@ abstract class CaptureModule {
             transactions: TransactionRepository,
             records: CaptureLogRepository,
             health: CaptureHealthStore,
+            rejections: AccessibilityRejectionLog,
         ): AccessibilitySnapshotIngest = AccessibilitySnapshotIngest(
             normalize = normalize,
             transactions = transactions,
             records = records,
             onCaptured = { at -> health.recordCapture(at) },
+            rejections = rejections,
         )
 
         @Provides

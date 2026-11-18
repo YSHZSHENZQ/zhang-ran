@@ -246,16 +246,121 @@ object AccessibilityFixtures {
         )
     }
 
+    /** 余额宝转出付款的结果页。没有商户名。 */
+    const val F_YUEBAO: String = "fx-1-f-ali-yuebao"
+
+    /** 同一页，但「¥」和「25.10」拆成两个节点。 */
+    const val F_YUEBAO_SPLIT: String = "fx-1-f-ali-yuebao-split"
+
+    /** 事件包名是支付宝，树却是账然首页。 */
+    const val F_WRONG_WINDOW: String = "fx-1-f-wrong-window"
+
+    const val YUEBAO_CAPTURED_AT: Long = 1_794_552_000_000L
+
+    const val WRONG_WINDOW_CAPTURED_AT: Long = 1_794_552_319_644L
+
+    /**
+     * 支付宝余额宝结果页的脱敏结构：单独的「支付成功」、主金额 ¥25.10、
+     * 「订单金额」和金额分列、「交易方式 / 余额宝(转出资金付款)」、
+     * 优惠券（10元、2元、12元、¥10、10.00元）、「回首页」「完成」。没有商户名。
+     */
+    fun alipayYuebao(capturedAt: Long = YUEBAO_CAPTURED_AT): AccessibilityPageSnapshot = page(
+        packageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        windowId = 41_001,
+        capturedAt = capturedAt,
+        rootPackageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        nodes = yuebaoNodes(splitAmount = false),
+    )
+
+    /** 与 [alipayYuebao] 相同，主金额的货币符号和数字分成两个节点。 */
+    fun alipayYuebaoSplit(capturedAt: Long = YUEBAO_CAPTURED_AT): AccessibilityPageSnapshot = page(
+        packageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        windowId = 41_002,
+        capturedAt = capturedAt,
+        rootPackageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        nodes = yuebaoNodes(splitAmount = true),
+    )
+
+    /**
+     * 事件写着支付宝，节点却是账然首页。结构来自一次脱敏后的窗口快照，
+     * 根包名补成 `com.zhangran.app`。不含最近任务里的个人应用名。
+     */
+    fun wrongWindowHome(capturedAt: Long = WRONG_WINDOW_CAPTURED_AT): AccessibilityPageSnapshot = page(
+        packageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        windowId = 38_598,
+        capturedAt = capturedAt,
+        rootPackageName = NonPaymentWindows.OWN_PACKAGE,
+        nodes = listOf(
+            node("我的", 8),
+            described(text = null, description = "我的，标签页，未选中", viewId = null, depth = 7),
+            node("预算", 8),
+            described(text = null, description = "预算，标签页，未选中", viewId = null, depth = 7),
+            node("记一笔", 8),
+            described(text = null, description = "记一笔，标签页，未选中", viewId = null, depth = 7),
+            node("统计", 8),
+            described(text = null, description = "统计，标签页，未选中", viewId = null, depth = 7),
+            node("首页", 8),
+            described(text = null, description = "首页，标签页，已选中", viewId = null, depth = 7),
+            node("检查自动记账", 6),
+            node("记一笔", 6),
+            node("记一笔，或检查自动记账设置", 5),
+            node("还没有记录", 5),
+            node("⏳", 7),
+            described(text = null, description = "待确认", viewId = null, depth = 6),
+            node("🔍", 7),
+            described(text = null, description = "搜索", viewId = null, depth = 6),
+            described(
+                text = "AUTO LEDGER · 疑似失效",
+                description = "自动记账状态：疑似失效",
+                viewId = null,
+                depth = 5,
+            ),
+            node("账然", 5),
+        ),
+    )
+
     /** 真机证据上的采样时间（UTC epoch millis）。 */
     const val WX_CAPTURED_AT: Long = 1_794_373_522_722L
 
     const val ALI_CAPTURED_AT: Long = 1_794_362_941_004L
+
+    private fun yuebaoNodes(splitAmount: Boolean): List<SnapshotNode> {
+        val main = if (splitAmount) {
+            listOf(node("¥", 5), node("25.10", 5))
+        } else {
+            listOf(node("¥25.10", 5))
+        }
+        val orderAmount = if (splitAmount) {
+            listOf(node("订单金额", 6), node("¥", 7), node("25.10", 7))
+        } else {
+            listOf(node("订单金额", 6), node("¥25.10", 7))
+        }
+        return listOf(node("支付成功", 4)) +
+            main +
+            orderAmount +
+            listOf(
+                node("交易方式", 6),
+                node("余额宝(转出资金付款)", 7),
+                node("支付红包", 8),
+                node("10元", 9),
+                node("优惠券", 8),
+                node("2元", 9),
+                node("立减券", 8),
+                node("12元", 9),
+                node("抵扣券", 8),
+                node("¥10", 9),
+                node("10.00元", 9),
+                node("回首页", 3),
+                node("完成", 4),
+            )
+    }
 
     private fun page(
         packageName: String,
         windowId: Int,
         capturedAt: Long,
         nodes: List<SnapshotNode>,
+        rootPackageName: String? = null,
     ) = AccessibilityPageSnapshot(
         packageName = packageName,
         windowId = windowId,
@@ -263,6 +368,7 @@ object AccessibilityFixtures {
         nodes = nodes,
         truncated = false,
         textChars = nodes.sumOf { (it.text?.length ?: 0) + (it.contentDescription?.length ?: 0) },
+        rootPackageName = rootPackageName,
     )
 
     private fun node(text: String, depth: Int) = described(
