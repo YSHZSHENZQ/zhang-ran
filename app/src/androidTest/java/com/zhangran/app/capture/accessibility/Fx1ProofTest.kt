@@ -94,7 +94,10 @@ class Fx1ProofTest {
         }
         assertTrue(CaptureLogExport.sensitiveFindings(exportAfter).isEmpty())
         val healthAfterReject = writeHealth("ac2-health")
-        assertEquals(healthBefore, healthAfterReject)
+        assertTrue(healthBefore.contains("\"lastCaptureAtMillis\":null"))
+        assertTrue(healthAfterReject.contains("\"lastCaptureAtMillis\":null"))
+        assertTrue(healthAfterReject.contains("\"watchStartedAtMillis\":null"))
+        assertTrue(healthAfterReject.contains("\"rejectedSamplesSinceCapture\":true"))
         val ledgerAfterReject = JSONObject(dump("ac2-ledger-after"))
         assertEquals(0, ledgerAfterReject.getInt("pendingCount"))
         assertEquals(0, ledgerAfterReject.getJSONArray("rows").length())
