@@ -213,7 +213,7 @@ class Fx1ProofTest {
         assertFalse(staleLedger.toString().contains("\"state\":\"DUPLICATE\""))
         val staleExport = writeLogs("ac4-export")
         val flips = Regex(
-            "SUSPECTED_STALE lastCaptureAt=\\d+ watchStartedAt=\\d+ rejectedSamples=true",
+            "SUSPECTED_STALE lastCaptureAt=\\d{4}-\\d{2}-\\d{2}T\\S+ watchStartedAt=\\d{4}-\\d{2}-\\d{2}T\\S+ rejectedSamples=true",
         ).findAll(staleExport).count()
         assertEquals(1, flips)
         File(filesDir(), "git-sha.txt").writeText(BuildConfig.GIT_SHA)

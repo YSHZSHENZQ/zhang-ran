@@ -40,9 +40,13 @@ class DebugCaptureHealthReceiver : BroadcastReceiver() {
         try {
             runBlocking {
                 val now = System.currentTimeMillis()
-                health.setLastCaptureAt(now - ageMillis)
                 if (watchAgeMillis >= 0L) {
-                    health.markWatchStarted(now - watchAgeMillis)
+                    health.setDebugTimeline(
+                        lastCaptureAtMillis = now - ageMillis,
+                        watchStartedAtMillis = now - watchAgeMillis,
+                    )
+                } else {
+                    health.setLastCaptureAt(now - ageMillis)
                 }
                 staleFlip.evaluateNow()
             }

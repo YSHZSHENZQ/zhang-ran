@@ -538,6 +538,14 @@ internal class MemoryHealth : com.zhangran.app.data.settings.CaptureHealthStore 
         publish()
     }
 
+    override suspend fun setDebugTimeline(lastCaptureAtMillis: Long, watchStartedAtMillis: Long) {
+        current = current.copy(
+            lastCaptureAtMillis = lastCaptureAtMillis,
+            watchStartedAtMillis = watchStartedAtMillis,
+        )
+        publish()
+    }
+
     override suspend fun markWatchStarted(atMillis: Long) {
         current = current.copy(watchStartedAtMillis = atMillis)
         publish()

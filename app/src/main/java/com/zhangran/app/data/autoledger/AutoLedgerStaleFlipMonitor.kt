@@ -21,6 +21,8 @@ import com.zhangran.app.domain.service.AutoLedgerAvailability
 import com.zhangran.app.domain.service.AutoLedgerHealth
 import com.zhangran.app.domain.service.AutoLedgerHealthInput
 import java.time.Clock
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -37,18 +39,25 @@ object AutoLedgerStaleFlip {
 
     const val KIND: String = "SUSPECTED_STALE"
 
+    /** 同一次静默只记一次。离开疑似失效后清掉，下次再进入才再写。 */
+    const val EPISODE: String = "logged"
+
     fun reason(
         lastCaptureAtMillis: Long?,
         watchStartedAtMillis: Long?,
         rejectedSamples: Boolean,
     ): String {
-        val last = lastCaptureAtMillis?.toString() ?: "null"
-        val watch = watchStartedAtMillis?.toString() ?: "null"
+        val last = formatTime(lastCaptureAtMillis)
+        val watch = formatTime(watchStartedAtMillis)
         return "SUSPECTED_STALE lastCaptureAt=$last watchStartedAt=$watch rejectedSamples=$rejectedSamples"
     }
 
-    fun marker(lastCaptureAtMillis: Long?, watchStartedAtMillis: Long?): String =
-        "last=${lastCaptureAtMillis ?: "null"};watch=${watchStartedAtMillis ?: "null"}"
+    /**
+     * 用带分隔符的 UTC 时间，避免 13 位毫秒被导出脱敏当成单号打码。
+     * null 保持字面 null。
+     */
+    fun formatTime(millis: Long?): String =
+        if (millis == null) "null" else DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(millis))
 }
 
 @Singleton
@@ -100,10 +109,9 @@ class AutoLedgerStaleFlipMonitor @Inject constructor(
                 if (current.staleFlipMarker != null) health.clearStaleFlipMarker()
                 return
             }
-            val marker = AutoLedgerStaleFlip.marker(input.lastCaptureAtMillis, input.watchStartedAtMillis)
-            if (current.staleFlipMarker == marker) return
+            if (current.staleFlipMarker != null) return
             write(current, input)
-            health.markStaleFlip(marker)
+            health.markStaleFlip(AutoLedgerStaleFlip.EPISODE)
         }
     }
 

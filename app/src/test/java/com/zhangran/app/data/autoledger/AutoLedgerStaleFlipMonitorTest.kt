@@ -44,7 +44,11 @@ class AutoLedgerStaleFlipMonitorTest {
         assertEquals(CaptureLogStatus.RECEIVED, log.status)
         assertTrue(log.reason.orEmpty().contains("SUSPECTED_STALE"))
         assertTrue(log.reason.orEmpty().contains("lastCaptureAt=null"))
-        assertTrue(log.reason.orEmpty().contains("watchStartedAt=${now - day}"))
+        assertTrue(
+            log.reason.orEmpty().contains(
+                "watchStartedAt=${AutoLedgerStaleFlip.formatTime(now - day)}",
+            ),
+        )
         assertTrue(log.reason.orEmpty().contains("rejectedSamples=true"))
         assertNull(log.transactionId)
         assertEquals(0, logs.evidence.size)
@@ -69,7 +73,11 @@ class AutoLedgerStaleFlipMonitorTest {
         health.setLastCaptureAt(now - day - 1_000L)
         monitor.evaluateNow()
         assertEquals(2, logs.logs.size)
-        assertTrue(logs.logs.last().reason.orEmpty().contains("lastCaptureAt=${now - day - 1_000L}"))
+        assertTrue(
+            logs.logs.last().reason.orEmpty().contains(
+                "lastCaptureAt=${AutoLedgerStaleFlip.formatTime(now - day - 1_000L)}",
+            ),
+        )
         assertNull(health.current.lastCaptureAtMillis?.let { if (it == now) it else null })
         assertEquals(now - day - 1_000L, health.current.lastCaptureAtMillis)
     }

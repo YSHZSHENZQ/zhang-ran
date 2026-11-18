@@ -36,6 +36,12 @@ interface CaptureHealthStore {
     /** 调试专用：无条件写成给定时间，可以早于现有记录。 */
     suspend fun setLastCaptureAt(atMillis: Long)
 
+    /**
+     * 调试专用：一次写上次捕获和开始监听，避免中间状态触发两次「疑似失效」。
+     * 不清除「期间有过被拒绝的采样」。
+     */
+    suspend fun setDebugTimeline(lastCaptureAtMillis: Long, watchStartedAtMillis: Long)
+
     suspend fun markWatchStarted(atMillis: Long)
 
     suspend fun clearWatchStarted()
@@ -98,6 +104,13 @@ class DataStoreCaptureHealthStore @Inject constructor(
     override suspend fun setLastCaptureAt(atMillis: Long) {
         dataStore.edit { preferences ->
             preferences[LAST_CAPTURE_AT] = atMillis
+        }
+    }
+
+    override suspend fun setDebugTimeline(lastCaptureAtMillis: Long, watchStartedAtMillis: Long) {
+        dataStore.edit { preferences ->
+            preferences[LAST_CAPTURE_AT] = lastCaptureAtMillis
+            preferences[WATCH_STARTED_AT] = watchStartedAtMillis
         }
     }
 
