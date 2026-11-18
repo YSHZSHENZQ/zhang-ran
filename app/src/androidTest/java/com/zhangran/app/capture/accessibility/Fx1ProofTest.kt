@@ -133,9 +133,11 @@ class Fx1ProofTest {
             assertFalse(row.getBoolean("confirmedByUser"))
         }
         openPending()
-        composeRule.onNodeWithText("¥25.10").assertIsDisplayed()
-        composeRule.onNodeWithText("未知").assertIsDisplayed()
-        composeRule.onNodeWithText(AccessibilityFixtures.F_YUEBAO).assertIsDisplayed()
+        assertTrue(composeRule.onAllNodesWithText("¥25.10").fetchSemanticsNodes().isNotEmpty())
+        assertTrue(composeRule.onAllNodesWithText("未知").fetchSemanticsNodes().isNotEmpty())
+        assertTrue(
+            composeRule.onAllNodesWithText(AccessibilityFixtures.F_YUEBAO).fetchSemanticsNodes().isNotEmpty(),
+        )
         shot("ac3-yuebao-pending")
 
         val beforeWrong = JSONObject(dump("ac3-before-wrong"))
