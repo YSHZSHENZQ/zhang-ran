@@ -1,6 +1,8 @@
 # FX-1 取证
 
-功能提交 `c77428730c79f5e8ff3ee985e3d3d0cf9c8381e8`。`git-sha.txt` 与该提交的 `BuildConfig.GIT_SHA` 相同。截图来自模拟器 `screencap`，时区 Asia/Shanghai。
+当前功能提交 `6d5f42c612db0768773fbf029349b240c9e08dec`。`git-sha.txt` 是这个提交。文档提交 `6868949cfe148a7247f0fce974e10ec4371e17e8` 只改 `docs/03`。
+
+AC-1 到 AC-5、AC-7 的 JSON 和截图仍是功能提交 `c77428730c79f5e8ff3ee985e3d3d0cf9c8381e8` 那次模拟器取证，这次没有替换。那些导出里的 `gitSha` 仍是 `c774287`。本环境模拟器停在 adb offline，没有用新包生成导出 JSON。AC-8、AC-9 是 JVM 单测摘录。截图时区 Asia/Shanghai。
 
 同一拒绝原因的去重窗口是 **60 秒**（`RejectionRateLimiter.WINDOW_MILLIS`）。窗口按原因码计算，不按包名。`now - previous < 60_000` 时丢掉后到的一条；刚好满 60 秒可以再记一条。
 
@@ -48,7 +50,19 @@
 
 ## AC-5
 
-`git-sha.txt` = `c77428730c79f5e8ff3ee985e3d3d0cf9c8381e8`。该提交上 `assembleDebug` 已打出 debug APK。
+`git-sha.txt` = `6d5f42c612db0768773fbf029349b240c9e08dec`。该提交上 `assembleDebug` 打出的 debug 包，`BuildConfig.GIT_SHA` 与此相同。没有装到模拟器，也没有从设备拉出新的导出 JSON。
+
+## AC-8 停留不再看节点文本
+
+| 文件 | 内容 |
+|---|---|
+| `ac8-stay.md` | 节点从「支付金额」换成「回首页」、相隔 1.3 秒仍是 1 条；不同单号、16 秒、不同窗口仍是 2 条。真机 ¥22.50 / ¥12.90 回放结果由 Eng 本机提供 |
+
+## AC-9 会话列表拒绝证据
+
+| 文件 | 内容 |
+|---|---|
+| `ac9-chat-list.md` | 合成会话列表待确认 0 条，每次 `NOT_PAYMENT_PAGE`。单测导出含结构字段，不含正文、金额数字、人名、contentDescription。60 秒内同一原因只留一条 |
 
 ## AC-7
 
