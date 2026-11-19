@@ -1,0 +1,87 @@
+FX-1 emulator smoke for 6d5f42c6 (AVD qj1, API 36, TCG: emulator -accel off, no KVM; emulator reused from earlier session)
+[2026-11-19 11:39:59 HKT] $ ps -o args= -C qemu-system-x86_64 | cut -c1-200
+/home/box/android-sdk/emulator/qemu/linux-x86_64/qemu-system-x86_64 -avd qj1 -accel off -no-snapshot -no-audio -no-boot-anim -gpu swiftshader_indirect -port 5554
+[2026-11-19 11:39:59 HKT] exit=0
+[2026-11-19 11:39:59 HKT] $ sha256sum /workspace/zhang-ran-pm/delivery/fx-1/zhangran-fx-1-debug-6d5f42c6.apk; echo expected c347e80f6a9341fd6f330d7f2780afe0d3512aa12bb18e84d3dabded87b5ad9a
+c347e80f6a9341fd6f330d7f2780afe0d3512aa12bb18e84d3dabded87b5ad9a  /workspace/zhang-ran-pm/delivery/fx-1/zhangran-fx-1-debug-6d5f42c6.apk
+expected c347e80f6a9341fd6f330d7f2780afe0d3512aa12bb18e84d3dabded87b5ad9a
+[2026-11-19 11:39:59 HKT] exit=0
+[2026-11-19 11:39:59 HKT] $ aapt dump badging /workspace/zhang-ran-pm/delivery/fx-1/zhangran-fx-1-debug-6d5f42c6.apk | grep -E "^package:|launchable-activity|sdkVersion"
+package: name='com.zhangran.app' versionCode='1' versionName='0.1.0' platformBuildVersionName='17' platformBuildVersionCode='37' compileSdkVersion='37' compileSdkVersionCodename='17'
+sdkVersion:'31'
+launchable-activity: name='com.zhangran.app.MainActivity'  label='账然' icon=''
+[2026-11-19 11:39:59 HKT] exit=0
+[2026-11-19 11:39:59 HKT] $ adb wait-for-device; adb devices
+List of devices attached
+emulator-5554	device
+
+[2026-11-19 11:39:59 HKT] exit=0
+[2026-11-19 11:40:00 HKT] $ adb shell getprop sys.boot_completed; adb shell getprop ro.build.version.sdk; adb shell getprop ro.product.cpu.abi; adb shell uptime
+1
+36
+x86_64
+ 11:40:01 up 17 min,  0 users,  load average: 1.18, 6.47, 6.76
+[2026-11-19 11:40:03 HKT] exit=0
+## STEP 1: find pkg + uninstall
+[2026-11-19 11:40:33 HKT] $ adb shell pm list packages | grep -i zhangran
+package:com.zhangran.app
+package:com.zhangran.app.test
+[2026-11-19 11:40:34 HKT] exit=0
+[2026-11-19 11:40:34 HKT] $ adb uninstall com.zhangran.app
+Success
+[2026-11-19 11:40:42 HKT] exit=0
+[2026-11-19 11:40:42 HKT] $ adb shell pm list packages | grep -i zhangran; echo grep-exit=$?
+package:com.zhangran.app.test
+grep-exit=0
+[2026-11-19 11:40:45 CST] exit=0
+## STEP 2: install
+[2026-11-19 11:40:45 CST] $ adb install /workspace/zhang-ran-pm/delivery/fx-1/zhangran-fx-1-debug-6d5f42c6.apk
+Performing Streamed Install
+Success
+[2026-11-19 11:41:03 CST] exit=0
+[2026-11-19 11:41:03 CST] $ adb shell pm list packages | grep -i zhangran
+package:com.zhangran.app
+package:com.zhangran.app.test
+[2026-11-19 11:41:07 CST] exit=0
+[2026-11-19 11:41:07 CST] $ adb shell dumpsys package com.zhangran.app | grep -E 'versionName|versionCode|lastUpdateTime'
+    versionCode=1 minSdk=31 targetSdk=36
+    versionName=0.1.0
+    lastUpdateTime=2026-11-19 11:41:01
+[2026-11-19 11:41:11 CST] exit=0
+## STEP 3: launch
+[2026-11-19 11:41:11 CST] $ adb logcat -c
+[2026-11-19 11:41:13 CST] exit=0
+[2026-11-19 11:41:13 CST] $ adb shell cmd package resolve-activity --brief com.zhangran.app
+priority=0 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=false
+com.zhangran.app/.MainActivity
+[2026-11-19 11:41:13 CST] exit=0
+[2026-11-19 11:41:15 CST] $ adb shell am start -W -n com.zhangran.app/.MainActivity
+Starting: Intent { cmp=com.zhangran.app/.MainActivity }
+Status: timeout
+LaunchState: UNKNOWN (-1)
+Activity: com.zhangran.app/.MainActivity
+WaitTime: 24549
+Complete
+[2026-11-19 11:41:41 CST] exit=0
+[2026-11-19 11:41:41 CST] $ sleep 15
+[2026-11-19 11:41:56 CST] exit=0
+[2026-11-19 11:41:56 CST] $ adb shell dumpsys activity activities | grep -E 'ResumedActivity|topResumed'
+    topResumedActivity=ActivityRecord{35056420 u0 com.zhangran.app/.MainActivity t159}
+  ResumedActivity: ActivityRecord{35056420 u0 com.zhangran.app/.MainActivity t159}
+[2026-11-19 11:41:57 CST] exit=0
+[2026-11-19 11:41:57 CST] $ adb shell pidof com.zhangran.app
+3413
+[2026-11-19 11:41:59 CST] exit=0
+## STEP 4: crash check
+[2026-11-19 11:41:59 CST] $ adb logcat -d -b crash; echo '(end of crash buffer)'
+(end of crash buffer)
+[2026-11-19 11:42:00 CST] exit=0
+[2026-11-19 11:42:00 CST] $ adb logcat -d | grep -E 'FATAL EXCEPTION|AndroidRuntime|ANR'; echo grep-exit=${PIPESTATUS[1]}
+grep-exit=1
+[2026-11-19 11:42:01 CST] exit=0
+## STEP 5: screenshot
+[2026-11-19 11:42:01 CST] $ adb exec-out screencap -p > /workspace/zhang-ran-pm/delivery/fx-1/fx1-6d5f42c6-launch.png; ls -l /workspace/zhang-ran-pm/delivery/fx-1/fx1-6d5f42c6-launch.png; md5sum /workspace/zhang-ran-pm/delivery/fx-1/fx1-6d5f42c6-launch.png
+-rw-r--r-- 1 box box 303094 Nov 19 11:42 /workspace/zhang-ran-pm/delivery/fx-1/fx1-6d5f42c6-launch.png
+f366e8a43aa59e05912c5959e623062c  /workspace/zhang-ran-pm/delivery/fx-1/fx1-6d5f42c6-launch.png
+[2026-11-19 11:42:14 CST] exit=0
+DONE
