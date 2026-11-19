@@ -695,9 +695,97 @@ class AccessibilitySnapshotIngestTest {
         assertEquals(2, harness.logs.logs.size)
         assertTrue(harness.logs.logs.all { it.reason == "NOT_PAYMENT_PAGE" && it.transactionId == null })
     }
+
+    @Test
+    fun 同窗口同金额节点文本变了仍合并() = runBlocking {
+        val harness = Harness()
+        val at = 1_794_210_000_000L
+        val paying = amountPage(capturedAt = at, extra = "支付金额")
+        val home = amountPage(capturedAt = at + 1_300L, extra = "回首页")
+        assertNotEquals(paying.nodes.map { it.text }, home.nodes.map { it.text })
+        val firstParsed = AccessibilitySnapshotParser.parse(paying)
+        val secondParsed = AccessibilitySnapshotParser.parse(home)
+        assertNotNull(firstParsed)
+        assertNotNull(secondParsed)
+        assertEquals(770L, firstParsed!!.amountMinor)
+        assertEquals(770L, secondParsed!!.amountMinor)
+        assertNull(firstParsed.externalTransactionId)
+        assertNull(secondParsed.externalTransactionId)
+        assertNull(firstParsed.paymentTimeMillis)
+        assertNull(secondParsed.paymentTimeMillis)
+        val first = harness.ingest.ingest(paying, "fx1-flip-amount")
+        val second = harness.ingest.ingest(home, "fx1-flip-home")
+        assertEquals(first.transactionId, second.transactionId)
+        assertEquals(1, harness.transactions.rows.size)
+        assertEquals(770L, harness.transactions.rows.single().amountMinor)
+        assertEquals(TransactionState.PENDING, harness.transactions.rows.single().state)
+        assertEquals(1, harness.logs.logs.size)
+        assertFalse(second.evidenceWritten)
+    }
+
+    @Test
+    fun `两笔不同的同金额付款是 2 条`() = runBlocking {
+        val orders = Harness()
+        val at = 1_794_220_000_000L
+        orders.ingest.ingest(
+            payPage(capturedAt = at, orderId = "202611191001", merchant = null),
+            "fx1-two-order-a",
+        )
+        orders.ingest.ingest(
+            payPage(capturedAt = at + 2_000L, orderId = "202611191002", merchant = null),
+            "fx1-two-order-b",
+        )
+        assertEquals(2, orders.transactions.rows.size)
+        assertEquals(
+            setOf("202611191001", "202611191002"),
+            orders.transactions.rows.map { it.externalTransactionId }.toSet(),
+        )
+
+        val later = Harness()
+        val stay = amountPage(capturedAt = at, extra = "支付金额")
+        later.ingest.ingest(stay, "fx1-two-16s-a")
+        later.ingest.ingest(
+            amountPage(capturedAt = at + 16_000L, extra = "回首页"),
+            "fx1-two-16s-b",
+        )
+        assertEquals(2, later.transactions.rows.size)
+        assertTrue(later.transactions.rows.all { it.amountMinor == 770L && it.state == TransactionState.PENDING })
+
+        val windows = Harness()
+        windows.ingest.ingest(amountPage(capturedAt = at, extra = "支付金额", windowId = 8801), "fx1-two-win-a")
+        windows.ingest.ingest(
+            amountPage(capturedAt = at + 2_000L, extra = "回首页", windowId = 8802),
+            "fx1-two-win-b",
+        )
+        assertEquals(2, windows.transactions.rows.size)
+        assertTrue(windows.transactions.rows.all { it.amountMinor == 770L && it.state == TransactionState.PENDING })
+    }
 }
 
 private const val SEVENTY_MINUTES: Long = 70L * 60L * 1_000L
+
+/** 合成结果页。金额固定 ¥7.70，没有单号和支付时间。节点正文只有调用方传入的那一个词。 */
+private fun amountPage(
+    capturedAt: Long,
+    extra: String,
+    windowId: Int = 8801,
+): AccessibilityPageSnapshot {
+    val nodes = listOf(
+        SnapshotNode("支付成功", null, null, null, 1),
+        SnapshotNode(extra, null, null, null, 2),
+        SnapshotNode("¥7.70", null, null, null, 3),
+        SnapshotNode("完成", null, null, null, 4),
+    )
+    return AccessibilityPageSnapshot(
+        packageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        windowId = windowId,
+        capturedAt = capturedAt,
+        nodes = nodes,
+        truncated = false,
+        textChars = nodes.sumOf { it.text?.length ?: 0 },
+        rootPackageName = AccessibilityTargets.ALIPAY_PACKAGE,
+    )
+}
 
 private fun payPage(
     capturedAt: Long,

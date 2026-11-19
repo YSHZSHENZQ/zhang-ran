@@ -9,7 +9,6 @@
 package com.zhangran.app.capture.accessibility
 
 import com.zhangran.app.capture.COLLECTOR_INTERFACE_VERSION
-import com.zhangran.app.capture.CaptureProcessor
 import com.zhangran.app.data.local.entity.CaptureEvidenceEntity
 import com.zhangran.app.data.local.entity.CaptureLogEntity
 import com.zhangran.app.data.local.entity.TransactionEntity
@@ -35,8 +34,9 @@ import kotlin.math.abs
 import kotlinx.coroutines.CancellationException
 
 /**
- * 同一结果页连续采样算一次停留。超过这个间隔就新建待确认，
- * 不能因为金额相同就把后来的另一笔并掉。
+ * 同一窗口里没有单号、也没有支付时间的连续采样算一次停留。
+ * 不比较节点文本：结果页从「支付金额」翻到「回首页」仍是同一次停留。
+ * 超过这个间隔就新建待确认。已知取舍：这 15 秒里两笔不同的同额付款也会合成一条。
  */
 internal const val SAME_PAGE_STAY_MILLIS: Long = 15_000L
 
@@ -379,8 +379,8 @@ class AccessibilitySnapshotIngest(
      * 1. 有单号：和任一未软删除记录的 `externalTransactionId` 相同就返回原行。
      * 2. 没有单号但有支付时间：包名、金额、方向、支付时间相同，且商户相同或至少一侧为空。
      *    两侧商户都有且不同，不在这里合并。
-     * 3. 两样都没有：只合并同一次停留（同包名、同 windowId、同金额、同方向、同节点指纹，
-     *    捕获间隔 ≤ [SAME_PAGE_STAY_MILLIS]）。
+     * 3. 两样都没有：只合并同一次停留（同包名、同 windowId、同金额、同方向，
+     *    捕获间隔 ≤ [SAME_PAGE_STAY_MILLIS]）。不比较节点文本。
      *
      * 命中时不写新交易，也不写成 DUPLICATE。捕获时刻仍留在原捕获日志上。
      */
@@ -411,7 +411,6 @@ class AccessibilitySnapshotIngest(
         snapshot: AccessibilityPageSnapshot,
         parsed: AccessibilityParsedFields,
     ): AccessibilityIngestResult? {
-        val fingerprint = nodeFingerprint(snapshot.nodes)
         var best: TransactionEntity? = null
         var bestGap = Long.MAX_VALUE
         for (log in records.listAll()) {
@@ -421,7 +420,6 @@ class AccessibilitySnapshotIngest(
             if (gap > SAME_PAGE_STAY_MILLIS || gap >= bestGap) continue
             val document = AccessibilitySnapshotFidelity.decode(log.rawCaptureRef) ?: continue
             if (document.windowId != snapshot.windowId) continue
-            if (nodeFingerprint(document) != fingerprint) continue
             val transaction = transactions.getById(transactionId) ?: continue
             if (transaction.amountMinor != parsed.amountMinor) continue
             if (transaction.type != parsed.direction) continue
@@ -462,19 +460,6 @@ class AccessibilitySnapshotIngest(
             refusedAutoConfirm = false,
         )
     }
-
-    private fun nodeFingerprint(nodes: List<SnapshotNode>): String =
-        nodes.joinToString(separator = "\u0001") { node ->
-            listOf(
-                CaptureProcessor.sanitize(node.text).orEmpty(),
-                CaptureProcessor.sanitize(node.contentDescription).orEmpty(),
-            ).joinToString(separator = "\u0002")
-        }
-
-    private fun nodeFingerprint(document: AccessibilityFidelityDocument): String =
-        document.nodes.joinToString(separator = "\u0001") { node ->
-            listOf(node.text.orEmpty(), node.contentDescription.orEmpty()).joinToString(separator = "\u0002")
-        }
 
     /**
      * 同一 `packageName + notificationId + postTime` 已经落过库时，不再写第二条捕获或交易。
