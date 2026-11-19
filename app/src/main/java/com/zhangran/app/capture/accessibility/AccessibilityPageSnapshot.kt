@@ -13,6 +13,8 @@ data class SnapshotNode(
     val viewId: String?,
     val className: String?,
     val depth: Int,
+    /** 按钮或可点击控件。兜底商户不得使用这类节点的文字或 contentDescription。 */
+    val clickable: Boolean = false,
 )
 
 /**
@@ -33,6 +35,8 @@ data class AccessibilityPageSnapshot(
     val truncated: Boolean,
     val textChars: Int,
     val rootPackageName: String? = null,
+    /** 窗口根节点的 class 名。拒绝日志只记这个名字，不记页面正文。 */
+    val rootClassName: String? = null,
 )
 
 /** 节点读取结论（失败原因必须可区分，`M6` 阶段 1 验收）。 */

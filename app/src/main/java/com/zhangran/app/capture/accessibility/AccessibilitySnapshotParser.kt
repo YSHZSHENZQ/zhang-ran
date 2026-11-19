@@ -13,6 +13,10 @@ package com.zhangran.app.capture.accessibility
 import com.zhangran.app.domain.model.TransactionType
 import com.zhangran.app.domain.service.Money
 import com.zhangran.app.domain.service.MoneyResult
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 data class AccessibilityParsedFields(
     val amountMinor: Long,
@@ -20,6 +24,13 @@ data class AccessibilityParsedFields(
     val merchantRaw: String?,
     val textClue: String,
     val directionSemanticsTrusted: Boolean,
+    /** 订单号、交易单号或商户单号。没有合格单号时为 null。 */
+    val externalTransactionId: String? = null,
+    /**
+     * 页面上的支付时间（Asia/Shanghai 解析成 UTC epoch millis）。
+     * 没有可解析的支付时间时为 null，调用方继续用捕获时刻。
+     */
+    val paymentTimeMillis: Long? = null,
 )
 
 object AccessibilitySnapshotParser {
@@ -34,6 +45,7 @@ object AccessibilitySnapshotParser {
     /** 导航、按钮、底栏。这些词不能当商户。 */
     private val chromeExact = setOf(
         "更多信息",
+        "更多功能",
         "回首页",
         "完成",
         "我的",
@@ -83,15 +95,20 @@ object AccessibilitySnapshotParser {
         "账单分类",
     )
 
-    /** 整页出现这些节点时是账单详情，不是支付结果页。 */
+    /**
+     * 整页出现这些节点时是账单详情，不是支付结果页。
+     * 「交易单号」本身可以出现在结果页上，用来识别同一笔，不能单独把结果页判成账单。
+     */
     private val billDetailMarkers = setOf(
         "全部账单",
         "商户全称",
         "收款方全称",
-        "交易单号",
         "当前状态",
         "账单服务",
     )
+
+    /** 结果页上的交易身份。按这个顺序取第一个合格值。 */
+    private val orderLabels = listOf("交易单号", "商户单号", "订单号")
 
     private val labeledMerchant = Regex("""(?:商户名称|商户|商家|店铺|收款方|付款方)[:：\s]+(\S{1,32})""")
 
@@ -108,6 +125,7 @@ object AccessibilitySnapshotParser {
 
     fun parse(snapshot: AccessibilityPageSnapshot): AccessibilityParsedFields? {
         if (PaymentWindowResolver.snapshotMismatch(snapshot)) return null
+        if (isWeChatConversationList(snapshot)) return null
         val texts = visibleTexts(snapshot)
         if (texts.isEmpty()) return null
         if (texts.any { it in billDetailMarkers }) return null
@@ -129,7 +147,7 @@ object AccessibilitySnapshotParser {
         val anchored = statusAmounts.isNotEmpty() || texts.any { it in resultAnchors }
         if (!anchored) return null
 
-        val merchant = merchantOf(texts)
+        val merchant = merchantOf(snapshot)
         val clue = texts.joinToString(separator = " ").take(MAX_CLUE)
         return AccessibilityParsedFields(
             amountMinor = amountMinor,
@@ -137,6 +155,8 @@ object AccessibilitySnapshotParser {
             merchantRaw = merchant,
             textClue = clue,
             directionSemanticsTrusted = true,
+            externalTransactionId = orderIdOf(texts),
+            paymentTimeMillis = paymentTimeOf(texts),
         )
     }
 
@@ -256,7 +276,39 @@ object AccessibilitySnapshotParser {
 
     private data class LocatedAmount(val index: Int, val minor: Long)
 
-    private fun merchantOf(texts: List<String>): String? {
+    /**
+     * 微信会话列表：顶栏是 `com.tencent.mm:id/jga` 且说明为「更多功能」，
+     * 金额写在同一条会话预览里（「已支付¥…」）。不能只因为出现「已支付」就拒绝。
+     * 已经有单独的支付结果节点时仍交给结果页解析。
+     */
+    private fun isWeChatConversationList(snapshot: AccessibilityPageSnapshot): Boolean {
+        if (snapshot.packageName != AccessibilityTargets.WECHAT_PACKAGE) return false
+        val topBar = snapshot.nodes.any { node ->
+            node.viewId == WECHAT_CONVERSATION_MORE_ID && node.contentDescription == "更多功能"
+        }
+        if (!topBar) return false
+        val texts = visibleTexts(snapshot)
+        if (texts.none { isConversationPreview(it) }) return false
+        val standaloneResult = texts.any { text ->
+            text in expenseExact || text in incomeExact || text in refundExact
+        }
+        return !standaloneResult
+    }
+
+    /** 金额贴在「已支付 / 已收款」后面，是会话预览，不是单独的结果金额节点。 */
+    private fun isConversationPreview(text: String): Boolean {
+        for (lead in listOf("已支付", "已收款")) {
+            val index = text.indexOf(lead)
+            if (index < 0) continue
+            val rest = text.substring(index + lead.length).trimStart()
+            val amount = symbolAmount.find(rest) ?: yuanAmount.find(rest) ?: continue
+            if (amount.range.first == 0) return true
+        }
+        return false
+    }
+
+    private fun merchantOf(snapshot: AccessibilityPageSnapshot): String? {
+        val texts = visibleTexts(snapshot)
         for (text in texts) {
             val labeled = labeledMerchant.find(text)?.groupValues?.getOrNull(1)?.trim()
             if (!labeled.isNullOrEmpty() && !isRejectedMerchant(labeled)) return labeled
@@ -266,7 +318,26 @@ object AccessibilitySnapshotParser {
             val next = texts.getOrNull(index + 1) ?: continue
             if (!isRejectedMerchant(next)) return next
         }
-        return texts.firstOrNull { text -> !isRejectedMerchant(text) }
+        return fallbackMerchant(snapshot.nodes)
+    }
+
+    /**
+     * 兜底只看非按钮节点。按钮和可点击控件的文字、contentDescription 都不能当商户。
+     */
+    private fun fallbackMerchant(nodes: List<SnapshotNode>): String? {
+        val candidates = ArrayList<String>()
+        for (node in nodes) {
+            if (isButtonOrClickable(node)) continue
+            node.text?.trim()?.takeIf { it.isNotEmpty() }?.let { candidates += it }
+            node.contentDescription?.trim()?.takeIf { it.isNotEmpty() }?.let { candidates += it }
+        }
+        return candidates.firstOrNull { text -> !isRejectedMerchant(text) }
+    }
+
+    private fun isButtonOrClickable(node: SnapshotNode): Boolean {
+        if (node.clickable) return true
+        val simple = node.className?.substringAfterLast('.') ?: return false
+        return simple == "Button" || simple.endsWith("Button")
     }
 
     private fun isRejectedMerchant(text: String): Boolean {
@@ -274,16 +345,100 @@ object AccessibilitySnapshotParser {
         if (text.all { it.isDigit() }) return true
         if (statusOf(text) != null) return true
         if (text in chromeExact || text in fieldLabels) return true
+        if (fieldLabels.any { label -> text.startsWith(label) && continuesLabel(text, label) }) return true
+        if (orderLabels.any { label -> text.startsWith(label) }) return true
         if (isCouponText(text)) return true
         if (bareNumber.matches(text)) return true
         if (isAmount(text)) return true
         if (paymentInstrument.containsMatchIn(text)) return true
         if (text.startsWith("使用") && text.contains("付")) return true
+        if (parsePaymentTime(text) != null) return true
         return false
+    }
+
+    private fun continuesLabel(text: String, label: String): Boolean {
+        if (text.length == label.length) return true
+        return text[label.length] in ":： "
+    }
+
+    /**
+     * 交易单号、商户单号、订单号。标签后一格或同一节点里的「标签 + 值」。
+     * 值必须像单号：至少 8 位，且含数字。纯商户名、按钮、金额都不收。
+     */
+    private fun orderIdOf(texts: List<String>): String? {
+        for (label in orderLabels) {
+            val inline = Regex("""${Regex.escape(label)}[:：\s]+(\S{8,64})""")
+            for (text in texts) {
+                val found = inline.find(text)?.groupValues?.getOrNull(1)?.trim()
+                if (isOrderId(found)) return found
+            }
+            for (index in texts.indices) {
+                if (texts[index] != label) continue
+                val next = texts.getOrNull(index + 1)?.trim()
+                if (isOrderId(next)) return next
+            }
+        }
+        return null
+    }
+
+    private fun isOrderId(value: String?): Boolean {
+        val text = value?.trim().orEmpty()
+        if (!ORDER_ID.matches(text)) return false
+        if (text.none { it.isDigit() }) return false
+        if (text in chromeExact || text in fieldLabels) return false
+        if (statusOf(text) != null) return false
+        if (isAmount(text)) return false
+        return true
+    }
+
+    /** 只接受带年份的支付时间。解析不了就当没有，不拿捕获时刻冒充。 */
+    private fun paymentTimeOf(texts: List<String>): Long? {
+        val candidates = mutableListOf<String>()
+        val inline = Regex("""支付时间[:：\s]+(\d{4}\S*(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?)""")
+        for (text in texts) {
+            inline.find(text)?.groupValues?.getOrNull(1)?.trim()?.let { candidates += it }
+        }
+        for (index in texts.indices) {
+            if (texts[index] != "支付时间") continue
+            texts.getOrNull(index + 1)?.trim()?.let { candidates += it }
+        }
+        return candidates.firstNotNullOfOrNull { parsePaymentTime(it) }
+    }
+
+    private fun parsePaymentTime(text: String): Long? {
+        val value = text.trim()
+        if (value.isEmpty()) return null
+        for (formatter in paymentTimeFormatters) {
+            try {
+                val local = LocalDateTime.parse(value, formatter)
+                val millis = local.atZone(PAYMENT_ZONE).toInstant().toEpochMilli()
+                if (millis > 0L) return millis
+            } catch (_: DateTimeParseException) {
+                continue
+            }
+        }
+        return null
     }
 
     private fun isAmount(text: String): Boolean =
         symbolAmount.containsMatchIn(text) || yuanAmount.containsMatchIn(text)
 
     private const val MAX_CLUE = 200
+
+    private val ORDER_ID = Regex("""[A-Za-z0-9_.:-]{8,64}""")
+
+    private const val WECHAT_CONVERSATION_MORE_ID = "com.tencent.mm:id/jga"
+
+    private val PAYMENT_ZONE: ZoneId = ZoneId.of("Asia/Shanghai")
+
+    private val paymentTimeFormatters: List<DateTimeFormatter> = listOf(
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd HH:mm",
+        "yyyy/MM/dd HH:mm:ss",
+        "yyyy/MM/dd HH:mm",
+        "yyyy年M月d日 HH:mm:ss",
+        "yyyy年M月d日 HH:mm",
+        "yyyy年M月d日HH:mm:ss",
+        "yyyy年M月d日HH:mm",
+    ).map { DateTimeFormatter.ofPattern(it) }
 }

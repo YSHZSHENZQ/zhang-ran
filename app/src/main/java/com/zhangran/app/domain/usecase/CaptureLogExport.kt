@@ -22,6 +22,12 @@ data class CaptureLogExportEntry(
     val status: String,
     val reason: String?,
     val fixtureId: String?,
+    val windowId: Long? = null,
+    val rootClass: String? = null,
+    val viewIds: List<String>? = null,
+    val nodeCount: Int? = null,
+    val hasAmountStyle: Boolean? = null,
+    val hasPaymentKeyword: Boolean? = null,
 )
 
 object CaptureLogExport {
@@ -36,6 +42,7 @@ object CaptureLogExport {
 
     fun entry(log: CaptureLogEntity, zone: ZoneId): CaptureLogExportEntry {
         val time = entryTime.format(Instant.ofEpochMilli(log.capturedAt).atZone(zone))
+        val facts = rejectionFactsOf(log.rawCaptureRef)
         return CaptureLogExportEntry(
             id = log.id,
             capturedAt = log.capturedAt,
@@ -45,6 +52,12 @@ object CaptureLogExport {
             status = log.status.name,
             reason = SensitiveText.redact(log.reason),
             fixtureId = SensitiveText.redact(fixtureIdOf(log.rawCaptureRef)),
+            windowId = facts.windowId,
+            rootClass = SensitiveText.redact(facts.rootClass),
+            viewIds = facts.viewIds?.map { SensitiveText.redact(it).orEmpty() },
+            nodeCount = facts.nodeCount,
+            hasAmountStyle = facts.hasAmountStyle,
+            hasPaymentKeyword = facts.hasPaymentKeyword,
         )
     }
 
@@ -78,7 +91,75 @@ object CaptureLogExport {
         append(",\"status\":${jsonString(entry.status)}")
         append(",\"reason\":${jsonString(entry.reason)}")
         append(",\"fixtureId\":${jsonString(entry.fixtureId)}")
+        append(",\"windowId\":${entry.windowId?.toString() ?: "null"}")
+        append(",\"rootClass\":${jsonString(entry.rootClass)}")
+        append(",\"viewIds\":${jsonStringList(entry.viewIds)}")
+        append(",\"nodeCount\":${entry.nodeCount?.toString() ?: "null"}")
+        append(",\"hasAmountStyle\":${jsonBoolean(entry.hasAmountStyle)}")
+        append(",\"hasPaymentKeyword\":${jsonBoolean(entry.hasPaymentKeyword)}")
         append('}')
+    }
+
+    private fun rejectionFactsOf(raw: String?): RejectionFacts {
+        if (raw.isNullOrBlank() || !raw.contains("\"kind\":\"rejection\"")) return RejectionFacts.EMPTY
+        return RejectionFacts(
+            windowId = jsonNumber(raw, "windowId"),
+            rootClass = jsonText(raw, "rootClass"),
+            viewIds = jsonTextArray(raw, "viewIds"),
+            nodeCount = jsonNumber(raw, "nodeCount")?.toInt(),
+            hasAmountStyle = jsonFlag(raw, "hasAmountStyle"),
+            hasPaymentKeyword = jsonFlag(raw, "hasPaymentKeyword"),
+        )
+    }
+
+    private fun jsonNumber(raw: String, key: String): Long? {
+        val match = Regex(""""$key"\s*:\s*(-?\d+)""").find(raw) ?: return null
+        return match.groupValues[1].toLongOrNull()
+    }
+
+    private fun jsonFlag(raw: String, key: String): Boolean? {
+        val match = Regex(""""$key"\s*:\s*(true|false|null)""").find(raw) ?: return null
+        return when (match.groupValues[1]) {
+            "true" -> true
+            "false" -> false
+            else -> null
+        }
+    }
+
+    private fun jsonText(raw: String, key: String): String? {
+        val match = Regex(""""$key"\s*:\s*("((?:[^"\\]|\\.)*)"|null)""").find(raw) ?: return null
+        if (match.groupValues[1] == "null") return null
+        return unescape(match.groupValues[2])
+    }
+
+    private fun jsonTextArray(raw: String, key: String): List<String>? {
+        val match = Regex(""""$key"\s*:\s*(\[[^\]]*\]|null)""").find(raw) ?: return null
+        if (match.groupValues[1] == "null") return null
+        return Regex(""""((?:[^"\\]|\\.)*)"""").findAll(match.groupValues[1]).map { unescape(it.groupValues[1]) }.toList()
+    }
+
+    private fun jsonStringList(values: List<String>?): String {
+        if (values == null) return "null"
+        return values.joinToString(prefix = "[", postfix = "]") { jsonString(it) }
+    }
+
+    private fun jsonBoolean(value: Boolean?): String = when (value) {
+        null -> "null"
+        true -> "true"
+        false -> "false"
+    }
+
+    private data class RejectionFacts(
+        val windowId: Long?,
+        val rootClass: String?,
+        val viewIds: List<String>?,
+        val nodeCount: Int?,
+        val hasAmountStyle: Boolean?,
+        val hasPaymentKeyword: Boolean?,
+    ) {
+        companion object {
+            val EMPTY = RejectionFacts(null, null, null, null, null, null)
+        }
     }
 
     private fun unescape(value: String): String =

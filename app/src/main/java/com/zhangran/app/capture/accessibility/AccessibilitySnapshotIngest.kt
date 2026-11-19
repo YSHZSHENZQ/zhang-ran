@@ -9,6 +9,7 @@
 package com.zhangran.app.capture.accessibility
 
 import com.zhangran.app.capture.COLLECTOR_INTERFACE_VERSION
+import com.zhangran.app.capture.CaptureProcessor
 import com.zhangran.app.data.local.entity.CaptureEvidenceEntity
 import com.zhangran.app.data.local.entity.CaptureLogEntity
 import com.zhangran.app.data.local.entity.TransactionEntity
@@ -30,7 +31,14 @@ import com.zhangran.app.domain.service.Dedup
 import com.zhangran.app.domain.service.ExistingTransaction
 import com.zhangran.app.domain.service.Normalize
 import java.util.UUID
+import kotlin.math.abs
 import kotlinx.coroutines.CancellationException
+
+/**
+ * 同一结果页连续采样算一次停留。超过这个间隔就新建待确认，
+ * 不能因为金额相同就把后来的另一笔并掉。
+ */
+internal const val SAME_PAGE_STAY_MILLIS: Long = 15_000L
 
 enum class AccessibilityIngestOutcome {
     NOT_WHITELIST,
@@ -129,6 +137,7 @@ class AccessibilitySnapshotIngest(
                 rootPackage = snapshot.rootPackageName,
             )
         }
+        findAlreadyRecorded(snapshot, parsed)?.let { return it }
         val fidelity = AccessibilitySnapshotFidelity.encode(
             snapshot = snapshot,
             fixtureId = fixtureId,
@@ -270,6 +279,7 @@ class AccessibilitySnapshotIngest(
             rootPackage = rootPackage,
             fixtureId = fixtureId,
             capturedAt = snapshot.capturedAt,
+            page = RejectionPageFacts.fromSnapshot(snapshot),
         )
         return AccessibilityIngestResult(
             captureId = captureId,
@@ -364,6 +374,109 @@ class AccessibilitySnapshotIngest(
     }
 
     /**
+     * 同一笔结果页不再插入。
+     *
+     * 1. 有单号：和任一未软删除记录的 `externalTransactionId` 相同就返回原行。
+     * 2. 没有单号但有支付时间：包名、金额、方向、支付时间相同，且商户相同或至少一侧为空。
+     *    两侧商户都有且不同，不在这里合并。
+     * 3. 两样都没有：只合并同一次停留（同包名、同 windowId、同金额、同方向、同节点指纹，
+     *    捕获间隔 ≤ [SAME_PAGE_STAY_MILLIS]）。
+     *
+     * 命中时不写新交易，也不写成 DUPLICATE。捕获时刻仍留在原捕获日志上。
+     */
+    private suspend fun findAlreadyRecorded(
+        snapshot: AccessibilityPageSnapshot,
+        parsed: AccessibilityParsedFields,
+    ): AccessibilityIngestResult? {
+        val orderId = parsed.externalTransactionId?.trim()?.takeIf { it.isNotEmpty() }
+        if (orderId != null) {
+            val matched = transactions.listVisible().firstOrNull { it.externalTransactionId == orderId }
+            return matched?.let { resultOfExisting(it) }
+        }
+        val paymentTime = parsed.paymentTimeMillis?.takeIf { it > 0L }
+        if (paymentTime != null) {
+            val matched = transactions.listVisible().firstOrNull { entity ->
+                entity.type == parsed.direction &&
+                    entity.amountMinor == parsed.amountMinor &&
+                    entity.transactionTime == paymentTime &&
+                    packageOf(entity.id) == snapshot.packageName &&
+                    merchantsAllowMerge(parsed.merchantRaw, entity.merchant)
+            }
+            return matched?.let { resultOfExisting(it) }
+        }
+        return findSameStay(snapshot, parsed)
+    }
+
+    private suspend fun findSameStay(
+        snapshot: AccessibilityPageSnapshot,
+        parsed: AccessibilityParsedFields,
+    ): AccessibilityIngestResult? {
+        val fingerprint = nodeFingerprint(snapshot.nodes)
+        var best: TransactionEntity? = null
+        var bestGap = Long.MAX_VALUE
+        for (log in records.listAll()) {
+            if (log.packageName != snapshot.packageName) continue
+            val transactionId = log.transactionId ?: continue
+            val gap = abs(log.capturedAt - snapshot.capturedAt)
+            if (gap > SAME_PAGE_STAY_MILLIS || gap >= bestGap) continue
+            val document = AccessibilitySnapshotFidelity.decode(log.rawCaptureRef) ?: continue
+            if (document.windowId != snapshot.windowId) continue
+            if (nodeFingerprint(document) != fingerprint) continue
+            val transaction = transactions.getById(transactionId) ?: continue
+            if (transaction.amountMinor != parsed.amountMinor) continue
+            if (transaction.type != parsed.direction) continue
+            best = transaction
+            bestGap = gap
+        }
+        return best?.let { resultOfExisting(it) }
+    }
+
+    private suspend fun packageOf(transactionId: String): String? =
+        records.findByTransactionId(transactionId)?.packageName
+
+    /** 商户相同，或至少一侧为空，才算同一笔。两侧都有且不同则不合并。 */
+    private fun merchantsAllowMerge(incomingRaw: String?, stored: String?): Boolean {
+        val incoming = normalize.normalizeMerchant(incomingRaw)
+        val existing = normalize.normalizeMerchant(stored)
+        if (incoming == null || existing == null) return true
+        return incoming == existing
+    }
+
+    private suspend fun resultOfExisting(transaction: TransactionEntity): AccessibilityIngestResult {
+        val log = records.findByTransactionId(transaction.id)
+        return AccessibilityIngestResult(
+            captureId = log?.captureId,
+            outcome = when (log?.status) {
+                CaptureLogStatus.IGNORED_INVALID -> AccessibilityIngestOutcome.IGNORED_INVALID
+                CaptureLogStatus.FAILED -> AccessibilityIngestOutcome.FAILED
+                else -> AccessibilityIngestOutcome.PENDING
+            },
+            status = log?.status ?: CaptureLogStatus.PENDING,
+            captureSource = log?.captureSource ?: CaptureSource.ACCESSIBILITY,
+            capturedAt = log?.capturedAt,
+            fixtureId = fixtureIdOfRaw(log?.rawCaptureRef),
+            transactionId = transaction.id,
+            transactionState = transaction.state,
+            reasons = reasonsOf(log?.reason),
+            evidenceWritten = false,
+            refusedAutoConfirm = false,
+        )
+    }
+
+    private fun nodeFingerprint(nodes: List<SnapshotNode>): String =
+        nodes.joinToString(separator = "\u0001") { node ->
+            listOf(
+                CaptureProcessor.sanitize(node.text).orEmpty(),
+                CaptureProcessor.sanitize(node.contentDescription).orEmpty(),
+            ).joinToString(separator = "\u0002")
+        }
+
+    private fun nodeFingerprint(document: AccessibilityFidelityDocument): String =
+        document.nodes.joinToString(separator = "\u0001") { node ->
+            listOf(node.text.orEmpty(), node.contentDescription.orEmpty()).joinToString(separator = "\u0002")
+        }
+
+    /**
      * 同一 `packageName + notificationId + postTime` 已经落过库时，不再写第二条捕获或交易。
      * 三要素缺一就不在这里合并。
      */
@@ -436,9 +549,10 @@ class AccessibilitySnapshotIngest(
         noteRaw = null,
         categoryNameRaw = null,
         accountNameRaw = null,
-        transactionTimeRaw = snapshot.capturedAt.takeIf { it > 0L },
+        transactionTimeRaw = parsed.paymentTimeMillis?.takeIf { it > 0L }
+            ?: snapshot.capturedAt.takeIf { it > 0L },
         transactionTimeZoneRaw = null,
-        externalTransactionId = null,
+        externalTransactionId = parsed.externalTransactionId,
         channelOrderId = null,
         capturedAt = snapshot.capturedAt,
         textClue = parsed.textClue,

@@ -56,6 +56,7 @@ class NodeTreeReader(
             val description = node.contentDescription?.toString()?.trim()?.takeIf { it.isNotEmpty() }
             val viewId = node.viewIdResourceName
             val className = node.className?.toString()
+            val clickable = node.isClickable || isButtonClass(className)
 
             if (text != null || description != null) {
                 val remaining = maxTextChars - chars
@@ -69,6 +70,7 @@ class NodeTreeReader(
                     viewId = viewId,
                     className = className,
                     depth = depth,
+                    clickable = clickable,
                 )
                 if (keptText?.length != text?.length || keptDesc?.length != description?.length) {
                     truncated = true
@@ -96,8 +98,14 @@ class NodeTreeReader(
                 truncated = truncated,
                 textChars = chars,
                 rootPackageName = rootPackageName,
+                rootClassName = root.className?.toString(),
             ),
         )
+    }
+
+    private fun isButtonClass(className: String?): Boolean {
+        val simple = className?.substringAfterLast('.') ?: return false
+        return simple == "Button" || simple.endsWith("Button")
     }
 
     private companion object {

@@ -76,7 +76,9 @@ class M64StatusProofTest {
             val ingest = entry().accessibilitySnapshotIngest()
             listOf(
                 AccessibilityFixtures.F_WX to AccessibilityFixtures.wechatDepthSeek(),
-                AccessibilityFixtures.F_WX to AccessibilityFixtures.wechatDepthSeek(),
+                AccessibilityFixtures.F_WX to AccessibilityFixtures.wechatDepthSeek(
+                    AccessibilityFixtures.WX_CAPTURED_AT + SAME_PAGE_STAY_MILLIS + 5_000L,
+                ),
                 AccessibilityFixtures.F_ALI to AccessibilityFixtures.alipayFufu(),
             ).map { (fixtureId, snapshot) ->
                 fixtureId to ingest.ingest(snapshot, fixtureId)

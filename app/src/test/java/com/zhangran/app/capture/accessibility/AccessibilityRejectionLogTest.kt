@@ -67,6 +67,12 @@ class AccessibilityRejectionLogTest {
         assertTrue(logs.logs.none { it.transactionId != null })
         assertFalse(after.contains("我的"))
         assertFalse(after.contains("支付成功"))
+        assertTrue(after.contains("\"windowId\":null"))
+        assertTrue(after.contains("\"rootClass\":null"))
+        assertTrue(after.contains("\"viewIds\":null"))
+        assertTrue(after.contains("\"nodeCount\":null"))
+        assertTrue(after.contains("\"hasAmountStyle\":null"))
+        assertTrue(after.contains("\"hasPaymentKeyword\":null"))
         assertTrue(CaptureLogExport.sensitiveFindings(after).isEmpty())
     }
 

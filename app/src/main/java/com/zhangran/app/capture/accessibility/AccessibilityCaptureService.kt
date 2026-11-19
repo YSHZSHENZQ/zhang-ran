@@ -137,12 +137,13 @@ class AccessibilityCaptureService : AccessibilityService() {
                             capturedAt = capturedAt,
                         )
                         if (!forward) {
-                            rejections.record(
-                                reason = AccessibilityRejectReason.NOT_PAYMENT_PAGE,
-                                eventPackage = packageName,
-                                rootPackage = result.snapshot.rootPackageName,
-                                capturedAt = capturedAt,
-                            )
+                        rejections.record(
+                            reason = AccessibilityRejectReason.NOT_PAYMENT_PAGE,
+                            eventPackage = packageName,
+                            rootPackage = result.snapshot.rootPackageName,
+                            capturedAt = capturedAt,
+                            page = RejectionPageFacts.fromSnapshot(result.snapshot),
+                        )
                         } else if (!settings.settings.first().autoLedgerEnabled) {
                             AccessibilityDiagnostics.log(
                                 status = "SWITCH_OFF",
@@ -153,6 +154,7 @@ class AccessibilityCaptureService : AccessibilityService() {
                                 eventPackage = packageName,
                                 rootPackage = result.snapshot.rootPackageName,
                                 capturedAt = capturedAt,
+                                page = RejectionPageFacts.fromSnapshot(result.snapshot),
                             )
                         } else {
                             pipeline.submit(result.snapshot)

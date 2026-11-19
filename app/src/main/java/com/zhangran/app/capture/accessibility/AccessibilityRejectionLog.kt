@@ -61,6 +61,8 @@ class AccessibilityRejectionLog(
 ) {
 
     /**
+     * @param page 拿得到页面结构时附上。`WINDOW_NULL`、`NODE_EMPTY` 等没有树时传 null。
+     * 只含窗口和结构字段，不含正文、金额、人名或 contentDescription。
      * @return 新日志的 captureId；窗口内的重复返回 null，不落库。
      */
     suspend fun record(
@@ -69,6 +71,7 @@ class AccessibilityRejectionLog(
         rootPackage: String? = null,
         fixtureId: String? = null,
         capturedAt: Long = System.currentTimeMillis(),
+        page: RejectionPageFacts? = null,
     ): String? {
         if (!rateLimiter.shouldRecord(reason.name, capturedAt)) return null
         return try {
@@ -87,7 +90,7 @@ class AccessibilityRejectionLog(
                     status = CaptureLogStatus.IGNORED_INVALID,
                     reason = reason.name,
                     isHistoricalReplay = false,
-                    rawCaptureRef = refOf(reason, eventPackage, rootPackage, fixtureId),
+                    rawCaptureRef = refOf(reason, eventPackage, rootPackage, fixtureId, page),
                     evidenceId = null,
                     transactionId = null,
                 ),
@@ -107,6 +110,7 @@ class AccessibilityRejectionLog(
         eventPackage: String?,
         rootPackage: String?,
         fixtureId: String?,
+        page: RejectionPageFacts?,
     ): String = buildString {
         append('{')
         append("\"kind\":\"rejection\"")
@@ -114,6 +118,12 @@ class AccessibilityRejectionLog(
         append(",\"eventPackage\":${jsonString(eventPackage)}")
         append(",\"rootPackage\":${jsonString(rootPackage)}")
         append(",\"fixtureId\":${jsonString(fixtureId)}")
+        append(",\"windowId\":${page?.windowId?.toString() ?: "null"}")
+        append(",\"rootClass\":${jsonString(page?.rootClass)}")
+        append(",\"viewIds\":${jsonStringList(page?.viewIds)}")
+        append(",\"nodeCount\":${page?.nodeCount?.toString() ?: "null"}")
+        append(",\"hasAmountStyle\":${jsonBoolean(page?.hasAmountStyle)}")
+        append(",\"hasPaymentKeyword\":${jsonBoolean(page?.hasPaymentKeyword)}")
         append('}')
     }
 
@@ -131,3 +141,65 @@ class AccessibilityRejectionLog(
 
 private fun jsonString(value: String?): String =
     if (value == null) "null" else "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
+private fun jsonBoolean(value: Boolean?): String = when (value) {
+    null -> "null"
+    true -> "true"
+    false -> "false"
+}
+
+private fun jsonStringList(values: List<String>?): String {
+    if (values == null) return "null"
+    return values.joinToString(prefix = "[", postfix = "]") { jsonString(it) }
+}
+
+/**
+ * 拒绝日志能安全导出的页面结构。没有正文、金额数值、人名或 contentDescription。
+ */
+data class RejectionPageFacts(
+    val windowId: Int?,
+    val rootClass: String?,
+    val viewIds: List<String>?,
+    val nodeCount: Int?,
+    val hasAmountStyle: Boolean?,
+    val hasPaymentKeyword: Boolean?,
+) {
+    companion object {
+        private const val MAX_IDS = 12
+        private const val MAX_ID_CHARS = 80
+        private const val MAX_CLASS_CHARS = 120
+
+        private val RESOURCE_ID = Regex("""[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+:id/[A-Za-z0-9_]+""")
+        private val CLASS_NAME = Regex("""[A-Za-z_][A-Za-z0-9_$.]*""")
+        private val AMOUNT_STYLE = Regex("""[¥￥]\s*[0-9]|[0-9][0-9,，]*(?:\.[0-9]{1,2})?\s*元""")
+        private val PAYMENT_WORDS = listOf(
+            "支付成功",
+            "付款成功",
+            "支付完成",
+            "已支付",
+            "收款成功",
+            "已收款",
+            "收款到账",
+            "退款成功",
+        )
+
+        fun fromSnapshot(snapshot: AccessibilityPageSnapshot): RejectionPageFacts {
+            val viewIds = snapshot.nodes.mapNotNull { node ->
+                val id = node.viewId?.trim().orEmpty()
+                id.takeIf { it.length <= MAX_ID_CHARS && RESOURCE_ID.matches(it) }
+            }.distinct().take(MAX_IDS)
+            val texts = snapshot.nodes.flatMap { node ->
+                listOfNotNull(node.text, node.contentDescription)
+            }
+            return RejectionPageFacts(
+                windowId = snapshot.windowId,
+                rootClass = snapshot.rootClassName?.trim()?.take(MAX_CLASS_CHARS)
+                    ?.takeIf { CLASS_NAME.matches(it) },
+                viewIds = viewIds,
+                nodeCount = snapshot.nodes.size,
+                hasAmountStyle = texts.any { AMOUNT_STYLE.containsMatchIn(it) },
+                hasPaymentKeyword = texts.any { text -> PAYMENT_WORDS.any { word -> text.contains(word) } },
+            )
+        }
+    }
+}

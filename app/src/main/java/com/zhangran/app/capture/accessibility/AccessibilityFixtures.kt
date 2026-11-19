@@ -126,6 +126,58 @@ object AccessibilityFixtures {
         )
     }
 
+    /**
+     * 合成的微信会话列表。顶栏按钮是 `com.tencent.mm:id/jga`，
+     * 预览把金额写在同一句「已支付¥…」里。不是付款成功页。
+     * 人名和正文只用于确认拒绝日志不会把它们导出。
+     */
+    fun wechatConversationList(capturedAt: Long = CAPTURED_AT): AccessibilityPageSnapshot {
+        val nodes = listOf(
+            SnapshotNode(
+                text = null,
+                contentDescription = "更多功能",
+                viewId = "com.tencent.mm:id/jga",
+                className = "android.widget.ImageView",
+                depth = 1,
+                clickable = true,
+            ),
+            SnapshotNode(
+                text = "王小明",
+                contentDescription = "王小明的头像",
+                viewId = null,
+                className = "android.widget.TextView",
+                depth = 3,
+                clickable = false,
+            ),
+            SnapshotNode(
+                text = "已支付¥3.90",
+                contentDescription = null,
+                viewId = null,
+                className = "android.widget.TextView",
+                depth = 4,
+                clickable = false,
+            ),
+            SnapshotNode(
+                text = "晚上吃饭",
+                contentDescription = null,
+                viewId = null,
+                className = "android.widget.TextView",
+                depth = 4,
+                clickable = false,
+            ),
+        )
+        return AccessibilityPageSnapshot(
+            packageName = AccessibilityTargets.WECHAT_PACKAGE,
+            windowId = 44_349,
+            capturedAt = capturedAt,
+            nodes = nodes,
+            truncated = false,
+            textChars = nodes.sumOf { (it.text?.length ?: 0) + (it.contentDescription?.length ?: 0) },
+            rootPackageName = AccessibilityTargets.WECHAT_PACKAGE,
+            rootClassName = "android.widget.FrameLayout",
+        )
+    }
+
     /** 微信支付列表：两笔金额，没有单独的结果节点。 */
     fun wechatPayList(): AccessibilityPageSnapshot = page(
         packageName = AccessibilityTargets.WECHAT_PACKAGE,
