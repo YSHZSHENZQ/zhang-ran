@@ -1,10 +1,44 @@
 # FX-1 取证
 
-功能提交 `6d5f42c612db0768773fbf029349b240c9e08dec`。`git-sha.txt` 与本目录里带 `gitSha` 的 JSON 都是这个提交。文档提交 `6868949cfe148a7247f0fce974e10ec4371e17e8` 只改 `docs/03`。
+功能提交 `383a0c5f62a8e7378b9a2d08097fa21bbf7d0b49`。`git-sha.txt` 是这一行，没有换行。文档提交 `e15163b91dae79822df90bf2e34b4d00a5a49629` 只改 `docs/03` §19。
 
-2026-11-19 本机 TCG 模拟器（AVD qj1，API 36）用该提交的 debug 包跑了 `Fx1ProofTest`，结果 OK (1 test)。16 个 JSON、`ac4-broadcast.txt`、`git-sha.txt` 和 4 张重拍 PNG 来自这次运行。仓库里没有缺新文件的旧 JSON，同名 JSON 都已换成这次的。
+CR-2 的新文件见下一节。AC-1–5、AC-8–10 的导出 JSON 和截图仍是 `6d5f42c612db0768773fbf029349b240c9e08dec` 包的证据，这次没有替换。那些文件里带 `gitSha` 的仍是 `6d5f42c6…`。
 
-没有 `gitSha` 字段的 JSON：`ac1-yuebao.json`、`ac1-yuebao-split.json`、`ac1-wrong-window.json`、`ac2-health-before.json`、`ac2-health.json`。其余 JSON 的 `gitSha` 都是 `6d5f42c612db0768773fbf029349b240c9e08dec`。
+## CR-2
+
+APK：`zhangran-fx-1-debug-383a0c5f.apk`。sha256 `a0e6460b7d2c78fea4cad43c1cc188f36b6dae3cdb04df1ebcc0261b3c0f359e`。签名证书 sha256 `be2c20b0be0ad24b20e8144f361e22d6c7be2631af288748df13b5e604ab6371`。
+
+| 项 | 结果 |
+|---|---|
+| AC-11 `fx-1-f-wx-success-no-keyword` | 1 条待确认。金额 8.00，支出，商户「示例早餐店」 |
+| AC-12 `fx-1-f-wx-success` | 口径相同，1 条待确认 |
+| AC-13 `fx-1-f-wx-confirm-pay` | 0 条。导出 `NOT_PAYMENT_PAGE`，`windowId` 88012，`nodeCount` 5，`hasAmountStyle` false，`hasPaymentKeyword` false，无正文 |
+| AC-13 会话列表 | 0 条。导出 `NOT_PAYMENT_PAGE`，`windowId` 44349，`viewIds` 含 `com.tencent.mm:id/jga`，`nodeCount` 4，两个布尔都是 true，无正文 |
+
+方法：新包在 TCG 模拟器（AVD qj1，API 36，`-accel off`）上做了 instrumented ingest。测试类是 throwaway `Fx1Cr2ProofTest`，没有提交。JVM 单测 628 例、0 失败。
+
+| 文件 | 内容 |
+|---|---|
+| `ac11-wx-success-no-keyword.md` / `.json`、`ac11-ledger.json` | AC-11。账本 `gitSha` 是 `383a0c5f…`。结果 JSON 本身没有 `gitSha` 字段 |
+| `ac12-wx-success.md` / `.json`、`ac12-ledger.json` | AC-12。账本 `gitSha` 是 `383a0c5f…` |
+| `ac13-confirm-pay.md` / `.json`、`ac13-confirm-pay-export.json`、`ac13-confirm-pay-ledger.json` | 确认支付页。导出和账本的 `gitSha` 是 `383a0c5f…` |
+| `ac13-chat-list.json`、`ac13-chat-list-export.json`、`ac13-chat-list-ledger.json` | 会话列表。导出和账本的 `gitSha` 是 `383a0c5f…` |
+| `smoke-383a0c5f.txt` | 卸载、安装、启动、崩溃检查的原始输出 |
+| `replay-summary-383a0c5f.txt` | AC-11–13 的回放摘要 |
+| `cr2-summary.txt` | 四行计数 |
+| `fx1-383a0c5f-launch.png` | 这次包安装启动后的截图，首页「不可用」 |
+
+`fx1-383a0c5f-launch.png` 的 md5 是 `3477937d424dd255b1e1e5be408359d6`，与旧的 `fx1-2de52187-launch.png` 相同。首页画面是确定性的，截图里没有状态栏时钟，所以字节相同，不是另一张不同的图。它和仍保留的 `fx1-6d5f42c6-launch.png` 不是同一张。
+
+`Fx1ProofTest` 的 Compose UI 在这次 TCG 会话里没有跑完。失败是 Espresso `RootViewWithoutFocusException`，发生在 `openPending`。因此 AC-1–5 的界面截图和旧导出仍来自 `6d5f42c6` 包，已在下面各节标明。CR-2 的 AC-11–13 由本次 instrumented ingest 和单测证明。失败的部分产物没有放进仓库，也不写成完整的 `Fx1ProofTest` 通过。
+
+## 此前：6d5f42c6 包
+
+当时的功能提交 `6d5f42c612db0768773fbf029349b240c9e08dec`。当时 `git-sha.txt` 与本目录里带 `gitSha` 的 JSON 都是这个提交。文档提交 `6868949cfe148a7247f0fce974e10ec4371e17e8` 只改 `docs/03`。CR-2 起 `git-sha.txt` 已改成 `383a0c5f…`，下面这些 JSON 和截图没有改。
+
+2026-11-19 本机 TCG 模拟器（AVD qj1，API 36）用该提交的 debug 包跑了 `Fx1ProofTest`，结果 OK (1 test)。16 个 JSON、`ac4-broadcast.txt` 和 4 张重拍 PNG 来自这次运行。对这次运行而言，仓库里没有缺新文件的旧 JSON，同名 JSON 都已换成 `6d5f42c6` 的。
+
+这次 `6d5f42c6` 运行里，没有 `gitSha` 字段的 JSON：`ac1-yuebao.json`、`ac1-yuebao-split.json`、`ac1-wrong-window.json`、`ac2-health-before.json`、`ac2-health.json`。其余那批 JSON 的 `gitSha` 都是 `6d5f42c612db0768773fbf029349b240c9e08dec`。CR-2 新 JSON 里带 `gitSha` 的是 `383a0c5f…`，见上一节。
 
 `ac2-logs.png`、`ac3-yuebao-pending.png`、`ac4-stale-home.png`、`ac4-stale-auto-ledger.png` 是这次在 `6d5f42c6` 包上重拍的。`fx1-6d5f42c6-launch.png` 是同一次安装启动冒烟的截图。`ac3-after-wrong-pending.png` 仍是功能提交 `c77428730c79f5e8ff3ee985e3d3d0cf9c8381e8` 的图，这次包里没有同名新文件，所以保留。`suspected-stale-root-cause.md` 也不是这次导出，仍是原先那份说明。
 
@@ -58,7 +92,7 @@
 
 ## AC-5
 
-`git-sha.txt` = `6d5f42c612db0768773fbf029349b240c9e08dec`。与这次模拟器上 `Fx1ProofTest` 写出的 `BuildConfig.GIT_SHA` 相同。
+这次模拟器上 `Fx1ProofTest` 写出的 `BuildConfig.GIT_SHA` 是 `6d5f42c612db0768773fbf029349b240c9e08dec`。CR-2 之后仓库里的 `git-sha.txt` 已改成 `383a0c5f62a8e7378b9a2d08097fa21bbf7d0b49`。
 
 ## AC-7
 
