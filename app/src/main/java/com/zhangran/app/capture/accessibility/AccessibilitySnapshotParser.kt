@@ -1,12 +1,13 @@
 /**
  * 支付结果页的最小解析（M6-2，M6-3 按真机页收窄）。
  *
- * 只在同时看到「单独的支付结果节点」和「可解析金额」时交出字段。
- * 结果用语必须是节点全文（或节点全文就是「结果用语 + 金额」），嵌在长句里不算。
+ * 有单独的支付结果节点时，结果用语必须是节点全文（或全文就是「结果用语 + 金额」），嵌在长句里不算。
+ * 微信若不是会话列表，树里没有这些结果用语，但整页恰好一笔金额且有「完成」，仍记为支出。
+ * 这条只用于微信。支付宝和其他包没有结果用语时不记。
  * 账单详情、多金额列表、只有导航/按钮文案的页面不是结果页。
- * 商户不得取导航、按钮、字段标签或支付方式。找不到商户就留空，不拿这些词充数。
+ * 商户不得取导航、按钮、字段标签、支付方式或运营条文案。找不到商户就留空。
  * 金额优先取「支付成功」或「订单金额」旁边的那一笔；优惠券上的金额不算。
- * 「¥」和数字拆在两个节点时仍拼成一笔。不猜分类、不猜账户、不把方向缺省成支出。
+ * 「¥」和数字拆在两个节点时仍拼成一笔。不猜分类、不猜账户。
  */
 package com.zhangran.app.capture.accessibility
 
@@ -61,7 +62,14 @@ object AccessibilitySnapshotParser {
         "付款",
         "确认",
         "立即付款",
+        "立即支付",
+        "确认支付",
         "交易详情",
+    )
+
+    /** 结果页上的运营条，不是商户。 */
+    private val promoExact = setOf(
+        "摇一摇，有优惠",
     )
 
     /** 结果页或账单上的字段名，不是商户。 */
@@ -135,10 +143,12 @@ object AccessibilitySnapshotParser {
         val income = statuses.any { it.second == TransactionType.INCOME }
         val refund = statuses.any { it.second == TransactionType.REFUND }
         val direction = when {
-            listOf(expense, income, refund).count { it } != 1 -> return null
+            listOf(expense, income, refund).count { it } > 1 -> return null
             expense -> TransactionType.EXPENSE
             income -> TransactionType.INCOME
-            else -> TransactionType.REFUND
+            refund -> TransactionType.REFUND
+            wechatDoneWithoutStatus(snapshot, texts) -> TransactionType.EXPENSE
+            else -> return null
         }
 
         val statusAmounts = statuses.mapNotNull { (text, _) -> amountOf(text) }.distinct()
@@ -277,6 +287,19 @@ object AccessibilitySnapshotParser {
     private data class LocatedAmount(val index: Int, val minor: Long)
 
     /**
+     * 微信成功页的结果用语可能不在无障碍树里。
+     * 包名是微信、节点全文有「完成」时，后面仍要求恰好一笔金额。
+     * 不看微信 viewId，也不用于其他包。会话列表已在 [parse] 开头排除。
+     */
+    private fun wechatDoneWithoutStatus(
+        snapshot: AccessibilityPageSnapshot,
+        texts: List<String>,
+    ): Boolean {
+        if (snapshot.packageName != AccessibilityTargets.WECHAT_PACKAGE) return false
+        return texts.any { it == "完成" }
+    }
+
+    /**
      * 微信会话列表：顶栏是 `com.tencent.mm:id/jga` 且说明为「更多功能」，
      * 金额写在同一条会话预览里（「已支付¥…」）。不能只因为出现「已支付」就拒绝。
      * 已经有单独的支付结果节点时仍交给结果页解析。
@@ -344,7 +367,7 @@ object AccessibilitySnapshotParser {
         if (text.length < 2) return true
         if (text.all { it.isDigit() }) return true
         if (statusOf(text) != null) return true
-        if (text in chromeExact || text in fieldLabels) return true
+        if (text in chromeExact || text in fieldLabels || text in promoExact) return true
         if (fieldLabels.any { label -> text.startsWith(label) && continuesLabel(text, label) }) return true
         if (orderLabels.any { label -> text.startsWith(label) }) return true
         if (isCouponText(text)) return true

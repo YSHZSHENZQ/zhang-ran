@@ -697,6 +697,70 @@ class AccessibilitySnapshotIngestTest {
     }
 
     @Test
+    fun 微信没有结果用语的成功页进一条待确认() = runBlocking {
+        val harness = Harness()
+        val page = AccessibilityFixtures.wechatSuccess(includeKeyword = false)
+        val first = harness.ingest.ingest(page, AccessibilityFixtures.F_WX_SUCCESS_NO_KEYWORD)
+        val again = harness.ingest.ingest(
+            page.copy(capturedAt = page.capturedAt + 1_300L),
+            AccessibilityFixtures.F_WX_SUCCESS_NO_KEYWORD,
+        )
+        assertEquals(first.transactionId, again.transactionId)
+        val row = harness.transactions.rows.single()
+        assertEquals(TransactionState.PENDING, row.state)
+        assertEquals(TransactionType.EXPENSE, row.type)
+        assertEquals(800L, row.amountMinor)
+        assertEquals(AccessibilityFixtures.WX_SUCCESS_MERCHANT, row.merchant)
+        assertNotEquals("完成", row.merchant)
+        assertNotEquals(AccessibilityFixtures.WX_SUCCESS_PROMO, row.merchant)
+        assertNull(row.externalTransactionId)
+        assertEquals(0, harness.transactions.countByState(TransactionState.CONFIRMED))
+        assertEquals(0, harness.transactions.countByState(TransactionState.DUPLICATE))
+    }
+
+    @Test
+    fun 微信有结果用语的成功页同样是一条待确认() = runBlocking {
+        val harness = Harness()
+        harness.ingest.ingest(
+            AccessibilityFixtures.wechatSuccess(includeKeyword = true),
+            AccessibilityFixtures.F_WX_SUCCESS,
+        )
+        val row = harness.transactions.rows.single()
+        assertEquals(TransactionState.PENDING, row.state)
+        assertEquals(TransactionType.EXPENSE, row.type)
+        assertEquals(800L, row.amountMinor)
+        assertEquals(AccessibilityFixtures.WX_SUCCESS_MERCHANT, row.merchant)
+        assertNotEquals("完成", row.merchant)
+        assertNotEquals(AccessibilityFixtures.WX_SUCCESS_PROMO, row.merchant)
+    }
+
+    @Test
+    fun 微信确认支付页不进待确认() = runBlocking {
+        val harness = Harness()
+        val page = AccessibilityFixtures.wechatConfirmPay()
+        val result = harness.ingest.ingest(page, AccessibilityFixtures.F_WX_CONFIRM_PAY)
+        assertEquals(AccessibilityIngestOutcome.IGNORED_INVALID, result.outcome)
+        assertEquals(0, harness.transactions.rows.size)
+        assertEquals(0, harness.transactions.countByState(TransactionState.PENDING))
+        val log = harness.logs.logs.single()
+        assertEquals("NOT_PAYMENT_PAGE", log.reason)
+        val exported = CaptureLogExport.json(
+            gitSha = "test",
+            entries = listOf(CaptureLogExport.entry(log, java.time.ZoneId.of("Asia/Shanghai"))),
+        )
+        listOf(
+            AccessibilityFixtures.WX_SUCCESS_MERCHANT,
+            "确认支付",
+            "立即支付",
+            "8.00",
+            "8.0",
+        ).forEach { secret ->
+            assertFalse(exported.contains(secret))
+            assertFalse(log.rawCaptureRef.orEmpty().contains(secret))
+        }
+    }
+
+    @Test
     fun 同窗口同金额节点文本变了仍合并() = runBlocking {
         val harness = Harness()
         val at = 1_794_210_000_000L

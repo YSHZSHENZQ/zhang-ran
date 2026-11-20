@@ -308,6 +308,49 @@ class AccessibilitySnapshotParserTest {
     }
 
     @Test
+    fun 微信没有结果用语但有完成和一笔金额时记为支出() {
+        val page = AccessibilityFixtures.wechatSuccess(includeKeyword = false)
+        val parsed = AccessibilitySnapshotParser.parse(page)
+        assertEquals(800L, parsed?.amountMinor)
+        assertEquals(TransactionType.EXPENSE, parsed?.direction)
+        assertEquals(AccessibilityFixtures.WX_SUCCESS_MERCHANT, parsed?.merchantRaw)
+        assertNotEquals("完成", parsed?.merchantRaw)
+        assertNotEquals(AccessibilityFixtures.WX_SUCCESS_PROMO, parsed?.merchantRaw)
+        assertNull(parsed?.externalTransactionId)
+        assertNull(parsed?.paymentTimeMillis)
+        assertTrue(AccessibilitySnapshotParser.shouldForward(page))
+        val joined = page.nodes.mapNotNull { it.text }
+        assertFalse(joined.any { it in listOf("支付成功", "付款成功", "支付完成", "已支付") })
+    }
+
+    @Test
+    fun 微信有结果用语的成功页仍是支出且商户是化名() {
+        val parsed = AccessibilitySnapshotParser.parse(
+            AccessibilityFixtures.wechatSuccess(includeKeyword = true),
+        )
+        assertEquals(800L, parsed?.amountMinor)
+        assertEquals(TransactionType.EXPENSE, parsed?.direction)
+        assertEquals(AccessibilityFixtures.WX_SUCCESS_MERCHANT, parsed?.merchantRaw)
+        assertNotEquals("完成", parsed?.merchantRaw)
+        assertNotEquals(AccessibilityFixtures.WX_SUCCESS_PROMO, parsed?.merchantRaw)
+    }
+
+    @Test
+    fun 微信确认支付页和支付宝缺结果用语都不进候选() {
+        assertNull(AccessibilitySnapshotParser.parse(AccessibilityFixtures.wechatConfirmPay()))
+        assertFalse(AccessibilitySnapshotParser.shouldForward(AccessibilityFixtures.wechatConfirmPay()))
+        val alipay = AccessibilityFixtures.wechatSuccess(includeKeyword = false).copy(
+            packageName = AccessibilityTargets.ALIPAY_PACKAGE,
+            rootPackageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        )
+        assertNull(AccessibilitySnapshotParser.parse(alipay))
+        val twoAmounts = AccessibilityFixtures.wechatSuccess(includeKeyword = false).let { page ->
+            page.copy(nodes = page.nodes + SnapshotNode("¥1.00", null, null, null, 7))
+        }
+        assertNull(AccessibilitySnapshotParser.parse(twoAmounts))
+    }
+
+    @Test
     fun 微信会话列表不是付款页且已有成功页仍能解析() {
         assertNull(AccessibilitySnapshotParser.parse(AccessibilityFixtures.wechatConversationList()))
         assertFalse(AccessibilitySnapshotParser.shouldForward(AccessibilityFixtures.wechatConversationList()))

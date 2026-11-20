@@ -298,6 +298,19 @@ object AccessibilityFixtures {
         )
     }
 
+    /** 微信成功页，带结果用语。商户是化名。 */
+    const val F_WX_SUCCESS: String = "fx-1-f-wx-success"
+
+    /** 同一结构，故意不带结果用语。 */
+    const val F_WX_SUCCESS_NO_KEYWORD: String = "fx-1-f-wx-success-no-keyword"
+
+    /** 确认付款页：有金额，没有「完成」，也没有结果用语。 */
+    const val F_WX_CONFIRM_PAY: String = "fx-1-f-wx-confirm-pay"
+
+    const val WX_SUCCESS_MERCHANT: String = "示例早餐店"
+
+    const val WX_SUCCESS_PROMO: String = "摇一摇，有优惠"
+
     /** 余额宝转出付款的结果页。没有商户名。 */
     const val F_YUEBAO: String = "fx-1-f-ali-yuebao"
 
@@ -368,6 +381,56 @@ object AccessibilityFixtures {
                 depth = 5,
             ),
             node("账然", 5),
+        ),
+    )
+
+    /**
+     * 脱敏的微信付款成功页。主金额是拆开的 ¥ 和 8.00。
+     * 「完成」是按钮。运营条不能当商户。没有单号，没有付款时间。
+     * 不写微信可能变化的 viewId。
+     */
+    fun wechatSuccess(
+        includeKeyword: Boolean,
+        capturedAt: Long = CAPTURED_AT,
+    ): AccessibilityPageSnapshot {
+        val nodes = buildList {
+            if (includeKeyword) add(node("支付成功", 2))
+            add(node(WX_SUCCESS_MERCHANT, 4))
+            add(node("¥", 6))
+            add(node("8.00", 6))
+            add(node(WX_SUCCESS_PROMO, 8))
+            add(
+                SnapshotNode(
+                    text = "完成",
+                    contentDescription = null,
+                    viewId = null,
+                    className = "android.widget.Button",
+                    depth = 10,
+                    clickable = true,
+                ),
+            )
+        }
+        return page(
+            packageName = AccessibilityTargets.WECHAT_PACKAGE,
+            windowId = 88_011,
+            capturedAt = capturedAt,
+            rootPackageName = AccessibilityTargets.WECHAT_PACKAGE,
+            nodes = nodes,
+        )
+    }
+
+    /** 微信确认付款页。有金额和确认按钮文案，没有「完成」，也没有结果用语。 */
+    fun wechatConfirmPay(capturedAt: Long = CAPTURED_AT): AccessibilityPageSnapshot = page(
+        packageName = AccessibilityTargets.WECHAT_PACKAGE,
+        windowId = 88_012,
+        capturedAt = capturedAt,
+        rootPackageName = AccessibilityTargets.WECHAT_PACKAGE,
+        nodes = listOf(
+            node("确认支付", 2),
+            node("立即支付", 4),
+            node(WX_SUCCESS_MERCHANT, 6),
+            node("¥", 8),
+            node("8.00", 8),
         ),
     )
 
