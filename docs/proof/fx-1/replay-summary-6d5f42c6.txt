@@ -1,0 +1,98 @@
+FX-1 AC-6 真机取证回放摘要 (功能提交 6d5f42c612db0768773fbf029349b240c9e08dec)  生成: 2026-11-19 11:43:33
+方法: 取真机库 capture_logs 中 33 条 PENDING 行的 rawCaptureRef(保真节点树) + 另外 17 份快照文件,按 capturedAt 排序,经 AccessibilitySnapshotFidelity.decode/toSnapshot 还原后逐条喂给 AccessibilitySnapshotIngest(空库,JVM 单测 harness,一次性,已删除,未入库)。
+限制: 真机快照没有 className/clickable/rootClassName,按钮商户规则与根 class 无法回放;WRONG_WINDOW 样本无节点树,未回放。REJECTED_LOG_RATE_LIMITED = 被拒绝,但同原因 60 秒内限流未写日志。本摘要只含时间、windowId、节点数、结论,不含页面文本。
+对照 2de52187 上同一回放: 待确认 3 条(¥22.50 对 2 行,¥12.90 对 1 行)。
+
+=== replay mode: ALL_50(db pending 33 + extra snapshot files 17) ===
+2026-11-18 18:10:42.277 alipay w=44003 nodes=7 src=db -> NEW_PENDING reasons=ACCOUNT_UNCERTAIN|CATEGORY_UNCERTAIN|UNKNOWN_MERCHANT 
+2026-11-18 18:10:43.586 alipay w=44003 nodes=7 src=db -> MERGED_INTO_EXISTING reasons=ACCOUNT_UNCERTAIN|CATEGORY_UNCERTAIN|UNKNOWN_MERCHANT fpSameAsPrev=false
+2026-11-19 08:10:26.506 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= 
+2026-11-19 08:10:28.453 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 08:10:59.326 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 08:20:47.115 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=true
+2026-11-19 08:20:50.764 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 08:20:55.681 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 08:21:00.402 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 08:21:01.080 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 08:21:01.285 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 08:41:23.403 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=false
+2026-11-19 08:41:24.590 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 08:41:26.163 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:00:14.905 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=true
+2026-11-19 09:00:16.386 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:00:17.152 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:14:37.767 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=false
+2026-11-19 09:14:39.780 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:14:47.139 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:14:49.289 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:14:55.834 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:15:00.130 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:19:41.801 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=false
+2026-11-19 09:19:42.804 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:21:53.974 alipay w=44440 nodes=7 src=db -> NEW_PENDING reasons=ACCOUNT_UNCERTAIN|CATEGORY_UNCERTAIN 
+2026-11-19 09:21:55.016 alipay w=44440 nodes=7 src=db -> MERGED_INTO_EXISTING reasons=ACCOUNT_UNCERTAIN|CATEGORY_UNCERTAIN fpSameAsPrev=true
+2026-11-19 09:22:56.460 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= 
+2026-11-19 09:23:11.332 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:23:22.043 wechat w=44349 nodes=46 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:23:26.778 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:23:30.148 wechat w=44349 nodes=12 src=file -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:23:30.753 wechat w=44349 nodes=12 src=file -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:23:32.536 wechat w=44349 nodes=43 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:30:54.822 wechat w=44349 nodes=43 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=false
+2026-11-19 10:39:01.382 alipay w=44731 nodes=5 src=file -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= 
+2026-11-19 10:39:01.973 alipay w=44731 nodes=5 src=file -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 10:39:03.137 alipay w=44732 nodes=1 src=file -> REJECTED_LOG_RATE_LIMITED reasons= 
+2026-11-19 10:39:03.556 alipay w=44732 nodes=14 src=file -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 10:39:03.998 alipay w=44731 nodes=5 src=file -> REJECTED_LOG_RATE_LIMITED reasons= 
+2026-11-19 10:39:04.155 alipay w=44731 nodes=5 src=file -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 10:39:06.195 alipay w=44733 nodes=3 src=file -> REJECTED_LOG_RATE_LIMITED reasons= 
+2026-11-19 10:39:06.939 alipay w=44734 nodes=3 src=file -> REJECTED_LOG_RATE_LIMITED reasons= 
+2026-11-19 10:39:08.206 alipay w=44735 nodes=32 src=file -> REJECTED_LOG_RATE_LIMITED reasons= 
+2026-11-19 10:39:10.796 alipay w=44737 nodes=17 src=file -> REJECTED_LOG_RATE_LIMITED reasons= 
+2026-11-19 10:39:12.403 alipay w=44739 nodes=1 src=file -> REJECTED_LOG_RATE_LIMITED reasons= 
+2026-11-19 10:39:13.611 alipay w=44739 nodes=11 src=file -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 10:39:16.087 alipay w=44737 nodes=14 src=file -> REJECTED_LOG_RATE_LIMITED reasons= 
+2026-11-19 10:39:16.380 alipay w=44737 nodes=14 src=file -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 10:40:09.253 alipay w=44735 nodes=32 src=file -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= 
+SUMMARY ALL_50(db pending 33 + extra snapshot files 17): {NEW_PENDING=2, MERGED_INTO_EXISTING=2, REJECTED_LOGGED(NOT_PAYMENT_PAGE)=10, REJECTED_LOG_RATE_LIMITED=36} ; transactions rows=2 pending=2 confirmed=0
+  new pending rows by windowId: {44003=1, 44440=1}
+  pending rows for com.eg.android.AlipayGphone: 2
+  rejection log rows=10 (by reason: {NOT_PAYMENT_PAGE=10})
+=== replay mode: DB_PENDING_ONLY_33 ===
+2026-11-18 18:10:42.277 alipay w=44003 nodes=7 src=db -> NEW_PENDING reasons=ACCOUNT_UNCERTAIN|CATEGORY_UNCERTAIN|UNKNOWN_MERCHANT 
+2026-11-18 18:10:43.586 alipay w=44003 nodes=7 src=db -> MERGED_INTO_EXISTING reasons=ACCOUNT_UNCERTAIN|CATEGORY_UNCERTAIN|UNKNOWN_MERCHANT fpSameAsPrev=false
+2026-11-19 08:10:26.506 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= 
+2026-11-19 08:10:28.453 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 08:10:59.326 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 08:20:47.115 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=true
+2026-11-19 08:20:50.764 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 08:20:55.681 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 08:21:00.402 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 08:21:01.080 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 08:21:01.285 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 08:41:23.403 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=false
+2026-11-19 08:41:24.590 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 08:41:26.163 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:00:14.905 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=true
+2026-11-19 09:00:16.386 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:00:17.152 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:14:37.767 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=false
+2026-11-19 09:14:39.780 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:14:47.139 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:14:49.289 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:14:55.834 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:15:00.130 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:19:41.801 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=false
+2026-11-19 09:19:42.804 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:21:53.974 alipay w=44440 nodes=7 src=db -> NEW_PENDING reasons=ACCOUNT_UNCERTAIN|CATEGORY_UNCERTAIN 
+2026-11-19 09:21:55.016 alipay w=44440 nodes=7 src=db -> MERGED_INTO_EXISTING reasons=ACCOUNT_UNCERTAIN|CATEGORY_UNCERTAIN fpSameAsPrev=true
+2026-11-19 09:22:56.460 wechat w=44349 nodes=44 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= 
+2026-11-19 09:23:11.332 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=true
+2026-11-19 09:23:22.043 wechat w=44349 nodes=46 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:23:26.778 wechat w=44349 nodes=44 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:23:32.536 wechat w=44349 nodes=43 src=db -> REJECTED_LOG_RATE_LIMITED reasons= fpSameAsPrev=false
+2026-11-19 09:30:54.822 wechat w=44349 nodes=43 src=db -> REJECTED_LOGGED(NOT_PAYMENT_PAGE) reasons= fpSameAsPrev=false
+SUMMARY DB_PENDING_ONLY_33: {NEW_PENDING=2, MERGED_INTO_EXISTING=2, REJECTED_LOGGED(NOT_PAYMENT_PAGE)=8, REJECTED_LOG_RATE_LIMITED=21} ; transactions rows=2 pending=2 confirmed=0
+  new pending rows by windowId: {44003=1, 44440=1}
+  pending rows for com.eg.android.AlipayGphone: 2
+  rejection log rows=8 (by reason: {NOT_PAYMENT_PAGE=8})

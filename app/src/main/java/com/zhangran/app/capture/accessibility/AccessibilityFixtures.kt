@@ -126,6 +126,58 @@ object AccessibilityFixtures {
         )
     }
 
+    /**
+     * 合成的微信会话列表。顶栏按钮是 `com.tencent.mm:id/jga`，
+     * 预览把金额写在同一句「已支付¥…」里。不是付款成功页。
+     * 人名和正文只用于确认拒绝日志不会把它们导出。
+     */
+    fun wechatConversationList(capturedAt: Long = CAPTURED_AT): AccessibilityPageSnapshot {
+        val nodes = listOf(
+            SnapshotNode(
+                text = null,
+                contentDescription = "更多功能",
+                viewId = "com.tencent.mm:id/jga",
+                className = "android.widget.ImageView",
+                depth = 1,
+                clickable = true,
+            ),
+            SnapshotNode(
+                text = "王小明",
+                contentDescription = "王小明的头像",
+                viewId = null,
+                className = "android.widget.TextView",
+                depth = 3,
+                clickable = false,
+            ),
+            SnapshotNode(
+                text = "已支付¥3.90",
+                contentDescription = null,
+                viewId = null,
+                className = "android.widget.TextView",
+                depth = 4,
+                clickable = false,
+            ),
+            SnapshotNode(
+                text = "晚上吃饭",
+                contentDescription = null,
+                viewId = null,
+                className = "android.widget.TextView",
+                depth = 4,
+                clickable = false,
+            ),
+        )
+        return AccessibilityPageSnapshot(
+            packageName = AccessibilityTargets.WECHAT_PACKAGE,
+            windowId = 44_349,
+            capturedAt = capturedAt,
+            nodes = nodes,
+            truncated = false,
+            textChars = nodes.sumOf { (it.text?.length ?: 0) + (it.contentDescription?.length ?: 0) },
+            rootPackageName = AccessibilityTargets.WECHAT_PACKAGE,
+            rootClassName = "android.widget.FrameLayout",
+        )
+    }
+
     /** 微信支付列表：两笔金额，没有单独的结果节点。 */
     fun wechatPayList(): AccessibilityPageSnapshot = page(
         packageName = AccessibilityTargets.WECHAT_PACKAGE,
@@ -246,16 +298,184 @@ object AccessibilityFixtures {
         )
     }
 
+    /** 微信成功页，带结果用语。商户是化名。 */
+    const val F_WX_SUCCESS: String = "fx-1-f-wx-success"
+
+    /** 同一结构，故意不带结果用语。 */
+    const val F_WX_SUCCESS_NO_KEYWORD: String = "fx-1-f-wx-success-no-keyword"
+
+    /** 确认付款页：有金额，没有「完成」，也没有结果用语。 */
+    const val F_WX_CONFIRM_PAY: String = "fx-1-f-wx-confirm-pay"
+
+    const val WX_SUCCESS_MERCHANT: String = "示例早餐店"
+
+    const val WX_SUCCESS_PROMO: String = "摇一摇，有优惠"
+
+    /** 余额宝转出付款的结果页。没有商户名。 */
+    const val F_YUEBAO: String = "fx-1-f-ali-yuebao"
+
+    /** 同一页，但「¥」和「25.10」拆成两个节点。 */
+    const val F_YUEBAO_SPLIT: String = "fx-1-f-ali-yuebao-split"
+
+    /** 事件包名是支付宝，树却是账然首页。 */
+    const val F_WRONG_WINDOW: String = "fx-1-f-wrong-window"
+
+    const val YUEBAO_CAPTURED_AT: Long = 1_794_552_000_000L
+
+    const val WRONG_WINDOW_CAPTURED_AT: Long = 1_794_552_319_644L
+
+    /**
+     * 支付宝余额宝结果页的脱敏结构：单独的「支付成功」、主金额 ¥25.10、
+     * 「订单金额」和金额分列、「交易方式 / 余额宝(转出资金付款)」、
+     * 优惠券（10元、2元、12元、¥10、10.00元）、「回首页」「完成」。没有商户名。
+     */
+    fun alipayYuebao(capturedAt: Long = YUEBAO_CAPTURED_AT): AccessibilityPageSnapshot = page(
+        packageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        windowId = 41_001,
+        capturedAt = capturedAt,
+        rootPackageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        nodes = yuebaoNodes(splitAmount = false),
+    )
+
+    /** 与 [alipayYuebao] 相同，主金额的货币符号和数字分成两个节点。 */
+    fun alipayYuebaoSplit(capturedAt: Long = YUEBAO_CAPTURED_AT): AccessibilityPageSnapshot = page(
+        packageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        windowId = 41_002,
+        capturedAt = capturedAt,
+        rootPackageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        nodes = yuebaoNodes(splitAmount = true),
+    )
+
+    /**
+     * 事件写着支付宝，节点却是账然首页。结构来自一次脱敏后的窗口快照，
+     * 根包名补成 `com.zhangran.app`。不含最近任务里的个人应用名。
+     */
+    fun wrongWindowHome(capturedAt: Long = WRONG_WINDOW_CAPTURED_AT): AccessibilityPageSnapshot = page(
+        packageName = AccessibilityTargets.ALIPAY_PACKAGE,
+        windowId = 38_598,
+        capturedAt = capturedAt,
+        rootPackageName = NonPaymentWindows.OWN_PACKAGE,
+        nodes = listOf(
+            node("我的", 8),
+            described(text = null, description = "我的，标签页，未选中", viewId = null, depth = 7),
+            node("预算", 8),
+            described(text = null, description = "预算，标签页，未选中", viewId = null, depth = 7),
+            node("记一笔", 8),
+            described(text = null, description = "记一笔，标签页，未选中", viewId = null, depth = 7),
+            node("统计", 8),
+            described(text = null, description = "统计，标签页，未选中", viewId = null, depth = 7),
+            node("首页", 8),
+            described(text = null, description = "首页，标签页，已选中", viewId = null, depth = 7),
+            node("检查自动记账", 6),
+            node("记一笔", 6),
+            node("记一笔，或检查自动记账设置", 5),
+            node("还没有记录", 5),
+            node("⏳", 7),
+            described(text = null, description = "待确认", viewId = null, depth = 6),
+            node("🔍", 7),
+            described(text = null, description = "搜索", viewId = null, depth = 6),
+            described(
+                text = "AUTO LEDGER · 疑似失效",
+                description = "自动记账状态：疑似失效",
+                viewId = null,
+                depth = 5,
+            ),
+            node("账然", 5),
+        ),
+    )
+
+    /**
+     * 脱敏的微信付款成功页。主金额是拆开的 ¥ 和 8.00。
+     * 「完成」是按钮。运营条不能当商户。没有单号，没有付款时间。
+     * 不写微信可能变化的 viewId。
+     */
+    fun wechatSuccess(
+        includeKeyword: Boolean,
+        capturedAt: Long = CAPTURED_AT,
+    ): AccessibilityPageSnapshot {
+        val nodes = buildList {
+            if (includeKeyword) add(node("支付成功", 2))
+            add(node(WX_SUCCESS_MERCHANT, 4))
+            add(node("¥", 6))
+            add(node("8.00", 6))
+            add(node(WX_SUCCESS_PROMO, 8))
+            add(
+                SnapshotNode(
+                    text = "完成",
+                    contentDescription = null,
+                    viewId = null,
+                    className = "android.widget.Button",
+                    depth = 10,
+                    clickable = true,
+                ),
+            )
+        }
+        return page(
+            packageName = AccessibilityTargets.WECHAT_PACKAGE,
+            windowId = 88_011,
+            capturedAt = capturedAt,
+            rootPackageName = AccessibilityTargets.WECHAT_PACKAGE,
+            nodes = nodes,
+        )
+    }
+
+    /** 微信确认付款页。有金额和确认按钮文案，没有「完成」，也没有结果用语。 */
+    fun wechatConfirmPay(capturedAt: Long = CAPTURED_AT): AccessibilityPageSnapshot = page(
+        packageName = AccessibilityTargets.WECHAT_PACKAGE,
+        windowId = 88_012,
+        capturedAt = capturedAt,
+        rootPackageName = AccessibilityTargets.WECHAT_PACKAGE,
+        nodes = listOf(
+            node("确认支付", 2),
+            node("立即支付", 4),
+            node(WX_SUCCESS_MERCHANT, 6),
+            node("¥", 8),
+            node("8.00", 8),
+        ),
+    )
+
     /** 真机证据上的采样时间（UTC epoch millis）。 */
     const val WX_CAPTURED_AT: Long = 1_794_373_522_722L
 
     const val ALI_CAPTURED_AT: Long = 1_794_362_941_004L
+
+    private fun yuebaoNodes(splitAmount: Boolean): List<SnapshotNode> {
+        val main = if (splitAmount) {
+            listOf(node("¥", 5), node("25.10", 5))
+        } else {
+            listOf(node("¥25.10", 5))
+        }
+        val orderAmount = if (splitAmount) {
+            listOf(node("订单金额", 6), node("¥", 7), node("25.10", 7))
+        } else {
+            listOf(node("订单金额", 6), node("¥25.10", 7))
+        }
+        return listOf(node("支付成功", 4)) +
+            main +
+            orderAmount +
+            listOf(
+                node("交易方式", 6),
+                node("余额宝(转出资金付款)", 7),
+                node("支付红包", 8),
+                node("10元", 9),
+                node("优惠券", 8),
+                node("2元", 9),
+                node("立减券", 8),
+                node("12元", 9),
+                node("抵扣券", 8),
+                node("¥10", 9),
+                node("10.00元", 9),
+                node("回首页", 3),
+                node("完成", 4),
+            )
+    }
 
     private fun page(
         packageName: String,
         windowId: Int,
         capturedAt: Long,
         nodes: List<SnapshotNode>,
+        rootPackageName: String? = null,
     ) = AccessibilityPageSnapshot(
         packageName = packageName,
         windowId = windowId,
@@ -263,6 +483,7 @@ object AccessibilityFixtures {
         nodes = nodes,
         truncated = false,
         textChars = nodes.sumOf { (it.text?.length ?: 0) + (it.contentDescription?.length ?: 0) },
+        rootPackageName = rootPackageName,
     )
 
     private fun node(text: String, depth: Int) = described(

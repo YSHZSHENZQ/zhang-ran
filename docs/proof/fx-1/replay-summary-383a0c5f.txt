@@ -1,0 +1,11 @@
+FX-1 CR-2 fixture replay summary (functional 383a0c5f62a8e7378b9a2d08097fa21bbf7d0b49)
+Generated: 2026-11-20 23:13:18 Asia/Shanghai (CST UTC+8)
+Method: instrumented AccessibilitySnapshotIngest on debug APK 383a0c5f62a8e7378b9a2d08097fa21bbf7d0b49 (AVD qj1, TCG -accel off). Throwaway Fx1Cr2ProofTest; source reverted after pull. No Owner originals.
+
+AC-11 fx-1-f-wx-success-no-keyword -> pending=1 amount=8.00 EXPENSE merchant=示例早餐店
+AC-12 fx-1-f-wx-success -> pending=1 amount=8.00 EXPENSE merchant=示例早餐店
+AC-13 fx-1-f-wx-confirm-pay -> pending=0 NOT_PAYMENT_PAGE (export has diagnostic fields, no body)
+AC-13 chat-list -> pending=0 NOT_PAYMENT_PAGE (viewIds jga; no person/body/amount digits)
+JVM unit tests: 628 passed, 0 failed (includes CR-2 parser/ingest cases and AC-8/9 style cases)
+
+Fx1ProofTest (Compose UI regression): FAILED twice under TCG (first leftover health state; second Espresso RootViewWithoutFocusException at openPending). Partial exports before failure show yuebao pending=2 and rejection export still gitSha=383a0c5f62a8e7378b9a2d08097fa21bbf7d0b49. Caveat: full UI Fx1ProofTest not green on this TCG session; CR-2 ACs proven by dedicated instrumented ingest + JVM.
