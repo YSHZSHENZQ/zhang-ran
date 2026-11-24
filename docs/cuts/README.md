@@ -16,6 +16,6 @@
 | FX-1 CR-1 | 2026-11-19 | APPROVED（FX-1 变更记录） | 真机 AC-6 首轮失败后增补：去重口径、微信聊天列表不算付款页、商户不取按钮文字、拒绝日志诊断字段。 | [#6](https://github.com/YSHZSHENZQ/zhang-ran/pull/6) | [cut-2026-11-19-FX-1-CR1.md](cut-2026-11-19-FX-1-CR1.md) |
 | FX-1 CR-2 | 2026-11-20 | APPROVED；MERGE APPROVED with residual risk（2026-11-24） | 微信付款成功页在无障碍树缺少「支付成功」等结果用语时，靠金额 +「完成」也能记上。 | [#6](https://github.com/YSHZSHENZQ/zhang-ran/pull/6) | [cut-2026-11-20-FX-1-CR2.md](cut-2026-11-20-FX-1-CR2.md) |
 | UX-1 | 2026-11-24 | MERGED（2026-11-24 15:08:57 Asia/Hong_Kong，合并提交 `40055ceb`） | 首页「最近交易」一眼区分待确认与已入账，本月合计仍只含已确认。 | [#7](https://github.com/YSHZSHENZQ/zhang-ran/pull/7) | [cut-2026-11-24-UX-1.md](cut-2026-11-24-UX-1.md) |
-| DOC-1 | 2026-11-24 | APPROVED（含 CR-1；基线 `40055ceb`，未开工） | 只读 `README.md` 与 `AGENTS.md` 就能知道进度、文档入口、构建测试、禁止事项和已知缺口。 | 无 PR | [cut-2026-11-24-DOC-1.md](cut-2026-11-24-DOC-1.md) |
+| DOC-1 | 2026-11-24 | APPROVED（含 CR-1；基线 `40055ceb`；随 PR #8 入库，合并需 Owner 本人批准） | 只读 `README.md` 与 `AGENTS.md` 就能知道进度、文档入口、构建测试、禁止事项和已知缺口。 | [#8](https://github.com/YSHZSHENZQ/zhang-ran/pull/8) | [cut-2026-11-24-DOC-1.md](cut-2026-11-24-DOC-1.md) |
 
 脱敏检索记录见 [redaction-check.txt](redaction-check.txt)。
