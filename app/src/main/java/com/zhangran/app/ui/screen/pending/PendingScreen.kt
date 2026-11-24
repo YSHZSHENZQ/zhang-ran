@@ -55,6 +55,7 @@ import dagger.hilt.components.SingletonComponent
 
 @Composable
 fun PendingScreen(
+    focusTransactionId: String = "",
     onOpenEdit: (String) -> Unit = {},
     onOpenReview: (String) -> Unit = {},
 ) {
@@ -85,6 +86,7 @@ fun PendingScreen(
     val state by pendingViewModel.uiState.collectAsState()
     PendingContent(
         state = state,
+        focusTransactionId = focusTransactionId,
         onRetry = pendingViewModel::refresh,
         onConfirm = pendingViewModel::confirm,
         onIgnore = pendingViewModel::ignore,
@@ -96,6 +98,7 @@ fun PendingScreen(
 @Composable
 fun PendingContent(
     state: PendingUiState,
+    focusTransactionId: String = "",
     onRetry: () -> Unit = {},
     onConfirm: (String) -> Unit = {},
     onIgnore: (String) -> Unit = {},
@@ -133,14 +136,22 @@ fun PendingContent(
                 state.banner?.let { banner ->
                     Text(text = banner, color = colors.errorColor)
                 }
-                state.rows.forEach { row ->
-                    PendingRowCard(
-                        row = row,
-                        onConfirm = { onConfirm(row.transactionId) },
-                        onIgnore = { onIgnore(row.transactionId) },
-                        onOpenEdit = { onOpenEdit(row.transactionId) },
-                        onOpenReview = { onOpenReview(row.transactionId) },
+                val rows = PendingViewModel.rowsForFocus(state.rows, focusTransactionId)
+                if (rows == null) {
+                    Text(
+                        text = "这条记录已不在待确认",
+                        color = colors.textSecondaryColor,
                     )
+                } else {
+                    rows.forEach { row ->
+                        PendingRowCard(
+                            row = row,
+                            onConfirm = { onConfirm(row.transactionId) },
+                            onIgnore = { onIgnore(row.transactionId) },
+                            onOpenEdit = { onOpenEdit(row.transactionId) },
+                            onOpenReview = { onOpenReview(row.transactionId) },
+                        )
+                    }
                 }
             }
         }

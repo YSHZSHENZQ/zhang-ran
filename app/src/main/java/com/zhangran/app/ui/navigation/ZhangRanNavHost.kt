@@ -215,8 +215,18 @@ fun ZhangRanNavHost(
                 },
             ),
         ) { TransactionDetailScreen() }
-        composable(Destination.Pending.route) {
+        composable(
+            route = Destination.PENDING_DESTINATION_PATTERN,
+            arguments = listOf(
+                navArgument(Destination.ARG_TRANSACTION_ID) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) { entry ->
+            val focusId = entry.arguments?.getString(Destination.ARG_TRANSACTION_ID).orEmpty()
             PendingScreen(
+                focusTransactionId = focusId,
                 onOpenEdit = { transactionId ->
                     navController.navigate(Destination.pendingEditRoute(transactionId))
                 },

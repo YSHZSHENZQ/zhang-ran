@@ -65,8 +65,19 @@ enum class Destination(
         /** 起始目的地。 */
         val start: Destination = Home
 
-        /** 按路由查找目的地；未知名返回 null。 */
-        fun fromRoute(route: String?): Destination? = entries.firstOrNull { it.route == route }
+        /**
+         * 按路由查找目的地；未知名返回 null。
+         *
+         * 导航图里的图案可能带查询参数（待确认聚焦某一笔），而枚举 route 仍是不带参数的路径。
+         * 精确匹配优先；带 `?` 时再按路径部分对应到同一目的地。
+         */
+        fun fromRoute(route: String?): Destination? {
+            if (route == null) return null
+            entries.firstOrNull { it.route == route }?.let { return it }
+            if ('?' !in route) return null
+            val path = route.substringBefore('?')
+            return entries.firstOrNull { it.route.substringBefore('?') == path }
+        }
 
         /**
          * 生成带交易 id 的详情路由（`M2e-1b` A10：详情入口必须带 `transactionId`）。
@@ -83,5 +94,18 @@ enum class Destination(
         /** 疑似重复对照页路由（必须带新记录的交易 id）。 */
         fun duplicateReviewRoute(transactionId: String): String =
             DuplicateReview.route.replace(TRANSACTION_ID_PLACEHOLDER, transactionId)
+
+        /**
+         * 待确认目的地在导航图里的图案。
+         *
+         * [Pending.route] 仍是 `pending`，角标和「我的」继续打开全部待确认。
+         * 首页点某一笔时用 [pendingItemRoute]，只展示这一笔的确认或查重操作。
+         */
+        const val PENDING_DESTINATION_PATTERN: String =
+            "pending?" + ARG_TRANSACTION_ID + "=" + TRANSACTION_ID_PLACEHOLDER
+
+        /** 某一笔待确认的详情路由。交易 id 为 UUID，不含需要转义的字符。 */
+        fun pendingItemRoute(transactionId: String): String =
+            "pending?$ARG_TRANSACTION_ID=$transactionId"
     }
 }

@@ -46,5 +46,44 @@ class PendingScreenTest {
         composeRule.onNodeWithText("¥38.50").assertIsDisplayed()
         composeRule.onNodeWithText("星巴克咖啡").assertIsDisplayed()
         composeRule.onNodeWithText("分类不确定、账户不确定").assertIsDisplayed()
+        composeRule.onNodeWithText("确认").assertIsDisplayed()
+        composeRule.onNodeWithText("改完再记").assertIsDisplayed()
+        composeRule.onNodeWithText("忽略").assertIsDisplayed()
+    }
+
+    @Test
+    fun 聚焦普通待确认可见确认且疑似重复不得直接确认() {
+        val normal = PendingRow(
+            transactionId = "normal",
+            amountText = "¥25.10",
+            merchantText = "示例早餐店",
+            reasonText = "分类不确定",
+            sourceText = "无障碍",
+            timeText = "08:00",
+        )
+        val duplicate = PendingRow(
+            transactionId = "dup",
+            amountText = "¥25.10",
+            merchantText = "示例早餐店",
+            reasonText = "疑似重复",
+            sourceText = "无障碍",
+            timeText = "08:01",
+            canConfirm = false,
+            canEdit = false,
+            canReview = true,
+        )
+        composeRule.setContent {
+            ZhangRanTheme(darkTheme = false) {
+                PendingContent(
+                    state = PendingUiState.Content(rows = listOf(normal, duplicate)),
+                    focusTransactionId = "dup",
+                )
+            }
+        }
+        composeRule.onNodeWithText("示例早餐店").assertIsDisplayed()
+        composeRule.onNodeWithText("查看重复").assertIsDisplayed()
+        composeRule.onNodeWithText("忽略").assertIsDisplayed()
+        composeRule.onNodeWithText("确认").assertDoesNotExist()
+        composeRule.onNodeWithText("改完再记").assertDoesNotExist()
     }
 }

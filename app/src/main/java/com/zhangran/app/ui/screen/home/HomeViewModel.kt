@@ -304,6 +304,14 @@ class HomeViewModel(
         private fun TransactionListEntry.toListItem(zone: ZoneId): TransactionListItem {
             val timeText = formatTimeOfDay(transactionTime, zone)
             val typeText = typeTextOf(type)
+            val pending = state == TransactionState.PENDING
+            val spoken = accessibilityTextOf(
+                title = titleOf(merchant, note, categoryName, type),
+                categoryName = categoryName,
+                timeText = timeText,
+                typeText = typeText,
+                amountMinor = amountMinor,
+            )
             return TransactionListItem(
                 id = id,
                 title = titleOf(merchant, note, categoryName, type),
@@ -315,13 +323,9 @@ class HomeViewModel(
                 sourceText = sourceTextOf(source),
                 type = type,
                 // 无障碍朗读文本（`M2e-1b` §4.8）："星巴克咖啡，餐饮，14:23，支出 38.50 元"
-                accessibilityText = accessibilityTextOf(
-                    title = titleOf(merchant, note, categoryName, type),
-                    categoryName = categoryName,
-                    timeText = timeText,
-                    typeText = typeText,
-                    amountMinor = amountMinor,
-                ),
+                // 待确认（含疑似重复，状态仍是 PENDING）在句尾加上标签，已确认不加。
+                accessibilityText = if (pending) "$spoken，$HOME_PENDING_LABEL" else spoken,
+                pending = pending,
             )
         }
 

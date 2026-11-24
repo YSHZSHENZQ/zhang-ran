@@ -14,6 +14,7 @@ package com.zhangran.app.ui.screen.home
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -218,5 +219,38 @@ class HomeScreenTest {
         }
         composeRule.onNodeWithText("星巴克咖啡").performClick()
         assertEquals(Destination.detailRoute("tx-1"), navigated)
+        composeRule.onNodeWithText("待确认").assertDoesNotExist()
+    }
+
+    @Test
+    fun 待确认行有标签且点击进入该笔待确认已确认行仍进详情() {
+        var navigated: String? = null
+        val pending = item(id = "pending-1").copy(
+            title = "示例早餐店",
+            amountText = "-25.10",
+            pending = true,
+        )
+        val confirmed = item(id = "confirmed-1").copy(
+            title = "示例午餐店",
+            amountText = "-88.00",
+            pending = false,
+        )
+        composeRule.setContent {
+            ZhangRanTheme(darkTheme = false) {
+                HomeContent(
+                    state = content(
+                        pendingCount = 1,
+                        sections = listOf(HomeSection(label = "今天", items = listOf(pending, confirmed))),
+                    ),
+                    onNavigate = { navigated = it },
+                )
+            }
+        }
+        composeRule.onNodeWithText("待确认").assertIsDisplayed()
+        composeRule.onAllNodesWithText("待确认").assertCountEquals(1)
+        composeRule.onNodeWithText("示例早餐店").performClick()
+        assertEquals(Destination.pendingItemRoute("pending-1"), navigated)
+        composeRule.onNodeWithText("示例午餐店").performClick()
+        assertEquals(Destination.detailRoute("confirmed-1"), navigated)
     }
 }

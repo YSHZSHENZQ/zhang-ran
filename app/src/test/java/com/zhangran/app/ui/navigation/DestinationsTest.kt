@@ -68,6 +68,21 @@ class DestinationsTest {
     }
 
     @Test
+    fun 待确认列表路由不变且某一笔带交易id() {
+        assertEquals("pending", Destination.Pending.route)
+        assertEquals(
+            "pending?transactionId={transactionId}",
+            Destination.PENDING_DESTINATION_PATTERN,
+        )
+        assertEquals("pending?transactionId=tx-1", Destination.pendingItemRoute("tx-1"))
+        assertSame(
+            Destination.Pending,
+            Destination.fromRoute(Destination.PENDING_DESTINATION_PATTERN),
+        )
+        assertSame(Destination.Pending, Destination.fromRoute("pending?transactionId=tx-1"))
+    }
+
+    @Test
     fun 路由解析可往返() {
         Destination.entries.forEach { destination ->
             assertSame(destination, Destination.fromRoute(destination.route))

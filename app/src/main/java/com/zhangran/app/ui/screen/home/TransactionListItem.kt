@@ -22,8 +22,10 @@ import com.zhangran.app.domain.model.TransactionType
  * @property categoryName 分类名（可能为空：转账或分类已删除）
  * @property categoryIcon 分类语义图标标识（供渐变组与 emoji 选择；为空时用默认）
  * @property sourceText 来源文案（手工 / 通知 / …）
- * @property type 交易类型（决定金额语义色）
+ * @property type 交易类型（已确认行的金额语义色）
  * @property accessibilityText 无障碍朗读文本（`M2e-1b` §4.8）
+ * @property pending 是否待确认。`true` 时行上显示「待确认」，金额不用已确认入账色。
+ *   搜索等非首页列表保持默认 `false`，不在本字段上改变它们的样式。
  */
 data class TransactionListItem(
     val id: String,
@@ -36,4 +38,5 @@ data class TransactionListItem(
     val sourceText: String,
     val type: TransactionType,
     val accessibilityText: String,
+    val pending: Boolean = false,
 )
