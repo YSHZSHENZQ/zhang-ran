@@ -8,6 +8,8 @@ package com.zhangran.app.ui.screen.mine
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -185,7 +187,11 @@ class MineScreenTest {
 
         composeRule.onNodeWithContentDescription("待确认记录", substring = true).performClick()
         composeRule.onNodeWithContentDescription("关于账然", substring = true).performScrollTo().performClick()
-        composeRule.onNodeWithContentDescription("自动记账状态", substring = true).performScrollTo().performClick()
+        // M6-4 页头胶囊的描述是「自动记账状态：…」，和入口行的「自动记账状态，…，双击进入」都会被
+        // 子串命中。入口行可点，胶囊不可点。
+        composeRule.onNode(
+            hasClickAction() and hasContentDescription("自动记账状态", substring = true),
+        ).performScrollTo().performClick()
 
         assertEquals(listOf("pending", "about", "autoLedger"), routes)
     }

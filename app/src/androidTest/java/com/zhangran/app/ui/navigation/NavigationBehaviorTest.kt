@@ -18,6 +18,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.zhangran.app.ui.theme.ZhangRanTheme
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -114,11 +115,22 @@ class NavigationBehaviorTest {
     @Test
     fun A8_首页返回退出应用() {
         launchApp()
+        // 首页按 docs/06 §6.3 不拦截返回（系统默认退出）。API 33+ 预测性返回下
+        // isFinishing 不会在 waitForIdle 的同一帧变成 true。
         composeRule.runOnUiThread {
+            assertFalse(
+                "首页不应有启用中的返回回调",
+                composeRule.activity.onBackPressedDispatcher.hasEnabledCallbacks(),
+            )
             composeRule.activity.onBackPressedDispatcher.onBackPressed()
         }
-        composeRule.waitForIdle()
-        assertTrue("首页返回应结束 Activity", composeRule.activity.isFinishing)
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.activity.isFinishing || composeRule.activity.isDestroyed
+        }
+        assertTrue(
+            "首页返回应结束 Activity",
+            composeRule.activity.isFinishing || composeRule.activity.isDestroyed,
+        )
     }
 
     @Test

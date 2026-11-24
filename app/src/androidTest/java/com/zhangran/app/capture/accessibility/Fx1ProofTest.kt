@@ -18,6 +18,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.zhangran.app.BuildConfig
 import com.zhangran.app.MainActivity
+import com.zhangran.app.clickHomePendingButton
 import com.zhangran.app.debug.DebugCaptureHealthReceiver
 import com.zhangran.app.domain.model.TransactionState
 import com.zhangran.app.domain.usecase.CaptureLogExport
@@ -315,7 +316,8 @@ class Fx1ProofTest {
 
     private fun openPending() {
         openHome()
-        composeRule.onNodeWithContentDescription("待确认", substring = true).performClick()
+        // UX-1 行朗读含「，待确认」，子串会同时命中顶栏和每一行。
+        composeRule.clickHomePendingButton()
         awaitText("待确认")
     }
 

@@ -5,15 +5,20 @@ package com.zhangran.app.capture.accessibility
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.zhangran.app.BuildConfig
 import com.zhangran.app.MainActivity
+import com.zhangran.app.clearCapturedLedgerForTest
 import com.zhangran.app.dismissColdStartOnboard
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.Timeout
@@ -31,6 +36,8 @@ class M62PendingProofTest {
     @Test
     fun 待确认页展示支付结果fixture() {
         dismissColdStartOnboard(composeRule)
+        // 全量同进程不清库。UX-1 行朗读含「，待确认」，子串「待确认」会命中顶栏和每一行。
+        clearCapturedLedgerForTest()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val ingest = EntryPointAccessors.fromApplication(
             context.applicationContext,
@@ -47,7 +54,10 @@ class M62PendingProofTest {
         }
 
         composeRule.waitForIdle()
-        composeRule.onNodeWithContentDescription("待确认", substring = true).performClick()
+        composeRule.waitUntil(timeoutMillis = 30_000) {
+            composeRule.onAllNodesWithContentDescription("待确认 1 条").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithContentDescription("待确认 1 条").performClick()
         composeRule.onNodeWithText("星巴克咖啡").assertIsDisplayed()
         composeRule.onNodeWithText("¥38.50").assertIsDisplayed()
         composeRule.onNodeWithText("分类不确定", substring = true).assertIsDisplayed()
@@ -58,11 +68,14 @@ class M62PendingProofTest {
     @Test
     fun 首页正式收支不因待确认增加() {
         dismissColdStartOnboard(composeRule)
+        // 前面的用例可能已经记过已确认支出。先清账，本月支出必须仍是 0。
+        clearCapturedLedgerForTest()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val ingest = EntryPointAccessors.fromApplication(
+        val entry = EntryPointAccessors.fromApplication(
             context.applicationContext,
-            AccessibilityIngestEntryPoint::class.java,
-        ).accessibilitySnapshotIngest()
+            M3aDebugEntryPoint::class.java,
+        )
+        val ingest = entry.accessibilitySnapshotIngest()
         val result = runBlocking {
             ingest.ingest(
                 AccessibilityFixtures.wechatPaySuccess(capturedAt = System.currentTimeMillis()),
@@ -76,6 +89,9 @@ class M62PendingProofTest {
         composeRule.onNodeWithText("本月支出").assertIsDisplayed()
         composeRule.onNodeWithText("¥0.00", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("+0.00").assertIsDisplayed()
+        val ledger = JSONObject(runBlocking { entry.ledgerProofQuery().json(BuildConfig.GIT_SHA) })
+        assertEquals(0L, ledger.getLong("monthExpenseMinor"))
+        assertEquals(1, ledger.getInt("pendingCount"))
         composeRule.waitForIdle()
         Thread.sleep(HOLD_FOR_SCREENCAP_MS)
     }
