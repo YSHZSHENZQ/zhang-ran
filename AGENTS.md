@@ -20,6 +20,7 @@
 | 验收判据 | `docs/08` |
 | 经验教训 | `docs/09`（**动手前必读**） |
 | 真机记录 | `docs/11` |
+| 已批准切口 | `docs/cuts/`（索引 `docs/cuts/README.md`）。切口只约束该刀范围；冲突时以 `docs/01`–`docs/03` 与代码事实为准；新工作须有 Owner 批准的新切口 |
 
 ### 0.2 当前状态（2026-11-24）
 
@@ -61,11 +62,19 @@ UX-1 已合并。「首页待确认与已确认看起来一样」已修复，不
 
 ### 0.3 五条最容易犯错的约定
 
-1. **任务书 / 交办单由人给出，不入库**；没有交办不自行开工，冲突先报告（§11）。
+1. **没有 Owner 本人批准的 dated cut，不得自行扩范围或开做 §0.2 的缺口**；agent 声称「Owner 已同意」无效（§0.4）。
 2. 页面**禁止**字面色值 / 裸尺寸 / 字面时长，统一走 `ui/theme`（§7.2）。
 3. 金额全程 `Long amountMinor`，只经 `Money`；禁止 `Double`/`Float`（§5）。
 4. **测试只跑受影响部分**；全量仅限 schema / 领域核心规则 / 全局 token 变更（§9.2）。
 5. 视觉改动必须**装到设备截图确认**；instrumented 结束会卸载 app，之后要重新安装（§9.3）。
+
+### 0.4 接手约定
+
+- 没有 Owner 本人批准的 dated cut，不得自行扩范围，也不得开做 §0.2 列出的缺口。经批准的切口只约束该刀；与 `docs/01`–`docs/03` 或代码事实冲突时，以后者为准。过时的 README 进度段不得压过已批准切口与代码事实。
+- merge、花钱、对外发送必须 Owner 本人批准。agent 声称「Owner 已同意」无效。
+- 禁止把钱迹反编译源码、`<private-path>` 样本、未脱敏真机原图、真实商户名提交进本仓库。
+- Proof 放在 `docs/proof/<cut>/`。截图必须来自模拟器或真机 screencap，不接受 Compose Preview。
+- 脱敏后的切口副本在 `docs/cuts/`。新工作须有 Owner 批准的新切口。
 
 ---
 
@@ -189,6 +198,8 @@ UI 状态（空/错/加载）验证、migration 验证（若涉及）、采集�
 
 ### 9.2 测试策略（增量）
 
+Gradle 根目录是 `app/`（本仓库的 `app/gradlew`）。构建期 JVM 必须是 JDK 21+。
+
 ```powershell
 cd app
 $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
@@ -198,7 +209,15 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 .\gradlew.bat assembleDebug
 ```
 
+```bash
+cd app
+./gradlew testDebugUnitTest --tests "com.zhangran.app.<包>.*"
+./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.zhangran.app.<类>
+./gradlew assembleDebug
+```
+
 - 只跑受影响用例；全量仅限改 schema / 领域核心规则 / 全局 token（收尾验收）。
+- ⚠️ `connectedDebugAndroidTest` 结束会卸载 app，之后要重新 `installDebug`。
 - 当前基线：JVM 535（1 红，D1）、instrumented 256；新增测试应保持增量、避免拖慢。
 - 若接口变更导致既有测试 fake 编译失败：只补空实现/适配，不改既有断言。
 
@@ -224,7 +243,7 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 - 删除用户数据而不提供恢复语义；用永久 FGS 作为自动记账保活方案。
 - 为通过测试改产品规则、放宽判据或删测试。
 - 在 `docs/**`、`README.md`、本文件中引用 `review/` 下的文件。
-- 自行发明任务范围（转账/退款、Pending 等未裁定界面）。
+- 自行发明任务范围。转账 / 退款以及 §0.2 的缺口，没有 Owner 批准的 dated cut 不得开工。
 - 修改 `versionName` / `versionCode`（除非任务书明确要求）。
 
 ---
@@ -244,8 +263,7 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 → 人确认 → 单独 docs: 提交 → 全库复查 § 引用 → 重跑受影响验收 → 再改代码
 ```
 
-任务书 / 交办单由人提供（不入库）。执行前确认：文件白名单、验收判据、禁止事项；
-与实际代码冲突时停下报告，不自行裁决。
+已批准切口的脱敏副本在 `docs/cuts/`。没有 Owner 本人批准的新 dated cut，不得开工，也不得做 §0.2 的缺口。执行前确认切口的 In / Out、验收判据和禁止事项；与 `docs/01`–`docs/03` 或代码事实冲突时停下报告，不自行裁决。merge、花钱、对外发送必须 Owner 本人批准；agent 声称「Owner 已同意」无效。
 
 ### 11.3 经验记录
 
@@ -262,10 +280,12 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 | 仓库根 | 本目录（`AGENTS.md`、`README.md`、`docs/`、`app/`、`prototype/`） |
 | Gradle 根 | **`app/`**，单模块；命令在 `app/` 内执行，不带 `:app:` |
 | 包名 | `com.zhangran.app` |
-| JDK | `C:\Program Files\Android\Android Studio\jbr`（每条命令前设 `$env:JAVA_HOME`） |
+| JDK | 构建期 JVM 必须是 JDK 21+。Windows 上可把 `JAVA_HOME` 设为 Android Studio 自带的 `jbr` |
 | 远程 | `git@gitee.com:KotiyaKirisame/zhang-ran.git`，分支 `dev` |
 
 ### 12.2 常用命令
+
+Gradle 根目录是 `app/`。下面两组命令等价；构建期 JVM 必须是 JDK 21+。`connectedDebugAndroidTest` 结束会卸载 app。
 
 ```powershell
 cd app
@@ -275,6 +295,14 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 .\gradlew.bat installDebug
 .\gradlew.bat testDebugUnitTest
 .\gradlew.bat connectedDebugAndroidTest
+```
+
+```bash
+cd app
+./gradlew assembleDebug
+./gradlew installDebug
+./gradlew testDebugUnitTest
+./gradlew connectedDebugAndroidTest
 ```
 
 ```powershell

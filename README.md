@@ -23,6 +23,8 @@
 手工记账闭环已交付。待确认、确认入账和去重已交付。微信与支付宝无障碍捕获、可导出的拒绝日志、FX-1 的窗口规则与微信成功页规则已交付。首页「最近交易」可区分待确认与已确认（UX-1）。高置信自动入账不做。解析规则页仍是占位。
 
 > 进度细节与已知缺口只写在 `AGENTS.md` §0.2（**唯一入口**）。本节不得与 §0.2 矛盾。
+>
+> 接手先读 `AGENTS.md` §0 与 §12。没有 Owner 批准的 dated cut 不得扩范围；merge、花钱、对外发送必须 Owner 本人批准。完整约定在 `AGENTS.md` §0.4。
 
 ## 采集与识别能力来源
 
@@ -52,6 +54,16 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 .\gradlew.bat installDebug              # 安装到设备
 .\gradlew.bat testDebugUnitTest         # JVM 测试
 .\gradlew.bat connectedDebugAndroidTest # 设备测试（需要设备/模拟器）
+```
+
+Linux / macOS（Gradle 根目录同样是 `app/`，脚本是 `app/gradlew`）：
+
+```bash
+cd app
+./gradlew assembleDebug
+./gradlew installDebug
+./gradlew testDebugUnitTest
+./gradlew connectedDebugAndroidTest
 ```
 
 打开应用：
@@ -84,7 +96,8 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 
 ## 文档入口
 
-- `AGENTS.md`：Agent 工作规则 + **当前进度 + 上手手册**（接手先读它）
+- `AGENTS.md`：Agent 工作规则 + **当前进度 + 上手手册**（接手先读它；约定见 §0.4）
+- `docs/cuts/`：Owner 批准的 dated cut（索引 `docs/cuts/README.md`）。切口只约束该刀范围；冲突时以 `docs/01`–`docs/03` 与代码事实为准；新工作须有 Owner 批准的新切口
 - `docs/01_产品需求.md`：为什么做、做什么、不做什么
 - `docs/02_产品规格.md`：产品行为规则
 - `docs/03_领域模型与业务规则.md`：数据模型和业务不变量（含领域决策规则）
@@ -102,7 +115,7 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
   - 工程内：`settings.gradle.kts`、`build.gradle.kts`、`gradle.properties`、`gradlew(.bat)`、`gradle/libs.versions.toml`（唯一版本来源）
   - 源码：`app/src/main/java/com/zhangran/app/`（包结构与代码地图见 `AGENTS.md` §12.3）
   - 资源：`app/src/main/res/`（含 `font/msyh.ttf`、`values/themes.xml` 系统栏外观）
-  - 构建命令：`cd app; .\gradlew.bat <task>`（Windows）
+  - 构建命令：`cd app; .\gradlew.bat <task>`（Windows）；`cd app && ./gradlew <task>`（Linux / macOS）
   - **构建前置：构建期 JVM 必须是 JDK 21+**（Hilt 生成的 Java 编译任务不跟随 Gradle toolchain）
 - `AutoAccounting/`：上游参考项目（本地克隆，仅用于接入分析，已 gitignore，不作为本项目提交对象）
 
@@ -138,6 +151,7 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 - 采集与识别侧的冲突（枚举取值、来源映射、工作模式、权限）以 `07` 为准；`02` §19 只是产品视角摘要。
 - UI 原型只用于确认视觉表现，不作为业务规则来源；原型中的示例数字、示例文件名、示例账户/支付方式不作为数据依据。
 - 本链路上不存在独立的"产品目标"文档，产品目标写在 `01_产品需求.md` §4。
+- 经 Owner 批准的 dated cut 只约束该刀；冲突时以 `docs/01`–`docs/03` 与代码事实为准。过时的 README 进度段不得压过已批准 cut 与代码事实。
 
 ## MVP 非目标
 
