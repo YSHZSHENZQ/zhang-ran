@@ -258,7 +258,14 @@ private fun HomeContentBody(
                 HomeEntrance(visible = entered) {
                     TransactionRow(
                         item = item,
-                        onClick = { onNavigate(Destination.detailRoute(item.id)) },
+                        onClick = {
+                            val route = if (item.pending) {
+                                Destination.pendingItemRoute(item.id)
+                            } else {
+                                Destination.detailRoute(item.id)
+                            }
+                            onNavigate(route)
+                        },
                     )
                 }
             }

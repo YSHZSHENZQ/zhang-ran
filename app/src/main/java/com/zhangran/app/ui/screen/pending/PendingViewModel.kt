@@ -149,6 +149,19 @@ class PendingViewModel(
                 }
                 .joinToString(separator = "、") { reasonText(it) }
 
+        /**
+         * 待确认列表的展示行。
+         *
+         * [focusTransactionId] 为空时返回全部行（角标进入的列表）。
+         * 非空时只返回这一笔，供首页点进来看确认或查重操作。
+         * 这一笔已经不在列表里时返回 null。
+         */
+        fun rowsForFocus(rows: List<PendingRow>, focusTransactionId: String): List<PendingRow>? {
+            if (focusTransactionId.isBlank()) return rows
+            val matched = rows.filter { it.transactionId == focusTransactionId }
+            return matched.takeIf { it.isNotEmpty() }
+        }
+
         fun reasonText(reason: PendingReason): String = when (reason) {
             PendingReason.UNKNOWN_MERCHANT -> "商户未知"
             PendingReason.AMOUNT_UNCERTAIN -> "金额不确定"

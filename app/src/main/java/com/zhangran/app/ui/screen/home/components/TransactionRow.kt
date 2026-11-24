@@ -4,14 +4,17 @@
  * 结构：
  * ```text
  * [渐变图标块] 商户名 / 备注摘要        金额
+ *              待确认（仅 PENDING）
  *              分类 · HH:mm · 来源
  * ```
  *
  * 约定：
  * - 渐变组与 emoji 由 [HomeCategoryVisuals] 集中决定（未知分类 → 默认橙组 + 默认 emoji，A8）；
- * - 金额符号与颜色按交易类型：支出 `-`（expense 色）、收入 `+`（income 色）、
+ * - 已确认行的金额符号与颜色按交易类型：支出 `-`（expense 色）、收入 `+`（income 色）、
  *   转账 `-`（transfer 色）、退款 `+`（income 色，**补充规则**：原型无退款样式）；
- * - 点击进详情（带 transactionId 的路由由调用方拼好）。
+ * - 待确认行（含仍为 PENDING 的疑似重复）另起一行显示「待确认」，金额改用 warning 色，
+ *   不用已确认支出的入账红；已确认行不加该标签；
+ * - 点击进哪一页由调用方决定（已确认进交易详情，待确认进该笔待确认详情）。
  */
 package com.zhangran.app.ui.screen.home.components
 
@@ -41,19 +44,25 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
-import com.zhangran.app.domain.model.TransactionType
+import com.zhangran.app.ui.screen.home.HOME_PENDING_LABEL
 import com.zhangran.app.ui.screen.home.HomeCategoryVisuals
 import com.zhangran.app.ui.screen.home.HomeLayout
+import com.zhangran.app.ui.screen.home.HomeRowAmountTone
 import com.zhangran.app.ui.screen.home.TransactionListItem
+import com.zhangran.app.ui.screen.home.homeRowAmountTone
 import com.zhangran.app.ui.screen.home.homePressScale
 import com.zhangran.app.ui.theme.MotionScale
 import com.zhangran.app.ui.theme.ZhangRanTheme
 import com.zhangran.app.ui.theme.expenseColor
 import com.zhangran.app.ui.theme.iconGradientBrush
 import com.zhangran.app.ui.theme.incomeColor
+import com.zhangran.app.ui.theme.backgroundColor
+import com.zhangran.app.ui.theme.smDp
 import com.zhangran.app.ui.theme.textDisabledColor
 import com.zhangran.app.ui.theme.textPrimaryColor
 import com.zhangran.app.ui.theme.transferColor
+import com.zhangran.app.ui.theme.warningColor
+import com.zhangran.app.ui.theme.xxsDp
 import com.zhangran.app.ui.theme.zhangRanGlass
 
 /**
@@ -128,6 +137,10 @@ fun TransactionRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (item.pending) {
+                Spacer(modifier = Modifier.height(ZhangRanTheme.spacing.xxsDp))
+                PendingStatusLabel()
+            }
             Spacer(modifier = Modifier.height(HomeLayout.metaTopPaddingDp))
             Text(
                 text = metaTextOf(item),
@@ -145,10 +158,32 @@ fun TransactionRow(
         Text(
             text = item.amountText,
             style = MaterialTheme.typography.displayMedium,
-            color = amountColorOf(item.type),
+            color = amountColorOf(item),
             maxLines = 1,
         )
     }
+}
+
+/**
+ * 待确认标签。单独一行，避免长商户名把四字挤出屏幕。
+ * 底用 warning、字用背景色，和已确认支出的红字金额分开。
+ */
+@Composable
+private fun PendingStatusLabel() {
+    val colors = ZhangRanTheme.colors
+    Text(
+        text = HOME_PENDING_LABEL,
+        modifier = Modifier
+            .clip(ZhangRanTheme.shapes.chip)
+            .background(colors.warningColor)
+            .padding(
+                horizontal = ZhangRanTheme.spacing.smDp,
+                vertical = ZhangRanTheme.spacing.xxsDp,
+            ),
+        style = MaterialTheme.typography.titleMedium,
+        color = colors.backgroundColor,
+        maxLines = 1,
+    )
 }
 
 /** 元信息：`分类 · HH:mm · 来源`（空字段自动省略）。 */
@@ -164,12 +199,12 @@ private fun metaTextOf(item: TransactionListItem): String = listOfNotNull(
  * 退款用收入色是本任务的**补充规则**：原型没有退款行样式；退款是"钱回来"，与收入同向。
  */
 @Composable
-private fun amountColorOf(type: TransactionType): Color {
+private fun amountColorOf(item: TransactionListItem): Color {
     val colors = ZhangRanTheme.colors
-    return when (type) {
-        TransactionType.EXPENSE -> colors.expenseColor
-        TransactionType.INCOME -> colors.incomeColor
-        TransactionType.TRANSFER -> colors.transferColor
-        TransactionType.REFUND -> colors.incomeColor
+    return when (homeRowAmountTone(item.pending, item.type)) {
+        HomeRowAmountTone.EXPENSE -> colors.expenseColor
+        HomeRowAmountTone.INCOME -> colors.incomeColor
+        HomeRowAmountTone.TRANSFER -> colors.transferColor
+        HomeRowAmountTone.PENDING -> colors.warningColor
     }
 }

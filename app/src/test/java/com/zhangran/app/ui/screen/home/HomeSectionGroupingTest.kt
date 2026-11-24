@@ -278,5 +278,59 @@ class HomeMoneyFormatTest {
         assertEquals("餐饮", item.categoryName)
         assertEquals("food", item.categoryIcon)
         assertEquals("星巴克咖啡，餐饮，14:23，支出 38.50 元", item.accessibilityText)
+        assertEquals(false, item.pending)
+    }
+
+    @Test
+    fun 待确认行带标签且已确认行不带() {
+        val pending = TransactionListEntry(
+            id = "pending-1",
+            type = TransactionType.EXPENSE,
+            amountMinor = 2_510L,
+            merchant = "示例早餐店",
+            note = null,
+            transactionTime = LocalDateTime.of(2024, 6, 15, 8, 5)
+                .atZone(ZoneId.of("Asia/Shanghai"))
+                .toInstant()
+                .toEpochMilli(),
+            categoryName = "餐饮",
+            categoryIcon = "food",
+            accountName = "现金",
+            source = CaptureSource.ACCESSIBILITY,
+            state = TransactionState.PENDING,
+        )
+        val confirmed = TransactionListEntry(
+            id = "confirmed-1",
+            type = TransactionType.EXPENSE,
+            amountMinor = 8_800L,
+            merchant = "示例午餐店",
+            note = null,
+            transactionTime = LocalDateTime.of(2024, 6, 15, 12, 10)
+                .atZone(ZoneId.of("Asia/Shanghai"))
+                .toInstant()
+                .toEpochMilli(),
+            categoryName = "餐饮",
+            categoryIcon = "food",
+            accountName = "现金",
+            source = CaptureSource.MANUAL,
+            state = TransactionState.CONFIRMED,
+        )
+        val items = HomeViewModel.groupIntoSections(
+            entries = listOf(pending, confirmed),
+            zoneId = "Asia/Shanghai",
+            nowEpochMillis = LocalDateTime.of(2024, 6, 15, 20, 0)
+                .atZone(ZoneId.of("Asia/Shanghai"))
+                .toInstant()
+                .toEpochMilli(),
+        ).single().items.associateBy { it.id }
+
+        val pendingItem = items.getValue("pending-1")
+        val confirmedItem = items.getValue("confirmed-1")
+        assertEquals(true, pendingItem.pending)
+        assertEquals(false, confirmedItem.pending)
+        assertTrue(pendingItem.accessibilityText.endsWith("，待确认"))
+        assertTrue(!confirmedItem.accessibilityText.contains("待确认"))
+        assertEquals("-25.10", pendingItem.amountText)
+        assertEquals("-88.00", confirmedItem.amountText)
     }
 }
