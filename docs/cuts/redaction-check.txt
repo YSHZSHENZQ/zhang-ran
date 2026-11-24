@@ -1,0 +1,80 @@
+# DOC-1 CR-1 / AC-5 脱敏检索记录
+
+生成时间：2026-11-24 16:17:56（Asia/Hong_Kong）
+检索对象：本目录全部文件（13 个：11 份切口副本 + README.md + 本文件），不排除任何文件（含本文件）。
+工具：ripgrep，逐词 `rg -o -i -e <词> <本目录> | wc -l`。
+
+本文件不写任何明文敏感词。词表为 PM 本机私有词表（不入仓）；下表只列序号、类别与命中数，不列词本身或其哈希（短词哈希可被猜词反推）。
+复核方法：由 PM 用私有词表重跑同一脚本，命中数应与下表一致且全部为 0。
+
+## 各类别词数
+| 类别 | 说明 | 词数 |
+|---|---|---|
+| merchant | 真实商户/公司名 | 9 |
+| implicit | 可反推真实商户的描述 | 3 |
+| owner-name | Owner 真名 | 2 |
+| device | 设备序列号/设备 ID | 7 |
+| path | 私有/原图/本机路径（含 /workspace 前缀） | 21 |
+| account | 手机号/邮箱/卡号/单号/账号 | 9 |
+| 合计 | | 51 |
+
+## 逐词命中（本目录全量）
+| # | 类别 | 命中 |
+|---|---|---|
+| 01 | merchant | 0 |
+| 02 | merchant | 0 |
+| 03 | merchant | 0 |
+| 04 | merchant | 0 |
+| 05 | merchant | 0 |
+| 06 | merchant | 0 |
+| 07 | merchant | 0 |
+| 08 | merchant | 0 |
+| 09 | merchant | 0 |
+| 10 | implicit | 0 |
+| 11 | implicit | 0 |
+| 12 | implicit | 0 |
+| 13 | owner-name | 0 |
+| 14 | owner-name | 0 |
+| 15 | device | 0 |
+| 16 | device | 0 |
+| 17 | device | 0 |
+| 18 | device | 0 |
+| 19 | device | 0 |
+| 20 | device | 0 |
+| 21 | device | 0 |
+| 22 | path | 0 |
+| 23 | path | 0 |
+| 24 | path | 0 |
+| 25 | path | 0 |
+| 26 | path | 0 |
+| 27 | path | 0 |
+| 28 | path | 0 |
+| 29 | path | 0 |
+| 30 | path | 0 |
+| 31 | path | 0 |
+| 32 | path | 0 |
+| 33 | path | 0 |
+| 34 | path | 0 |
+| 35 | path | 0 |
+| 36 | path | 0 |
+| 37 | path | 0 |
+| 38 | path | 0 |
+| 39 | path | 0 |
+| 40 | path | 0 |
+| 41 | path | 0 |
+| 42 | path | 0 |
+| 43 | account | 0 |
+| 44 | account | 0 |
+| 45 | account | 0 |
+| 46 | account | 0 |
+| 47 | account | 0 |
+| 48 | account | 0 |
+| 49 | account | 0 |
+| 50 | account | 0 |
+| 51 | account | 0 |
+
+## 十六进制串检查
+`rg -o -I -w '[0-9a-f]{7,40}' <本目录> | sort -u` 与私有词表中的白名单（切口内的 commit / gitSha / PR head 与 1 个截图 md5）比对；白名单外：0 个。
+
+## 结论
+PASS：51 个词 + 十六进制检查，对本目录全部文件合计 0 命中。

@@ -2,7 +2,7 @@
 
 > 个人本地优先、隐私优先的 Android 自动记账应用。
 
-版本：v0.1 ｜ 当前阶段：**阶段一（手工记账闭环）进行中**
+版本：v0.1 ｜ 分支：`dev` ｜ 基线：`40055cebbd4db3c74a6e06f70f1a514a0cd86e61`（UX-1 PR #7 合并提交）
 
 ## 项目目标
 
@@ -20,49 +20,24 @@
 
 ## 当前进度
 
-**已完成**
+手工记账闭环已交付。待确认、确认入账和去重已交付。微信与支付宝无障碍捕获、可导出的拒绝日志、FX-1 的窗口规则与微信成功页规则已交付。首页「最近交易」可区分待确认与已确认（UX-1）。高置信自动入账不做。解析规则页仍是占位。
 
-- 工程骨架与主题骨架（单 Activity、18 页占位）
-- 数据库 v2（9 实体）+ 真实迁移
-- 领域规则唯一落点：金额、时间、商户规范化、置信度、去重、决策
-- 采集接入层**进程内接口**（不再有 URI / 第二 APK 入口）
-- 数据层 3 个 Repository + 手工记账用例 + 首页真实列表
-- 首次安装初始数据（12 支出 + 6 收入 + 1 现金账户，幂等 / 删除不复活 / 升级不重跑）
-- 设计 token（颜色 / 字号 / 圆角 / 间距 / 玻璃 / 动画）全部对齐原型
-- **记账表单**（金额状态机、分类网格、数字键盘、四态）
+> 进度细节与已知缺口只写在 `AGENTS.md` §0.2（**唯一入口**）。本节不得与 §0.2 矛盾。
+>
+> 接手先读 `AGENTS.md` §0 与 §12。没有 Owner 批准的 dated cut 不得扩范围；merge、花钱、对外发送必须 Owner 本人批准。完整约定在 `AGENTS.md` §0.4。
 
-**未做**
+## 采集与识别能力来源
 
-- 转账、退款（原型无界面，需另行裁定）
-- 分类 / 账户管理页
-- 统计、预算、备份页
-- 底部导航图标、属性行彩色图标块
+微信与支付宝无障碍捕获已在本仓库 `app` 模块交付。AutoAccounting **尚未**作为 Gradle 模块接入：`app/settings.gradle.kts` 没有子项目，`app/build.gradle.kts` 的依赖里也没有该模块；上游代码不入库、不参与构建。
 
-> 逐项细节、已知缺口与接手约定见 `AGENTS.md` §0.2 与 §12.4（**唯一入口，不在此重复**）。
-
-## 采集与识别能力来源（v0.1 已定前提）
-
-v0.1 **采集层复用 AutoAccounting 的模块化核心**，账然不另行自建一套采集实现；最终以 **Gradle 模块内嵌于账然 APK**（单 APK 交付，D6）。
-
-**当前状态（勿误解）**：
-
-| 项 | 状态 |
-|---|---|
-| 账然侧**进程内接入接口** | ✅ 已完成（`capture/`，无 URI、无导出组件） |
-| 采集核心作为 Gradle 模块接入 | ❌ **尚未接入**（`app/settings.gradle.kts` 目前只有一个模块） |
-| 上游代码 | 仍是本地参考克隆，**不入库、不参与构建** |
-
-- 内嵌采集核心将负责：捕获（通知 / 无障碍 / OCR / 短信）、规则匹配、识别、证据。
-- 账然负责：**采集接入与适配**（`capture/`、`autoaccounting/`）、领域模型、领域决策、UI、Pending、统计、预算、备份、用户修改保护。
-- 边界：采集核心**不得直接写账然的 Room / Transaction**，只能经 Adapter 交出候选与证据（详见 `docs/07_自动记账与AutoAccounting集成.md` §2/§3.5）。
-- `docs/04_技术架构.md` §2 的自动记账链路与本条一致；若措辞有差异，以 `07` 为采集/识别侧 SSOT，以 `03` 为领域侧 SSOT。
+目标内嵌方案、Adapter 边界与许可证见 `docs/07_自动记账与AutoAccounting集成.md` 与 `docs/10_AutoAccounting接入结论.md`。模块是否已经编进当前 APK，以 `AGENTS.md` §0.2 的代码事实为准。
 
 ## AutoAccounting 使用边界（自用，不分发）
 
 - 本项目当前定位：**个人本地自用，不上架任何应用商店、不对外分发**。
 - AutoAccounting 上游仓库声明许可证为 GPL-3.0；内嵌后账然为 GPL-3.0 衍生作品。按"仅自用、不再分发"的口径，不触发分发义务。
 - 因此必须遵守（详见 `07` §20）：
-  - 采集核心以 **Gradle 模块内嵌**，来源与 commit 记录在 `docs/10`；
+  - 采集核心的目标形态仍是 **Gradle 模块内嵌**，来源与 commit 记录在 `docs/10`；当前构建尚未纳入该模块（`AGENTS.md` §0.2）；
   - 升级走 `07` §22 的采集核心版本合并流程；
   - 保留上游 LICENSE 与版权声明（含其依赖的第三方许可）；
   - 若未来要公开分发、闭源分发或商业化，必须先重新做许可证合规评估，或重做采集层。
@@ -80,6 +55,24 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 .\gradlew.bat testDebugUnitTest         # JVM 测试
 .\gradlew.bat connectedDebugAndroidTest # 设备测试（需要设备/模拟器）
 ```
+
+Linux / macOS（Gradle 根目录同样是 `app/`，脚本是 `app/gradlew`）：
+
+```bash
+cd app
+./gradlew assembleDebug
+./gradlew installDebug
+./gradlew testDebugUnitTest
+./gradlew connectedDebugAndroidTest
+```
+
+仓库里的 `app/gradlew` 权限是 `100644`，换行是 CRLF（`git ls-files -s app/gradlew` 为 `100644`，`git show HEAD:app/gradlew` 含 CR）。全新检出后要先转成 LF 并加上可执行位，才能运行上面的 `./gradlew`。在 `app/` 下：
+
+```bash
+perl -pi -e 's/\r$//' gradlew && chmod +x gradlew
+```
+
+Linux 的 GNU sed 也可以写成 `sed -i 's/\r$//' gradlew && chmod +x gradlew`。macOS 的 BSD sed 要写成 `sed -i '' 's/\r$//' gradlew && chmod +x gradlew`。这是本地改动，不要提交。
 
 打开应用：
 
@@ -103,7 +96,7 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 - Coroutines / Flow / StateFlow
 - WorkManager
 - Navigation Compose
-- 采集与识别能力由**内嵌采集核心**（AutoAccounting，GPL-3.0，Gradle 模块）提供（含通知 / 无障碍 / OCR / 短信等模式，按模式决定所需权限）；仅自用不分发
+- 已交付的微信 / 支付宝无障碍捕获在本模块 `capture/`。AutoAccounting（GPL-3.0）尚未以 Gradle 模块接入；方案见 `docs/07`、`docs/10`。仅自用不分发
 
 **字体**：正文内置**微软雅黑**（`app/src/main/res/font/msyh.ttf`，从本机 TTC 提取为 TTF），
 与原型在 Windows 上的实际渲染一致。字体文件使 APK 约 43 MB。
@@ -111,7 +104,8 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 
 ## 文档入口
 
-- `AGENTS.md`：Agent 工作规则 + **当前进度 + 上手手册**（接手先读它）
+- `AGENTS.md`：Agent 工作规则 + **当前进度 + 上手手册**（接手先读它；约定见 §0.4）
+- `docs/cuts/`：Owner 批准的 dated cut（索引 `docs/cuts/README.md`）。切口只约束该刀范围；冲突时以 `docs/01`–`docs/03` 与代码事实为准；新工作须有 Owner 批准的新切口
 - `docs/01_产品需求.md`：为什么做、做什么、不做什么
 - `docs/02_产品规格.md`：产品行为规则
 - `docs/03_领域模型与业务规则.md`：数据模型和业务不变量（含领域决策规则）
@@ -129,7 +123,7 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
   - 工程内：`settings.gradle.kts`、`build.gradle.kts`、`gradle.properties`、`gradlew(.bat)`、`gradle/libs.versions.toml`（唯一版本来源）
   - 源码：`app/src/main/java/com/zhangran/app/`（包结构与代码地图见 `AGENTS.md` §12.3）
   - 资源：`app/src/main/res/`（含 `font/msyh.ttf`、`values/themes.xml` 系统栏外观）
-  - 构建命令：`cd app; .\gradlew.bat <task>`（Windows）
+  - 构建命令：`cd app; .\gradlew.bat <task>`（Windows）；`cd app && ./gradlew <task>`（Linux / macOS）
   - **构建前置：构建期 JVM 必须是 JDK 21+**（Hilt 生成的 Java 编译任务不跟随 Gradle toolchain）
 - `AutoAccounting/`：上游参考项目（本地克隆，仅用于接入分析，已 gitignore，不作为本项目提交对象）
 
@@ -165,6 +159,7 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 - 采集与识别侧的冲突（枚举取值、来源映射、工作模式、权限）以 `07` 为准；`02` §19 只是产品视角摘要。
 - UI 原型只用于确认视觉表现，不作为业务规则来源；原型中的示例数字、示例文件名、示例账户/支付方式不作为数据依据。
 - 本链路上不存在独立的"产品目标"文档，产品目标写在 `01_产品需求.md` §4。
+- 经 Owner 批准的 dated cut 只约束该刀；冲突时以 `docs/01`–`docs/03` 与代码事实为准。过时的 README 进度段不得压过已批准 cut 与代码事实。
 
 ## MVP 非目标
 
