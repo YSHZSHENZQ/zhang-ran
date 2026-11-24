@@ -1,0 +1,88 @@
+FX-1 emulator smoke for 383a0c5f (AVD qj1, API 36, TCG: emulator -accel off, no KVM)
+[2026-11-20 22:44:56 CST] emu cmdline:
+/home/box/android-sdk/emulator/qemu/linux-x86_64/qemu-system-x86_64 -avd qj1 -accel off -no-snapshot -no-audio -no-boot-anim -gpu swiftshader_indirect -port 5554 -no-metrics
+[2026-11-20 22:44:56 CST] apk sha256:
+a0e6460b7d2c78fea4cad43c1cc188f36b6dae3cdb04df1ebcc0261b3c0f359e  /workspace/zhang-ran-pm/delivery/fx-1/zhangran-fx-1-debug-383a0c5f.apk
+expected a0e6460b7d2c78fea4cad43c1cc188f36b6dae3cdb04df1ebcc0261b3c0f359e
+TCG confirmed (-accel off)
+[2026-11-20 22:44:56 CST] $ adb wait-for-device; adb devices
+List of devices attached
+emulator-5554	device
+
+[2026-11-20 22:44:56 CST] exit=0
+[2026-11-20 22:44:56 CST] $ adb shell getprop sys.boot_completed; adb shell getprop ro.build.version.sdk; adb shell getprop ro.product.cpu.abi; adb shell uptime; adb shell getprop persist.sys.timezone
+1
+36
+x86_64
+ 22:45:02 up 4 min,  0 users,  load average: 16.77, 7.41, 2.93
+Asia/Shanghai
+[2026-11-20 22:45:04 CST] exit=0
+## STEP 1: uninstall
+[2026-11-20 22:45:04 CST] $ adb shell pm list packages | grep -i zhangran || true
+package:com.zhangran.app
+package:com.zhangran.app.test
+[2026-11-20 22:45:07 CST] exit=0
+[2026-11-20 22:45:07 CST] $ adb uninstall com.zhangran.app || true
+Success
+[2026-11-20 22:45:16 CST] exit=0
+[2026-11-20 22:45:16 CST] $ adb uninstall com.zhangran.app.test || true
+Success
+[2026-11-20 22:45:26 CST] exit=0
+[2026-11-20 22:45:26 CST] $ adb shell pm list packages | grep -i zhangran || echo 'none'
+none
+[2026-11-20 22:45:28 CST] exit=0
+## STEP 2: install
+[2026-11-20 22:45:28 CST] $ adb install /workspace/zhang-ran-pm/delivery/fx-1/zhangran-fx-1-debug-383a0c5f.apk
+Performing Streamed Install
+Success
+[2026-11-20 22:46:43 CST] exit=0
+[2026-11-20 22:46:43 CST] $ adb shell pm list packages | grep -i zhangran
+package:com.zhangran.app
+[2026-11-20 22:46:46 CST] exit=0
+[2026-11-20 22:46:46 CST] $ adb shell dumpsys package com.zhangran.app | grep -E 'versionName|versionCode|lastUpdateTime|signatures' | head -20
+    versionCode=1 minSdk=31 targetSdk=36
+    versionName=0.1.0
+    lastUpdateTime=2026-11-20 22:46:38
+    signatures=PackageSignatures{df98b02 version:3, signatures:[efbdfb4], past signatures:[]}
+[2026-11-20 22:46:51 CST] exit=0
+## STEP 3: launch
+[2026-11-20 22:46:51 CST] $ adb logcat -c
+[2026-11-20 22:46:53 CST] exit=0
+[2026-11-20 22:46:53 CST] $ adb shell cmd package resolve-activity --brief com.zhangran.app
+priority=0 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=false
+com.zhangran.app/.MainActivity
+[2026-11-20 22:46:54 CST] exit=0
+[2026-11-20 22:46:54 CST] $ adb shell am start -W -n com.zhangran.app/.MainActivity || true
+Starting: Intent { cmp=com.zhangran.app/.MainActivity }
+Status: timeout
+LaunchState: UNKNOWN (-1)
+Activity: com.zhangran.app/.MainActivity
+WaitTime: 26258
+Complete
+[2026-11-20 22:47:22 CST] exit=0
+[2026-11-20 22:47:22 CST] $ sleep 20
+[2026-11-20 22:47:42 CST] exit=0
+[2026-11-20 22:47:42 CST] $ adb shell dumpsys activity activities | grep -E 'ResumedActivity|topResumed' | head -5
+    topResumedActivity=ActivityRecord{225789893 u0 com.zhangran.app/.MainActivity t173}
+  ResumedActivity: ActivityRecord{225789893 u0 com.zhangran.app/.MainActivity t173}
+[2026-11-20 22:47:45 CST] exit=0
+[2026-11-20 22:47:45 CST] $ adb shell pidof com.zhangran.app
+2200
+[2026-11-20 22:47:47 CST] exit=0
+## STEP 4: crash check
+[2026-11-20 22:47:47 CST] $ adb logcat -d -b crash; echo '(end of crash buffer)'
+(end of crash buffer)
+[2026-11-20 22:47:49 CST] exit=0
+[2026-11-20 22:47:49 CST] $ adb logcat -d | grep -E 'FATAL EXCEPTION|AndroidRuntime|ANR' || echo 'no FATAL/ANR'
+11-20 22:46:55.601   659  1987 E ActivityManager: ANR in com.android.phone
+11-20 22:46:58.341   659  1987 D ActivityManager: Completed ANR of com.android.phone in 6726ms, latency 25968ms (expired, only dump ANR app)
+11-20 22:47:27.591   659  2353 D ActivityManager: created ANR temporary file:/data/anr/temp_anr_4452429797392443374.txt
+11-20 22:47:33.882   659  2375 D ActivityManager: created ANR temporary file:/data/anr/temp_anr_8601372626798562691.txt
+[2026-11-20 22:47:51 CST] exit=0
+## STEP 5: screenshot
+[2026-11-20 22:47:51 CST] $ adb exec-out screencap -p > /workspace/zhang-ran-pm/delivery/fx-1/fx1-383a0c5f-launch.png; ls -l /workspace/zhang-ran-pm/delivery/fx-1/fx1-383a0c5f-launch.png; md5sum /workspace/zhang-ran-pm/delivery/fx-1/fx1-383a0c5f-launch.png; file /workspace/zhang-ran-pm/delivery/fx-1/fx1-383a0c5f-launch.png || true
+-rw-r--r-- 1 box box 292356 Nov 20 22:48 /workspace/zhang-ran-pm/delivery/fx-1/fx1-383a0c5f-launch.png
+3477937d424dd255b1e1e5be408359d6  /workspace/zhang-ran-pm/delivery/fx-1/fx1-383a0c5f-launch.png
+environment: line 10: file: command not found
+[2026-11-20 22:48:12 CST] exit=0
+[2026-11-20 22:48:12 CST] smoke done

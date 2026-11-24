@@ -1,0 +1,31 @@
+# AC-8 同窗口停留不再比较节点文本
+
+功能提交 `6d5f42c612db0768773fbf029349b240c9e08dec`。
+
+来源：JVM `testDebugUnitTest`，类 `com.zhangran.app.capture.accessibility.AccessibilitySnapshotIngestTest`。该类 29 条，0 失败。全量 JVM 52 个类、622 条，0 失败、0 错误。下面是该类报告摘录：
+
+```text
+PASS 两笔不同的同金额付款是 2 条
+PASS 没有单号也没有支付时间时两秒内同页合并七十分钟后仍新建
+PASS 同单号隔七十分钟不再插入忽略或确认后也不再插入
+PASS 同金额但窗口不同即使两秒内也不合并
+PASS 同支付时间但两侧商户不同仍是两条一侧为空则不再插入
+PASS 同窗口同金额节点文本变了仍合并
+PASS 同支付时间隔七十分钟不再插入且捕获时刻另存
+```
+
+仓库里没有「节点指纹不同就不合并」的旧断言，这次没有改这类断言。
+
+合成页用支付宝包名、`windowId` 8801、金额 ¥7.70。第一次节点含「支付金额」，1.3 秒后第二次含「回首页」。没有单号，也没有支付时间。两条采样合成 1 条 `PENDING`。
+
+「两笔不同的同金额付款是 2 条」覆盖三件事：
+
+- 单号 `202611191001` 与 `202611191002`，相隔 2 秒 → 2 条
+- 无单号、同一 `windowId`、相隔 16 秒 → 2 条
+- 无单号、`windowId` 8801 与 8802、相隔 2 秒 → 2 条
+
+真机回放见 `replay-summary-6d5f42c6.txt`（2026-11-19 11:43:33 生成，未手改）。方法：取真机库 33 条 PENDING 行的 `rawCaptureRef` 保真节点树，加上另外 17 份快照，按 `capturedAt` 排序，经 `AccessibilitySnapshotFidelity.decode` / `toSnapshot` 还原后，逐条喂给空库上的 `AccessibilitySnapshotIngest`。这是一次性 JVM harness，跑完已删除，没有入库。真机原始快照和数据库不进仓库。
+
+限制：真机快照没有 `className`、`clickable`、`rootClassName`，按钮商户规则和根 class 不能回放。`WRONG_WINDOW` 样本没有节点树，未回放。摘要只含时间、`windowId`、节点数和结论。
+
+¥22.50 那对是支付宝 `windowId` 44003，18:10:42.277 与 18:10:43.586，相隔 1.3 秒，`fpSameAsPrev=false`。同一回放在 `2de52187` 上是 2 行；在 `6d5f42c6` 上第二条 `MERGED_INTO_EXISTING`，只留 1 行。¥12.90 那对是 `windowId` 44440，09:21:53.974 与 09:21:55.016，约 1.0 秒，`fpSameAsPrev=true`，合并成 1 行。全部 50 份输入回放后待确认共 2 行（真机库原来 33 行），已确认 0。对照 `2de52187` 同一回放是 3 条待确认（¥22.50 两行，¥12.90 一行）。

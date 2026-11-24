@@ -32,6 +32,8 @@ data class AccessibilityFidelityDocument(
     val notificationId: String? = null,
     /** 通知投递时间。旧保真文本没有这个字段时为 null。 */
     val postTime: Long? = null,
+    /** 窗口根节点的真实包名。旧保真文本没有这个字段时为 null。 */
+    val rootPackageName: String? = null,
 )
 
 object AccessibilitySnapshotFidelity {
@@ -61,6 +63,7 @@ object AccessibilitySnapshotFidelity {
             truncated = snapshot.truncated,
             notificationId = CaptureProcessor.sanitize(notificationId),
             postTime = postTime,
+            rootPackageName = CaptureProcessor.sanitize(snapshot.rootPackageName),
             nodes = snapshot.nodes.map { node ->
                 AccessibilityFidelityNode(
                     text = CaptureProcessor.sanitize(node.text),
@@ -95,5 +98,6 @@ object AccessibilitySnapshotFidelity {
             },
             truncated = document.truncated,
             textChars = document.nodes.sumOf { (it.text?.length ?: 0) + (it.contentDescription?.length ?: 0) },
+            rootPackageName = document.rootPackageName,
         )
 }

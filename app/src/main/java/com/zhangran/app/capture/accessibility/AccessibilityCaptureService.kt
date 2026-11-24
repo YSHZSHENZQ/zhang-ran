@@ -31,6 +31,8 @@ class AccessibilityCaptureService : AccessibilityService() {
 
     @Inject lateinit var settings: SettingsRepository
 
+    @Inject lateinit var rejections: AccessibilityRejectionLog
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val reader = NodeTreeReader()
     private val scheduler = DelayedSampleScheduler(scope)
@@ -72,51 +74,87 @@ class AccessibilityCaptureService : AccessibilityService() {
         scheduler.schedule(windowKey) {
             val startedAt = System.currentTimeMillis()
             val capturedAt = startedAt
-            val result = withContext(Dispatchers.Main) {
-                reader.read(
-                    root = rootInActiveWindow,
-                    packageName = packageName,
-                    windowId = windowId,
-                    capturedAt = capturedAt,
-                )
+            val sampled = withContext(Dispatchers.Main) {
+                sampleWindow(packageName = packageName, windowId = windowId, capturedAt = capturedAt)
             }
             val elapsed = System.currentTimeMillis() - startedAt
-            when (result) {
-                is NodeReadResult.WindowUnavailable ->
+            when (sampled) {
+                is SampledWindow.Rejected -> {
                     AccessibilityDiagnostics.log(
-                        status = "WINDOW_NULL",
+                        status = sampled.reason.name,
                         packageName = packageName,
                         elapsedMs = elapsed,
-                    )
-
-                is NodeReadResult.Empty ->
-                    AccessibilityDiagnostics.log(
-                        status = "NODE_EMPTY",
-                        packageName = packageName,
-                        elapsedMs = elapsed,
-                    )
-
-                is NodeReadResult.Success -> {
-                    exportDebugSnapshot(result.snapshot)
-                    val forward = AccessibilitySnapshotParser.shouldForward(result.snapshot)
-                    AccessibilityDiagnostics.log(
-                        status = when {
-                            !forward -> "NOT_PAYMENT_PAGE"
-                            result.snapshot.truncated -> "SNAPSHOT_TRUNCATED"
-                            else -> "SNAPSHOT_OK"
-                        },
-                        packageName = packageName,
-                        nodes = result.snapshot.nodes.size,
-                        elapsedMs = elapsed,
-                        truncated = result.snapshot.truncated,
                         capturedAt = capturedAt,
                     )
-                    if (forward) {
-                        val enabled = settings.settings.first().autoLedgerEnabled
-                        if (!enabled) {
+                    rejections.record(
+                        reason = sampled.reason,
+                        eventPackage = packageName,
+                        rootPackage = sampled.rootPackage,
+                        capturedAt = capturedAt,
+                    )
+                }
+
+                is SampledWindow.Read -> when (val result = sampled.result) {
+                    is NodeReadResult.WindowUnavailable -> {
+                        AccessibilityDiagnostics.log(
+                            status = "WINDOW_NULL",
+                            packageName = packageName,
+                            elapsedMs = elapsed,
+                        )
+                        rejections.record(
+                            reason = AccessibilityRejectReason.WINDOW_NULL,
+                            eventPackage = packageName,
+                            capturedAt = capturedAt,
+                        )
+                    }
+
+                    is NodeReadResult.Empty -> {
+                        AccessibilityDiagnostics.log(
+                            status = "NODE_EMPTY",
+                            packageName = packageName,
+                            elapsedMs = elapsed,
+                        )
+                        rejections.record(
+                            reason = AccessibilityRejectReason.NODE_EMPTY,
+                            eventPackage = packageName,
+                            capturedAt = capturedAt,
+                        )
+                    }
+
+                    is NodeReadResult.Success -> {
+                        exportDebugSnapshot(result.snapshot)
+                        val forward = AccessibilitySnapshotParser.shouldForward(result.snapshot)
+                        AccessibilityDiagnostics.log(
+                            status = when {
+                                !forward -> "NOT_PAYMENT_PAGE"
+                                result.snapshot.truncated -> "SNAPSHOT_TRUNCATED"
+                                else -> "SNAPSHOT_OK"
+                            },
+                            packageName = packageName,
+                            nodes = result.snapshot.nodes.size,
+                            elapsedMs = elapsed,
+                            truncated = result.snapshot.truncated,
+                            capturedAt = capturedAt,
+                        )
+                        if (!forward) {
+                        rejections.record(
+                            reason = AccessibilityRejectReason.NOT_PAYMENT_PAGE,
+                            eventPackage = packageName,
+                            rootPackage = result.snapshot.rootPackageName,
+                            capturedAt = capturedAt,
+                            page = RejectionPageFacts.fromSnapshot(result.snapshot),
+                        )
+                        } else if (!settings.settings.first().autoLedgerEnabled) {
                             AccessibilityDiagnostics.log(
                                 status = "SWITCH_OFF",
                                 packageName = packageName,
+                            )
+                            rejections.record(
+                                reason = AccessibilityRejectReason.SWITCH_OFF,
+                                eventPackage = packageName,
+                                rootPackage = result.snapshot.rootPackageName,
+                                capturedAt = capturedAt,
+                                page = RejectionPageFacts.fromSnapshot(result.snapshot),
                             )
                         } else {
                             pipeline.submit(result.snapshot)
@@ -126,6 +164,45 @@ class AccessibilityCaptureService : AccessibilityService() {
             }
         }
     }
+
+    /**
+     * 延迟之后再看窗口。只读事件包名自己的那一扇；对不上就不读树，避免把账然首页记成支付页。
+     */
+    private fun sampleWindow(packageName: String, windowId: Int, capturedAt: Long): SampledWindow {
+        val active = rootInActiveWindow
+        val decision = PaymentWindowResolver.resolve(
+            eventPackage = packageName,
+            eventWindowId = windowId,
+            activePackage = active?.packageName?.toString(),
+            windows = observedWindows(),
+        )
+        if (decision.match != PaymentWindowMatch.MATCHED) {
+            val reason = when (decision.match) {
+                PaymentWindowMatch.WRONG_WINDOW -> AccessibilityRejectReason.WRONG_WINDOW
+                else -> AccessibilityRejectReason.NO_MATCHING_WINDOW
+            }
+            return SampledWindow.Rejected(reason = reason, rootPackage = decision.rootPackage)
+        }
+        val root = windows?.firstOrNull { it.id == decision.windowId }?.root
+            ?: active?.takeIf { it.packageName?.toString() == decision.rootPackage }
+        return SampledWindow.Read(
+            reader.read(
+                root = root,
+                packageName = packageName,
+                windowId = decision.windowId ?: windowId,
+                capturedAt = capturedAt,
+                rootPackageName = decision.rootPackage,
+            ),
+        )
+    }
+
+    private fun observedWindows(): List<ObservedWindow> =
+        windows?.map { window ->
+            ObservedWindow(
+                packageName = window.root?.packageName?.toString(),
+                windowId = window.id,
+            )
+        }.orEmpty()
 
     /**
      * debug：无论当前解析是否认为这是支付结果页，都导出脱敏快照。
@@ -152,6 +229,15 @@ class AccessibilityCaptureService : AccessibilityService() {
             capturedAt = snapshot.capturedAt,
             fileName = fileName,
         )
+    }
+
+    private sealed interface SampledWindow {
+        data class Rejected(
+            val reason: AccessibilityRejectReason,
+            val rootPackage: String?,
+        ) : SampledWindow
+
+        data class Read(val result: NodeReadResult) : SampledWindow
     }
 
     override fun onInterrupt() {

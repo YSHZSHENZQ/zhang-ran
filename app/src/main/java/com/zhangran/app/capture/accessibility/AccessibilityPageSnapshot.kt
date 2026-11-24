@@ -13,15 +13,19 @@ data class SnapshotNode(
     val viewId: String?,
     val className: String?,
     val depth: Int,
+    /** 按钮或可点击控件。兜底商户不得使用这类节点的文字或 contentDescription。 */
+    val clickable: Boolean = false,
 )
 
 /**
- * @property packageName 来源包名
+ * @property packageName 事件来源包名（无障碍事件上的包名）
  * @property windowId 窗口 id
  * @property capturedAt 采样时刻（UTC epoch millis）
  * @property nodes 节点文本快照（仅内存）
  * @property truncated 是否触达深度/数量/文本上限
  * @property textChars 收集到的文本字符数
+ * @property rootPackageName 采样窗口根节点的真实包名。旧快照没有这个字段时为 null，
+ * 视为与 [packageName] 相同。事件包名和根包名不一致时，这棵树不是支付页。
  */
 data class AccessibilityPageSnapshot(
     val packageName: String,
@@ -30,6 +34,9 @@ data class AccessibilityPageSnapshot(
     val nodes: List<SnapshotNode>,
     val truncated: Boolean,
     val textChars: Int,
+    val rootPackageName: String? = null,
+    /** 窗口根节点的 class 名。拒绝日志只记这个名字，不记页面正文。 */
+    val rootClassName: String? = null,
 )
 
 /** 节点读取结论（失败原因必须可区分，`M6` 阶段 1 验收）。 */

@@ -1,0 +1,5 @@
+gitSha=383a0c5f62a8e7378b9a2d08097fa21bbf7d0b49
+ac11.pending=1 amount=8.00 type=EXPENSE merchant=示例早餐店
+ac12.pending=1 amount=8.00 type=EXPENSE merchant=示例早餐店
+ac13.confirm.pending=0
+ac13.chat.pending=0

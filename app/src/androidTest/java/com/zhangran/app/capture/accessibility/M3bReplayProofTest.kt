@@ -119,7 +119,9 @@ class M3bReplayProofTest {
                 AccessibilityFixtures.F_WX,
             )
             val second = ingest.ingest(
-                AccessibilityFixtures.wechatDepthSeek(),
+                AccessibilityFixtures.wechatDepthSeek(
+                    AccessibilityFixtures.WX_CAPTURED_AT + SAME_PAGE_STAY_MILLIS + 5_000L,
+                ),
                 AccessibilityFixtures.F_WX,
             )
             check(first.transactionState == TransactionState.PENDING)
@@ -209,9 +211,19 @@ class M3bReplayProofTest {
         runBlocking {
             val ingest = entry().accessibilitySnapshotIngest()
             ingest.ingest(AccessibilityFixtures.wechatDepthSeek(), AccessibilityFixtures.F_WX)
-            ingest.ingest(AccessibilityFixtures.wechatDepthSeek(), AccessibilityFixtures.F_WX)
+            ingest.ingest(
+                AccessibilityFixtures.wechatDepthSeek(
+                    AccessibilityFixtures.WX_CAPTURED_AT + SAME_PAGE_STAY_MILLIS + 5_000L,
+                ),
+                AccessibilityFixtures.F_WX,
+            )
             ingest.ingest(AccessibilityFixtures.alipayFufu(), AccessibilityFixtures.F_ALI)
-            ingest.ingest(AccessibilityFixtures.alipayFufu(), AccessibilityFixtures.AC6_ALI)
+            ingest.ingest(
+                AccessibilityFixtures.alipayFufu(
+                    AccessibilityFixtures.ALI_CAPTURED_AT + SAME_PAGE_STAY_MILLIS + 5_000L,
+                ),
+                AccessibilityFixtures.AC6_ALI,
+            )
         }
         composeRule.waitForIdle()
         awaitDescription("待确认 4 条")
