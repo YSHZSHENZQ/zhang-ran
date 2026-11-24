@@ -57,6 +57,7 @@
 | 产品范围 | 高置信自动入账不做，除非另有经批准的 cut。 |
 | instrumented | 7 条失败待排查，不在 DOC-1 范围：`Fx1ProofTest.看错窗口余额宝金额与疑似失效`、`M3aAcceptanceProofTest.待确认三种处置与统计保护取证`、`M62PendingProofTest.首页正式收支不因待确认增加`、`M62PendingProofTest.待确认页展示支付结果fixture`、`M64StatusProofTest.状态引导日志导出清空恢复与疑似失效`、`NavigationBehaviorTest.A8_首页返回退出应用`、`MineScreenTest.A5_待确认与关于入口可跳转`。 |
 | D5 | 仍成立。我的页数据管理没有「预算管理」入口（`MineScreen.kt` 的 `DataManagementSection`；文件头写明预算只保留底栏入口）。`docs/06` §4.5 仍把「预算管理」写在数据管理入口里。本刀不改 `docs/06`。 |
+| 关于页文案 | 产品文案，待修，不在 DOC-1 范围：关于页 `CAPTURE_CORE_SUMMARY`（`AboutInfo.kt`）写着「来源：AutoAccounting（Gradle 模块内嵌）」，但仓库里没有该 Gradle 模块（`app/settings.gradle.kts` 无子项目）。 |
 
 UX-1 已合并。「首页待确认与已确认看起来一样」已修复，不再列为未修。
 
