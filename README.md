@@ -66,6 +66,14 @@ cd app
 ./gradlew connectedDebugAndroidTest
 ```
 
+仓库里的 `app/gradlew` 权限是 `100644`，换行是 CRLF（`git ls-files -s app/gradlew` 为 `100644`，`git show HEAD:app/gradlew` 含 CR）。全新检出后要先转成 LF 并加上可执行位，才能运行上面的 `./gradlew`。在 `app/` 下：
+
+```bash
+perl -pi -e 's/\r$//' gradlew && chmod +x gradlew
+```
+
+Linux 的 GNU sed 也可以写成 `sed -i 's/\r$//' gradlew && chmod +x gradlew`。macOS 的 BSD sed 要写成 `sed -i '' 's/\r$//' gradlew && chmod +x gradlew`。这是本地改动，不要提交。
+
 打开应用：
 
 ```powershell
