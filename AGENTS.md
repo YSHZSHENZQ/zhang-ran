@@ -58,7 +58,7 @@
 
 UX-1 已合并。「首页待确认与已确认看起来一样」已修复，不再列为未修。
 
-自动化基线见 §9.2。历史性能数字（2026-10-28 模拟器 debug，本刀未重测，不是验收指标）：首页冷启动约 3.2s；搜索 10,000 条约 12ms（关键字）/ 7ms（组合）；滚动 Janky 约 34%。
+自动化基线（2026-11-24 实测；`app/` 与 `40055ceb` 相同，运行时 HEAD `81cbef1bd5a0ab0a4b5729e9147cd71bc4432d9c`）：JVM `:testDebugUnitTest` 636 例，0 失败、0 错误、0 跳过；instrumented `:connectedDebugAndroidTest` 270 例，7 失败、0 错误、0 跳过。命令、分项计数与失败用例见 §9.2 和 `docs/proof/doc-1/`。历史性能数字（2026-10-28 模拟器 debug，本刀未重测，不是验收指标）：首页冷启动约 3.2s；搜索 10,000 条约 12ms（关键字）/ 7ms（组合）；滚动 Janky 约 34%。
 
 ### 0.3 五条最容易犯错的约定
 
@@ -218,7 +218,10 @@ cd app
 
 - 只跑受影响用例；全量仅限改 schema / 领域核心规则 / 全局 token（收尾验收）。
 - ⚠️ `connectedDebugAndroidTest` 结束会卸载 app，之后要重新 `installDebug`。
-- 当前基线：JVM 535（1 红，D1）、instrumented 256；新增测试应保持增量、避免拖慢。
+- 当前基线（2026-11-24，在 `app/` 执行 `./gradlew testDebugUnitTest` 与 `./gradlew connectedDebugAndroidTest`；运行时 HEAD `81cbef1bd5a0ab0a4b5729e9147cd71bc4432d9c`，`app/` 相对 `40055ceb` 无差异）：
+  - `:testDebugUnitTest`：tests 636，failures 0，errors 0，skipped 0。单模块，没有第二个 JVM 测试任务。
+  - `:connectedDebugAndroidTest`：tests 270，failures 7，errors 0，skipped 0。模拟器为 API 36，系统时区是 `Etc/UTC`（不是 `Asia/Shanghai`）。7 个失败用例与日志关键行见 `docs/proof/doc-1/test-baseline.md`。
+  - 新增测试应保持增量，避免拖慢。禁止再引用 2026-10-28 的 535 / 256 作为当前基线。
 - 若接口变更导致既有测试 fake 编译失败：只补空实现/适配，不改既有断言。
 
 ### 9.3 视觉验证
