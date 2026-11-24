@@ -55,7 +55,9 @@ class M64StatusProofTest {
             "设备时区不是 Asia/Shanghai：${java.time.ZoneId.systemDefault()}"
         }
         // M6-4 AC-2：完成一次后冷启动不再弹引导。前面的用例可能已经点过完成，Fx1 也会打开无障碍。
+        // 全量里别的用例可能已经打开总开关。本用例要先看到「当前已关闭」，再自己打开。
         resetOnboardAndAccessibilityForTest()
+        runBlocking { entry().setAutoLedgerEnabledUseCase().invoke(false) }
         awaitText("权限引导")
         awaitText("无障碍未授权")
         shot("ac2-onboard-before")
