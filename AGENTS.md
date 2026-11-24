@@ -21,33 +21,43 @@
 | 经验教训 | `docs/09`（**动手前必读**） |
 | 真机记录 | `docs/11` |
 
-### 0.2 当前状态（2026-10-28）
+### 0.2 当前状态（2026-11-24）
 
-**阶段一（手工记账闭环）已完成收尾验收；阶段二（采集核心接入）尚未开始。**
+**进度唯一入口。** 分支 `dev`。代码基线是 UX-1 PR #7 的合并提交 `40055cebbd4db3c74a6e06f70f1a514a0cd86e61`。`README.md` 只保留短摘要，不得与本节矛盾。已合并切口见 `docs/cuts/`，证明见 `docs/proof/`。
 
-- 18 个页面均有实现：11 个完整页（首页 / 统计 / 记一笔 / 预算 / 我的 / 详情 / 分类 / 账户 / 备份 / 搜索 / 关于），
-  7 个阶段二占位页（待确认 / 编辑后入账 / 疑似重复 / 自动记账 / 权限引导 / 解析规则 / 捕获日志）。
-- 阶段一完成脉络：T1 工程/18 页骨架 → T2 Room v2 + 迁移 → T3/M1 领域规则 → U0 采集接入层 →
-  M1c'/M2a/M2e-1 手工记账与首页 → M2b 详情/字段编辑/软删除 → M2d 分类/账户 → M4a 预算 →
-  M4b 备份/三模式恢复 → M4c 设置与主题 → M4d 关于 → M4e 搜索 → M5-1 导航与底栏 → M5 收尾验收。
-- 分支 `dev`，工作区应保持干净；最新提交即最新状态（`git log --oneline -10` 可看任务脉络）。
-- 自动化基线：**JVM 535 例（1 例失败，见 D1）**；**instrumented 256 例全过**；
-  `assembleDebug` 通过。全量命令与例外见 §9.2。
-- 性能基线（模拟器 debug）：首页冷启动约 3.2s；搜索 10,000 条约 12ms（关键字）/ 7ms（组合）；
-  滚动 Janky 约 34%。仅作基线，不是指标。
+**已交付**
 
-**已知问题（接手先看，详见 §12.4）**
+- 手工记账闭环：记一笔、详情与字段编辑、软删除、分类、账户、统计、预算、备份（三模式恢复）、搜索、关于、底栏与推入型「记一笔」。
+- 待确认、确认入账和去重：待确认只在用户点「确认 / 改完再记 / 忽略」后入账或丢弃；疑似重复可判「同一笔 / 两笔」（M3a、M3b）。用户改过的字段不会被自动流程改回。
+- 微信与支付宝无障碍捕获，以及可导出的拒绝日志（M6-2、M6-3、M6-4、FX-1）。
+- FX-1 窗口规则：采样只认事件包名自己的窗口；账然自身、桌面、多任务和系统界面不当成支付页。微信成功页规则：无障碍树缺少「支付成功」等结果用语时，包名是微信、不是会话列表、恰好一笔金额且有「完成」，记为支出并进入待确认。
+- UX-1：首页「最近交易」的待确认行可与已确认区分（行上有「待确认」标签，金额不用已确认支出的入账红字）。本月合计仍只含已确认。
+- 自动记账可用状态、权限引导、捕获日志与导出已有页面。`RulesScreen`（解析规则）仍是占位，只显示页面名。其余页面不是占位。
 
-| # | 问题 | 下一步 |
-|---|---|---|
-| D1 | `DestinationsTest.页面清单与文档一致` 仍断言 `detail`，实际路由为 `detail?transactionId={transactionId}`；JVM 全量因此 1 红 | 只改测试期望（测试文件；不得为绿灯改产品） |
-| D2 | 关于页隐私文案称 `INTERNET` 用于本机回环，但当前 Manifest **零权限**、未声明 `INTERNET`（计划 U3 合并） | 阶段二 U3 前先裁定：改文案，或按 U3 声明权限 |
-| D3 | 搜索结果行点击无跳转（`SearchScreen` 的 `onOpenTransaction` 默认空实现，NavHost 未接线） | 导航小任务接线 |
-| D4 | 底栏进入「记一笔」时数字键盘最后一行被底栏部分遮挡 | UI 打磨：内容底部让出底栏高度 |
-| D5 | 我的页已移除「预算管理」入口（产品决定），`docs/06` §4.5 仍写有该入口 | 走文档提案流程修正 `docs/06` |
+**采集接入（对照 `app/settings.gradle.kts`、`app/build.gradle.kts` 与源码）**
 
-**阶段二范围**：U1 上游库化 → U2 采集接入 → U3 权限合并 → U4 Room 隔离 → U5 UI 处置 → P0 覆盖率基线；
-另含 M2c（转账/退款，需先裁定 UI）、M3a/M3b（Pending / Duplicate 处理）与 7 个占位页。
+- AutoAccounting **没有**以 Gradle 模块接入。`settings.gradle.kts` 不 `include` 子项目；`build.gradle.kts` 的依赖里没有 AutoAccounting 模块或坐标。上游克隆不在本仓库，不参与构建。
+- 包 `autoaccounting/` 只有来源映射 `CaptureSourceMapper`，不是上游采集核心。
+- 已交付的微信 / 支付宝捕获在本模块 `capture/accessibility/`，入口是 `AccessibilityCaptureService`。
+- 内嵌方案、进程边界、许可证与版本锚点见 `docs/07`、`docs/10`。这两份文档中的「Gradle 模块内嵌」是目标方案；当前 APK 有没有编入该模块，以本节为准。
+
+**已知缺口（本刀不修。没有 Owner 本人批准的新切口，不得开工。）**
+
+| 来源 | 缺口 |
+|---|---|
+| FX-1 AC-6 | 真机重做不记通过（不是 soft-pass）。Owner 于 2026-11-24 接受残留后批准合并。 |
+| FX-1 残留 1 | 缺待确认列表截图，无法核对「恰好 1 条、金额对、方向为支出、商户不是按钮或运营文案」。 |
+| FX-1 残留 2 | 仅 `gn` / `go`、有金额样式、无结果用语的微信页仍可能被记成 `NOT_PAYMENT_PAGE` 而漏记。要修须另开 CR。 |
+| FX-1 残留 3 | 2026-11-22 17:57 同一秒的 `ACCOUNT_UNCERTAIN` 与 `POSSIBLE_DUPLICATE` 两条 PENDING 日志，是否重复入库未核清。 |
+| QJ-1 发包后 | 无障碍显示「不可用」时的「去修复」。不含保活全家桶。 |
+| QJ-1 发包后 | `confirmedByUser` 在只改备注、尚未入账时变成 true。 |
+| QJ-1 发包后 | 侧载安装时「受限制的设置」文案。 |
+| QJ-1 发包后 | 日志列表被 `SERVICE_CONNECTED` 顶上去。 |
+| 产品范围 | 高置信自动入账不做，除非另有经批准的 cut。 |
+
+UX-1 已合并。「首页待确认与已确认看起来一样」已修复，不再列为未修。
+
+自动化基线见 §9.2。历史性能数字（2026-10-28 模拟器 debug，本刀未重测，不是验收指标）：首页冷启动约 3.2s；搜索 10,000 条约 12ms（关键字）/ 7ms（组合）；滚动 Janky 约 34%。
 
 ### 0.3 五条最容易犯错的约定
 
@@ -107,9 +117,9 @@ UI → ViewModel / StateHolder → UseCase / Domain → Repository → Room
 Capture → Candidate → Normalize → Confidence → Dedup → Decision（Pending / Confirmed）→ Transaction
 ```
 
-- 采集核心为内嵌 Gradle 模块（AutoAccounting，GPL-3.0，个人自用、不分发）；不另建第二套采集。
-- 采集核心只能经 Adapter 交出候选与证据；不得直接写 Transaction，不得决定 Pending/Confirmed。
-- 权限矩阵与集成事实见 `docs/07` §9、`docs/10`；当前阶段尚未接入（§0.2）。
+- 已交付的微信 / 支付宝捕获在本模块 `capture/accessibility/`，不是上游 AutoAccounting 源码。AutoAccounting 尚未作为 Gradle 模块接入（§0.2）。不另建第二套采集。若将来按 `docs/07`、`docs/10` 内嵌，仍只能经 Adapter 交出候选与证据。
+- 采集侧不得直接写 Transaction，不得决定 Pending/Confirmed。高置信自动入账不做，除非另有经批准的 cut。
+- 权限矩阵与集成事实见 `docs/07` §9、`docs/10`。
 
 ---
 
@@ -278,7 +288,8 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 
 | 包 / 文件 | 职责 |
 |---|---|
-| `capture/`、`autoaccounting/` | 采集接入层与 Adapter（U0；尚未接真实采集） |
+| `capture/` | 微信 / 支付宝无障碍捕获、窗口选择、拒绝日志（已交付，见 §0.2） |
+| `autoaccounting/` | 来源映射 `CaptureSourceMapper`；不是上游 Gradle 模块 |
 | `data/local/` | Room v2（9 实体）、DAO、迁移、初始数据、日志表 |
 | `data/repository/` | 交易 / 分类 / 账户 Repository（接口 + Room 实现） |
 | `data/backup/` | 备份导出、三模式恢复、原子性/不变量修复 |
@@ -289,7 +300,8 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 | `ui/theme/` | 全部设计 token、玻璃、动画、字体 |
 | `ui/navigation/` | Destination、NavHost、底栏显隐与返回规则、图标 |
 | `ui/screen/`（home / stats / add / budget / mine / detail / categories / accounts / backup / search / about） | 已实现页面 |
-| `ui/screen/`（pending / pendingEdit / duplicateReview / autoLedger / onboard / rules / logs） | 阶段二占位页 |
+| `ui/screen/`（pending / pendingEdit / duplicateReview / autoLedger / onboard / logs） | 已实现：待确认、编辑后入账、疑似重复、自动记账、权限引导、捕获日志 |
+| `ui/screen/rules` | 解析规则仍是占位（`RulesScreen` → `PlaceholderScreen`） |
 | `ui/common/` | 分类图标映射等公共 UI |
 | `di/` | Hilt 模块（Repository、Settings、ApplicationScope） |
 
@@ -300,10 +312,9 @@ $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 1. 读 §0、§12，再按 §2 读本任务文档与 `docs/09`；不要在未读规格前改代码。
 2. `git status` 应干净；`git log --oneline -10` 看最近任务。
 3. `assembleDebug` + 受影响测试；装到模拟器打开首页确认环境。
-4. 等任务书（§11.2）。任务书会给出**文件白名单**与验收判据；不要越界修改。
-5. 当前没有"进行中的功能分支"；阶段二的起点是 U1/U2，但**不要自行开工**，先等人确认范围。
-6. 若先做收尾修补，按 §0.2 的 D1–D5 顺序：D1 测试期望、D2 权限/文案裁定、D3 搜索行接线、
-   D4 键盘遮挡、D5 文档提案；每项单独提交。
+4. 等 Owner 批准的 dated cut（§11.2）。切口给出范围与验收判据；不要越界修改。
+5. 不要按旧的「阶段二从 U1/U2 自行开工」清单动手。
+6. 已知缺口只以 §0.2 的表为准。没有新的 Owner 批准切口，不得修这些缺口。
 
 ### 12.5 高频坑（完整见 `docs/09`）
 
