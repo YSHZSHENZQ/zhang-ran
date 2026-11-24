@@ -18,6 +18,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.zhangran.app.BuildConfig
 import com.zhangran.app.MainActivity
+import com.zhangran.app.clearCaptureHealthForTest
 import com.zhangran.app.clickHomePendingButton
 import com.zhangran.app.debug.DebugCaptureHealthReceiver
 import com.zhangran.app.domain.model.TransactionState
@@ -56,6 +57,8 @@ class Fx1ProofTest {
         passOnboard()
         runBlocking { entry().debugLedgerReset().clearCapturedLedger() }
         runBlocking { entry().rejectionRateLimiter().reset() }
+        // 全量任意顺序时，前面的用例可能已经写下上次捕获。清空日志不会清健康度。
+        clearCaptureHealthForTest()
 
         val base = 1_700_000_000_000L
         val healthBefore = writeHealth("ac2-health-before")
