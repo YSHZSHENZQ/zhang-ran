@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="1" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-24T11:37:43" hostname="localhost">
+  <testsuite name="com.zhangran.app.ui.screen.mine.MineScreenTest" tests="1" failures="0" errors="0" skipped="0" time="6.932" timestamp="2026-11-24T11:37:43" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A5_待确认与关于入口可跳转" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="6.932" />
+  </testsuite>
+</testsuites>

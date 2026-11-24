@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="1" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-24T11:37:27" hostname="localhost">
+  <testsuite name="com.zhangran.app.ui.navigation.NavigationBehaviorTest" tests="1" failures="0" errors="0" skipped="0" time="5.424" timestamp="2026-11-24T11:37:27" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A8_首页返回退出应用" classname="com.zhangran.app.ui.navigation.NavigationBehaviorTest" time="5.424" />
+  </testsuite>
+</testsuites>

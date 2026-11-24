@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="1" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-24T11:59:12" hostname="localhost">
+  <testsuite name="com.zhangran.app.capture.accessibility.M64StatusProofTest" tests="1" failures="0" errors="0" skipped="0" time="87.788" timestamp="2026-11-24T11:59:12" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="状态引导日志导出清空恢复与疑似失效" classname="com.zhangran.app.capture.accessibility.M64StatusProofTest" time="87.788" />
+  </testsuite>
+</testsuites>
