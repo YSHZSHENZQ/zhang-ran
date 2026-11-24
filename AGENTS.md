@@ -55,8 +55,14 @@
 | QJ-1 发包后 | 侧载安装时「受限制的设置」文案。 |
 | QJ-1 发包后 | 日志列表被 `SERVICE_CONNECTED` 顶上去。 |
 | 产品范围 | 高置信自动入账不做，除非另有经批准的 cut。 |
+| instrumented | 7 条失败待排查，不在 DOC-1 范围：`Fx1ProofTest.看错窗口余额宝金额与疑似失效`、`M3aAcceptanceProofTest.待确认三种处置与统计保护取证`、`M62PendingProofTest.首页正式收支不因待确认增加`、`M62PendingProofTest.待确认页展示支付结果fixture`、`M64StatusProofTest.状态引导日志导出清空恢复与疑似失效`、`NavigationBehaviorTest.A8_首页返回退出应用`、`MineScreenTest.A5_待确认与关于入口可跳转`。 |
+| D5 | 仍成立。我的页数据管理没有「预算管理」入口（`MineScreen.kt` 的 `DataManagementSection`；文件头写明预算只保留底栏入口）。`docs/06` §4.5 仍把「预算管理」写在数据管理入口里。本刀不改 `docs/06`。 |
 
 UX-1 已合并。「首页待确认与已确认看起来一样」已修复，不再列为未修。
+
+D2 已修：关于页可见文案 `AboutInfo.PRIVACY_LINES` 不再称 `INTERNET` 用于本机回环（`AboutInfo.kt`）。`AndroidManifest.xml` 仍未声明 `INTERNET`。
+
+D4 已修：底栏进入「记一笔」时，`NumberPad` 放在滚动区之外，底栏高度由 `ZhangRanNavHost` 的 Scaffold `innerPadding` 让出（`AddTransactionScreen.kt`、`ZhangRanNavHost.kt`）。
 
 自动化基线（2026-11-24 实测；`app/` 与 `40055ceb` 相同，运行时 HEAD `81cbef1bd5a0ab0a4b5729e9147cd71bc4432d9c`）：JVM `:testDebugUnitTest` 636 例，0 失败、0 错误、0 跳过；instrumented `:connectedDebugAndroidTest` 270 例，7 失败、0 错误、0 跳过。命令、分项计数与失败用例见 §9.2 和 `docs/proof/doc-1/`。历史性能数字（2026-10-28 模拟器 debug，本刀未重测，不是验收指标）：首页冷启动约 3.2s；搜索 10,000 条约 12ms（关键字）/ 7ms（组合）；滚动 Janky 约 34%。
 
