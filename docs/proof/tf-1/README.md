@@ -1,5 +1,7 @@
 # TF-1 仪器测试
 
+CR-1（2026-11-25）要求在将交付的 PR head 上重跑两次全量。这次没有新的 270/0 日志。主机 KVM 在创建 vCPU 时触发内核错误，模拟器只能用软件 CPU；在该环境下单跑 M3a 失败。下面的 270/0 数字仍是 2026-11-24、运行时 HEAD `61c18ba` 的结果，不是 CR-1 的复跑。说明见 `cr1/README.md`。
+
 运行时 HEAD：`61c18bafecb52709dba4211a545d027d6ea9c3c4`（最后一个改测试代码的提交）。其后的提交只补 `docs/proof/tf-1/` 和 `AGENTS.md` 的基线行，不再改测试。
 
 模拟器：`system-images;android-36;google_apis;x86_64`，指纹 `google/sdk_gphone64_x86_64/emu64xa:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys`，API 36，系统时区 `Asia/Shanghai`（设备日期 Tue Nov 24 20:08:49 CST 2026）。Gradle 在 `app/` 执行。环境原文见 `env.txt`。
