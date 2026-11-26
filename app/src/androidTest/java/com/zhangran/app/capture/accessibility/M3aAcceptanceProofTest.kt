@@ -115,7 +115,7 @@ class M3aAcceptanceProofTest {
         assertEquals(0, ac2.getJSONArray("fieldEdits").length())
 
         composeRule.onNodeWithContentDescription("$F_B 改完再记").performScrollTo().performClick()
-        composeRule.onNodeWithText("保存并入账").assertIsDisplayed()
+        composeRule.onNodeWithText("保存并入账").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("餐饮").performScrollTo().performClick()
         composeRule.onNodeWithContentDescription("备注输入").performScrollTo().performTextReplacement(NOTE)
         composeRule.onNodeWithText("保存并入账").performScrollTo().assertIsDisplayed()
