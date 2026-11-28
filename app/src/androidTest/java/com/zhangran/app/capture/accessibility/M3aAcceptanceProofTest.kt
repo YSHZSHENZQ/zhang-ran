@@ -72,7 +72,11 @@ class M3aAcceptanceProofTest {
             seed(F_A, base - 50 * MINUTE)
             seed(F_B, base - 40 * MINUTE)
             seed(F_C, base - 30 * MINUTE)
-            seed(F_D, base - 30 * MINUTE + 30_000L, merchant = "瑞幸咖啡")
+            // F-D 与 F-C 是同一结果页，捕获相隔 30 秒：超过同一次停留（15 秒），仍在 180 秒语义窗内。
+            // 两侧商户都有且不同时 Dedup 不标疑似，行上会留下「确认」，第 94 行因此失败。
+            // 同一商户才会成为 POSSIBLE_DUPLICATE。按钮断言按 M3b AC-4
+            // （docs/cuts/cut-2026-11-11-M3b.md）：疑似重复行有「查看重复 / 忽略」，没有「确认 / 改完再记」。
+            seed(F_D, base - 30 * MINUTE + 30_000L)
             seed(F_E, base - 20 * MINUTE)
         }
 
@@ -93,7 +97,8 @@ class M3aAcceptanceProofTest {
         composeRule.onNodeWithContentDescription("$F_D 忽略").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("$F_D 确认").assertDoesNotExist()
         composeRule.onNodeWithContentDescription("$F_D 改完再记").assertDoesNotExist()
-        composeRule.onNodeWithText("查看重复").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("$F_D 查看重复").assertIsDisplayed()
+        composeRule.onNodeWithText("查看重复").assertIsDisplayed()
         shoot("ac1-pending-actions")
 
         val fd = row(dump("ac1"), F_D)
@@ -110,7 +115,7 @@ class M3aAcceptanceProofTest {
         assertEquals(0, ac2.getJSONArray("fieldEdits").length())
 
         composeRule.onNodeWithContentDescription("$F_B 改完再记").performScrollTo().performClick()
-        composeRule.onNodeWithText("保存并入账").assertIsDisplayed()
+        composeRule.onNodeWithText("保存并入账").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("餐饮").performScrollTo().performClick()
         composeRule.onNodeWithContentDescription("备注输入").performScrollTo().performTextReplacement(NOTE)
         composeRule.onNodeWithText("保存并入账").performScrollTo().assertIsDisplayed()
@@ -202,8 +207,12 @@ class M3aAcceptanceProofTest {
             }
         }
         val newStates = JSONObject("{\"items\":$rerun}").getJSONArray("items")
+        // FX-1 CR-1：同一停留（重跑间隔为 0）不再插入新行，返回原记录状态。
+        // docs/cuts/cut-2026-11-19-FX-1-CR1.md。已确认 / 已忽略保持原状态，不会新产生 CONFIRMED。
+        val expectedNewState = mapOf(F_A to "CONFIRMED", F_B to "CONFIRMED", F_C to "IGNORED")
         for (index in 0 until newStates.length()) {
-            assertEquals("PENDING", newStates.getJSONObject(index).getString("newState"))
+            val item = newStates.getJSONObject(index)
+            assertEquals(expectedNewState.getValue(item.getString("fixtureId")), item.getString("newState"))
         }
 
         val confirmedBeforeNew = rows(JSONObject(ac6After)).count { it.getString("state") == "CONFIRMED" }
@@ -226,22 +235,22 @@ class M3aAcceptanceProofTest {
         awaitDescription("待确认 $pendingAfterNew 条")
         composeRule.onNodeWithContentDescription("待确认 $pendingAfterNew 条").performClick()
         composeRule.onNodeWithContentDescription("$F_E 改完再记").performScrollTo().performClick()
-        composeRule.onNodeWithContentDescription("金额输入").performScrollTo().performTextReplacement("")
+        composeRule.onNodeWithContentDescription("金额输入", useUnmergedTree = true).performScrollTo().performTextReplacement("")
         composeRule.onNodeWithText("保存并入账").performScrollTo().performClick()
         composeRule.onNodeWithText("金额不能为空").assertIsDisplayed()
         shoot("ac8-empty-amount")
 
-        composeRule.onNodeWithContentDescription("金额输入").performTextReplacement("0")
+        composeRule.onNodeWithContentDescription("金额输入", useUnmergedTree = true).performTextReplacement("0")
         composeRule.onNodeWithText("保存并入账").performScrollTo().performClick()
         composeRule.onNodeWithText("金额不能为 0").assertIsDisplayed()
         shoot("ac8-zero-amount")
 
-        composeRule.onNodeWithContentDescription("金额输入").performTextReplacement("abc")
+        composeRule.onNodeWithContentDescription("金额输入", useUnmergedTree = true).performTextReplacement("abc")
         composeRule.onNodeWithText("保存并入账").performScrollTo().performClick()
         composeRule.onNodeWithText("金额不合法").assertIsDisplayed()
         shoot("ac8-illegal-amount")
 
-        composeRule.onNodeWithContentDescription("金额输入").performTextReplacement("38.50")
+        composeRule.onNodeWithContentDescription("金额输入", useUnmergedTree = true).performTextReplacement("38.50")
         composeRule.onNodeWithContentDescription("时间输入").performScrollTo().performTextReplacement("")
         composeRule.onNodeWithText("保存并入账").performScrollTo().performClick()
         composeRule.onNodeWithText("时间不能为空").assertIsDisplayed()

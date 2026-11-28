@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="1" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-24T12:09:22" hostname="localhost">
+  <testsuite name="com.zhangran.app.capture.accessibility.Fx1ProofTest" tests="1" failures="0" errors="0" skipped="0" time="17.233" timestamp="2026-11-24T12:09:22" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="看错窗口余额宝金额与疑似失效" classname="com.zhangran.app.capture.accessibility.Fx1ProofTest" time="17.233" />
+  </testsuite>
+</testsuites>

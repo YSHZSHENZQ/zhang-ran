@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="1" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-24T11:34:11" hostname="localhost">
+  <testsuite name="com.zhangran.app.capture.accessibility.M3aAcceptanceProofTest" tests="1" failures="0" errors="0" skipped="0" time="19.455" timestamp="2026-11-24T11:34:11" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="待确认三种处置与统计保护取证" classname="com.zhangran.app.capture.accessibility.M3aAcceptanceProofTest" time="19.455" />
+  </testsuite>
+</testsuites>

@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="1" failures="1" errors="0" skipped="0" time="0.000" timestamp="2026-11-25T03:50:48" hostname="localhost">
+  <testsuite name="com.zhangran.app.capture.accessibility.M3aAcceptanceProofTest" tests="1" failures="1" errors="0" skipped="0" time="99.607" timestamp="2026-11-25T03:50:48" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="待确认三种处置与统计保护取证" classname="com.zhangran.app.capture.accessibility.M3aAcceptanceProofTest" time="99.607">
+      <failure>java.lang.AssertionError: Assert failed: The component with Text + InputText + EditableText contains 'm6-2-wechat-pay-success:F-A' (ignoreCase: false) is not displayed!
+	at androidx.compose.ui.test.AssertionsKt.assertIsDisplayed(Assertions.kt:34)
+	at com.zhangran.app.capture.accessibility.M3aAcceptanceProofTest.待确认三种处置与统计保护取证(M3aAcceptanceProofTest.kt:92)
+</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

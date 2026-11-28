@@ -55,7 +55,6 @@
 | QJ-1 发包后 | 侧载安装时「受限制的设置」文案。 |
 | QJ-1 发包后 | 日志列表被 `SERVICE_CONNECTED` 顶上去。 |
 | 产品范围 | 高置信自动入账不做，除非另有经批准的 cut。 |
-| instrumented | 7 条失败待排查，不在 DOC-1 范围：`Fx1ProofTest.看错窗口余额宝金额与疑似失效`、`M3aAcceptanceProofTest.待确认三种处置与统计保护取证`、`M62PendingProofTest.首页正式收支不因待确认增加`、`M62PendingProofTest.待确认页展示支付结果fixture`、`M64StatusProofTest.状态引导日志导出清空恢复与疑似失效`、`NavigationBehaviorTest.A8_首页返回退出应用`、`MineScreenTest.A5_待确认与关于入口可跳转`。 |
 | D5 | 仍成立。我的页数据管理没有「预算管理」入口（`MineScreen.kt` 的 `DataManagementSection`；文件头写明预算只保留底栏入口）。`docs/06` §4.5 仍把「预算管理」写在数据管理入口里。本刀不改 `docs/06`。 |
 | 关于页文案 | 产品文案，待修，不在 DOC-1 范围：关于页 `CAPTURE_CORE_SUMMARY`（`AboutInfo.kt`）写着「来源：AutoAccounting（Gradle 模块内嵌）」，但仓库里没有该 Gradle 模块（`app/settings.gradle.kts` 无子项目）。 |
 
@@ -65,7 +64,7 @@ D2 已修：关于页可见文案 `AboutInfo.PRIVACY_LINES` 不再称 `INTERNET`
 
 D4 已修：底栏进入「记一笔」时，`NumberPad` 放在滚动区之外，底栏高度由 `ZhangRanNavHost` 的 Scaffold `innerPadding` 让出（`AddTransactionScreen.kt`、`ZhangRanNavHost.kt`）。
 
-自动化基线（2026-11-24 实测；`app/` 与 `40055ceb` 相同，运行时 HEAD `81cbef1bd5a0ab0a4b5729e9147cd71bc4432d9c`）：JVM `:testDebugUnitTest` 636 例，0 失败、0 错误、0 跳过；instrumented `:connectedDebugAndroidTest` 270 例，7 失败、0 错误、0 跳过。命令、分项计数与失败用例见 §9.2 和 `docs/proof/doc-1/`。历史性能数字（2026-10-28 模拟器 debug，本刀未重测，不是验收指标）：首页冷启动约 3.2s；搜索 10,000 条约 12ms（关键字）/ 7ms（组合）；滚动 Janky 约 34%。
+自动化基线（2026-11-24 实测，Asia/Shanghai，API 36；运行时 HEAD `61c18bafecb52709dba4211a545d027d6ea9c3c4`，其后提交只补 `docs/proof/tf-1/` 与本段）：JVM `:testDebugUnitTest` 636 例，0 失败、0 错误、0 跳过；instrumented `:connectedDebugAndroidTest` 连续 2 次均为 270 例，0 失败、0 错误、0 跳过。命令、分项计数与日志见 §9.2 和 `docs/proof/tf-1/`。历史性能数字（2026-10-28 模拟器 debug，本刀未重测，不是验收指标）：首页冷启动约 3.2s；搜索 10,000 条约 12ms（关键字）/ 7ms（组合）；滚动 Janky 约 34%。
 
 ### 0.3 五条最容易犯错的约定
 
@@ -225,10 +224,10 @@ cd app
 
 - 只跑受影响用例；全量仅限改 schema / 领域核心规则 / 全局 token（收尾验收）。
 - ⚠️ `connectedDebugAndroidTest` 结束会卸载 app，之后要重新 `installDebug`。
-- 当前基线（2026-11-24，在 `app/` 执行 `./gradlew testDebugUnitTest` 与 `./gradlew connectedDebugAndroidTest`；运行时 HEAD `81cbef1bd5a0ab0a4b5729e9147cd71bc4432d9c`，`app/` 相对 `40055ceb` 无差异）：
+- 当前基线（2026-11-24，在 `app/` 执行 `./gradlew testDebugUnitTest` 与连续两次 `./gradlew connectedDebugAndroidTest`；运行时 HEAD `61c18bafecb52709dba4211a545d027d6ea9c3c4`，其后提交只补文档）：
   - `:testDebugUnitTest`：tests 636，failures 0，errors 0，skipped 0。单模块，没有第二个 JVM 测试任务。
-  - `:connectedDebugAndroidTest`：tests 270，failures 7，errors 0，skipped 0。模拟器为 API 36，系统时区是 `Etc/UTC`（不是 `Asia/Shanghai`）。7 个失败用例与日志关键行见 `docs/proof/doc-1/test-baseline.md`。
-  - 新增测试应保持增量，避免拖慢。禁止再引用 2026-10-28 的 535 / 256 作为当前基线。
+  - `:connectedDebugAndroidTest`：两次都是 tests 270，failures 0，errors 0，skipped 0。模拟器为 API 36，系统时区是 `Asia/Shanghai`。日志、sha256 与 7 条前后对照见 `docs/proof/tf-1/`。
+  - 新增测试应保持增量，避免拖慢。禁止再引用 2026-10-28 的 535 / 256，或 DOC-1 的 270/7，作为当前基线。
 - 若接口变更导致既有测试 fake 编译失败：只补空实现/适配，不改既有断言。
 
 ### 9.3 视觉验证

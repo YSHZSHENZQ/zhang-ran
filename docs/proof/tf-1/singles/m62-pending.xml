@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="1" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-24T11:35:19" hostname="localhost">
+  <testsuite name="com.zhangran.app.capture.accessibility.M62PendingProofTest" tests="1" failures="0" errors="0" skipped="0" time="25.671" timestamp="2026-11-24T11:35:19" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="待确认页展示支付结果fixture" classname="com.zhangran.app.capture.accessibility.M62PendingProofTest" time="25.671" />
+  </testsuite>
+</testsuites>

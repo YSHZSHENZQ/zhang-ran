@@ -1,0 +1,463 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="270" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-28T17:14:15" hostname="localhost">
+  <testsuite name="com.zhangran.app.ScreensSmokeTest" tests="36" failures="0" errors="0" skipped="0" time="90.453" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="页面可渲染并显示页面名[Home]" classname="com.zhangran.app.ScreensSmokeTest" time="4.952" />
+    <testcase name="深色主题下可渲染并显示页面名[Home]" classname="com.zhangran.app.ScreensSmokeTest" time="2.781" />
+    <testcase name="页面可渲染并显示页面名[Stats]" classname="com.zhangran.app.ScreensSmokeTest" time="3.494" />
+    <testcase name="深色主题下可渲染并显示页面名[Stats]" classname="com.zhangran.app.ScreensSmokeTest" time="1.779" />
+    <testcase name="页面可渲染并显示页面名[Add]" classname="com.zhangran.app.ScreensSmokeTest" time="2.696" />
+    <testcase name="深色主题下可渲染并显示页面名[Add]" classname="com.zhangran.app.ScreensSmokeTest" time="2.625" />
+    <testcase name="页面可渲染并显示页面名[Budget]" classname="com.zhangran.app.ScreensSmokeTest" time="2.054" />
+    <testcase name="深色主题下可渲染并显示页面名[Budget]" classname="com.zhangran.app.ScreensSmokeTest" time="2.174" />
+    <testcase name="页面可渲染并显示页面名[Mine]" classname="com.zhangran.app.ScreensSmokeTest" time="2.616" />
+    <testcase name="深色主题下可渲染并显示页面名[Mine]" classname="com.zhangran.app.ScreensSmokeTest" time="2.746" />
+    <testcase name="页面可渲染并显示页面名[Detail]" classname="com.zhangran.app.ScreensSmokeTest" time="2.381" />
+    <testcase name="深色主题下可渲染并显示页面名[Detail]" classname="com.zhangran.app.ScreensSmokeTest" time="2.322" />
+    <testcase name="页面可渲染并显示页面名[Pending]" classname="com.zhangran.app.ScreensSmokeTest" time="2.944" />
+    <testcase name="深色主题下可渲染并显示页面名[Pending]" classname="com.zhangran.app.ScreensSmokeTest" time="2.035" />
+    <testcase name="页面可渲染并显示页面名[PendingEdit]" classname="com.zhangran.app.ScreensSmokeTest" time="3.532" />
+    <testcase name="深色主题下可渲染并显示页面名[PendingEdit]" classname="com.zhangran.app.ScreensSmokeTest" time="1.588" />
+    <testcase name="页面可渲染并显示页面名[DuplicateReview]" classname="com.zhangran.app.ScreensSmokeTest" time="3.119" />
+    <testcase name="深色主题下可渲染并显示页面名[DuplicateReview]" classname="com.zhangran.app.ScreensSmokeTest" time="2.911" />
+    <testcase name="页面可渲染并显示页面名[AutoLedger]" classname="com.zhangran.app.ScreensSmokeTest" time="2.662" />
+    <testcase name="深色主题下可渲染并显示页面名[AutoLedger]" classname="com.zhangran.app.ScreensSmokeTest" time="1.664" />
+    <testcase name="页面可渲染并显示页面名[Onboard]" classname="com.zhangran.app.ScreensSmokeTest" time="2.927" />
+    <testcase name="深色主题下可渲染并显示页面名[Onboard]" classname="com.zhangran.app.ScreensSmokeTest" time="1.998" />
+    <testcase name="页面可渲染并显示页面名[Categories]" classname="com.zhangran.app.ScreensSmokeTest" time="2.745" />
+    <testcase name="深色主题下可渲染并显示页面名[Categories]" classname="com.zhangran.app.ScreensSmokeTest" time="2.349" />
+    <testcase name="页面可渲染并显示页面名[Accounts]" classname="com.zhangran.app.ScreensSmokeTest" time="2.426" />
+    <testcase name="深色主题下可渲染并显示页面名[Accounts]" classname="com.zhangran.app.ScreensSmokeTest" time="1.879" />
+    <testcase name="页面可渲染并显示页面名[Rules]" classname="com.zhangran.app.ScreensSmokeTest" time="2.987" />
+    <testcase name="深色主题下可渲染并显示页面名[Rules]" classname="com.zhangran.app.ScreensSmokeTest" time="2.632" />
+    <testcase name="页面可渲染并显示页面名[Backup]" classname="com.zhangran.app.ScreensSmokeTest" time="2.991" />
+    <testcase name="深色主题下可渲染并显示页面名[Backup]" classname="com.zhangran.app.ScreensSmokeTest" time="1.900" />
+    <testcase name="页面可渲染并显示页面名[Logs]" classname="com.zhangran.app.ScreensSmokeTest" time="2.554" />
+    <testcase name="深色主题下可渲染并显示页面名[Logs]" classname="com.zhangran.app.ScreensSmokeTest" time="1.425" />
+    <testcase name="页面可渲染并显示页面名[Search]" classname="com.zhangran.app.ScreensSmokeTest" time="1.934" />
+    <testcase name="深色主题下可渲染并显示页面名[Search]" classname="com.zhangran.app.ScreensSmokeTest" time="2.396" />
+    <testcase name="页面可渲染并显示页面名[About]" classname="com.zhangran.app.ScreensSmokeTest" time="2.130" />
+    <testcase name="深色主题下可渲染并显示页面名[About]" classname="com.zhangran.app.ScreensSmokeTest" time="2.105" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.capture.accessibility.AccessibilityServiceConfigTest" tests="2" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="服务声明受BIND权限保护且含配置元数据" classname="com.zhangran.app.capture.accessibility.AccessibilityServiceConfigTest" time="0.000" />
+    <testcase name="配置只监听微信支付宝与两类窗口事件" classname="com.zhangran.app.capture.accessibility.AccessibilityServiceConfigTest" time="0.000" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.capture.accessibility.Fx1ProofTest" tests="1" failures="0" errors="0" skipped="0" time="14.222" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="看错窗口余额宝金额与疑似失效" classname="com.zhangran.app.capture.accessibility.Fx1ProofTest" time="14.222" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.capture.accessibility.M3aAcceptanceProofTest" tests="1" failures="0" errors="0" skipped="0" time="15.470" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="待确认三种处置与统计保护取证" classname="com.zhangran.app.capture.accessibility.M3aAcceptanceProofTest" time="15.470" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.capture.accessibility.M3bReplayProofTest" tests="1" failures="0" errors="0" skipped="0" time="12.114" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="回放去重与时区" classname="com.zhangran.app.capture.accessibility.M3bReplayProofTest" time="12.114" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.capture.accessibility.M62PendingProofTest" tests="2" failures="0" errors="0" skipped="0" time="45.013" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="首页正式收支不因待确认增加" classname="com.zhangran.app.capture.accessibility.M62PendingProofTest" time="22.212" />
+    <testcase name="待确认页展示支付结果fixture" classname="com.zhangran.app.capture.accessibility.M62PendingProofTest" time="22.801" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.capture.accessibility.M63Ac2Ac3ProofTest" tests="1" failures="0" errors="0" skipped="0" time="4.908" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="回放两笔待确认并打开改完再记不入账" classname="com.zhangran.app.capture.accessibility.M63Ac2Ac3ProofTest" time="4.908" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.capture.accessibility.M63ReplayProofTest" tests="1" failures="0" errors="0" skipped="0" time="3.814" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="回放三笔待确认且正式收支不变" classname="com.zhangran.app.capture.accessibility.M63ReplayProofTest" time="3.814" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.capture.accessibility.M64StatusProofTest" tests="1" failures="0" errors="0" skipped="0" time="119.391" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="状态引导日志导出清空恢复与疑似失效" classname="com.zhangran.app.capture.accessibility.M64StatusProofTest" time="119.391" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.backup.RestoreAtomicityTest" tests="9" failures="0" errors="0" skipped="0" time="0.403" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="V6_JSON不可解析被拒绝" classname="com.zhangran.app.data.backup.RestoreAtomicityTest" time="0.040" />
+    <testcase name="V5_摘要不符被拒绝" classname="com.zhangran.app.data.backup.RestoreAtomicityTest" time="0.091" />
+    <testcase name="V1_损坏ZIP被拒绝" classname="com.zhangran.app.data.backup.RestoreAtomicityTest" time="0.160" />
+    <testcase name="V3_更旧版本被拒绝" classname="com.zhangran.app.data.backup.RestoreAtomicityTest" time="0.000" />
+    <testcase name="V2_manifest缺失或不可解析被拒绝" classname="com.zhangran.app.data.backup.RestoreAtomicityTest" time="0.000" />
+    <testcase name="V4_缺少文件被拒绝" classname="com.zhangran.app.data.backup.RestoreAtomicityTest" time="0.000" />
+    <testcase name="V7_校验失败不修改任何数据" classname="com.zhangran.app.data.backup.RestoreAtomicityTest" time="0.000" />
+    <testcase name="V3_更高版本被拒绝" classname="com.zhangran.app.data.backup.RestoreAtomicityTest" time="0.000" />
+    <testcase name="A11_导入中途失败整体回滚" classname="com.zhangran.app.data.backup.RestoreAtomicityTest" time="0.112" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.backup.RestoreMergeTest" tests="4" failures="0" errors="0" skipped="0" time="0.053" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A4_受保护字段保留本地其他字段取备份" classname="com.zhangran.app.data.backup.RestoreMergeTest" time="0.018" />
+    <testcase name="A2_仅恢复设置不改任何表" classname="com.zhangran.app.data.backup.RestoreMergeTest" time="0.002" />
+    <testcase name="A3_新id插入_较新更新_相同保留本地并记冲突" classname="com.zhangran.app.data.backup.RestoreMergeTest" time="0.016" />
+    <testcase name="A5_field_edits表本身也合并" classname="com.zhangran.app.data.backup.RestoreMergeTest" time="0.017" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.backup.RestoreReplaceTest" tests="2" failures="0" errors="0" skipped="0" time="0.038" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A6_A8_A9_A10_替换清空并修复不变量" classname="com.zhangran.app.data.backup.RestoreReplaceTest" time="0.022" />
+    <testcase name="A7_恢复前备份可被重新解析" classname="com.zhangran.app.data.backup.RestoreReplaceTest" time="0.016" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.CaptureLogDaoTest" tests="8" failures="0" errors="0" skipped="0" time="0.134" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="按 captureId 可查且一一对应" classname="com.zhangran.app.data.local.CaptureLogDaoTest" time="0.020" />
+    <testcase name="清空日志与证据不影响交易记录与字段保护标记" classname="com.zhangran.app.data.local.CaptureLogDaoTest" time="0.034" />
+    <testcase name="日志可写入并按时间倒序分页" classname="com.zhangran.app.data.local.CaptureLogDaoTest" time="0.013" />
+    <testcase name="软删除交易后证据仍在" classname="com.zhangran.app.data.local.CaptureLogDaoTest" time="0.013" />
+    <testcase name="按状态与来源筛选" classname="com.zhangran.app.data.local.CaptureLogDaoTest" time="0.014" />
+    <testcase name="按状态计数可用" classname="com.zhangran.app.data.local.CaptureLogDaoTest" time="0.014" />
+    <testcase name="关键词搜索针对脱敏文本" classname="com.zhangran.app.data.local.CaptureLogDaoTest" time="0.013" />
+    <testcase name="保留策略按时间清理旧日志" classname="com.zhangran.app.data.local.CaptureLogDaoTest" time="0.013" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.ConstraintTest" tests="6" failures="0" errors="0" skipped="0" time="0.085" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="同一类型下分类名重复被拒绝" classname="com.zhangran.app.data.local.ConstraintTest" time="0.011" />
+    <testcase name="分类与账户禁用后历史交易仍可正常读取" classname="com.zhangran.app.data.local.ConstraintTest" time="0.017" />
+    <testcase name="同一月份同一分类的预算重复被拒绝" classname="com.zhangran.app.data.local.ConstraintTest" time="0.018" />
+    <testcase name="禁用默认账户后仍保留其默认取值" classname="com.zhangran.app.data.local.ConstraintTest" time="0.013" />
+    <testcase name="同一月份的总预算第二条被拒绝" classname="com.zhangran.app.data.local.ConstraintTest" time="0.011" />
+    <testcase name="设为默认账户时旧默认在同一事务内被清除" classname="com.zhangran.app.data.local.ConstraintTest" time="0.015" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.DaoCrudTest" tests="6" failures="0" errors="0" skipped="0" time="0.696" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="软删除后不在默认列表但可显式取回并恢复" classname="com.zhangran.app.data.local.DaoCrudTest" time="0.016" />
+    <testcase name="按状态与时间区间查询可用" classname="com.zhangran.app.data.local.DaoCrudTest" time="0.091" />
+    <testcase name="按交易引用的分类与账户可独立读出" classname="com.zhangran.app.data.local.DaoCrudTest" time="0.200" />
+    <testcase name="字段保护记录按交易与字段查询且同字段只保留一条" classname="com.zhangran.app.data.local.DaoCrudTest" time="0.067" />
+    <testcase name="五张表都能写入与读出" classname="com.zhangran.app.data.local.DaoCrudTest" time="0.204" />
+    <testcase name="插入_更新_查询可用" classname="com.zhangran.app.data.local.DaoCrudTest" time="0.118" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.InitialDataTest" tests="8" failures="0" errors="0" skipped="0" time="0.269" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A4_删除预置分类后重启不复活" classname="com.zhangran.app.data.local.InitialDataTest" time="0.071" />
+    <testcase name="A6_预置分类标记为systemDefined且其他在两个type下各一个" classname="com.zhangran.app.data.local.InitialDataTest" time="0.039" />
+    <testcase name="A2_支出分类按文档顺序落库" classname="com.zhangran.app.data.local.InitialDataTest" time="0.025" />
+    <testcase name="A2_首次初始化写入12加6个分类与1个默认账户" classname="com.zhangran.app.data.local.InitialDataTest" time="0.016" />
+    <testcase name="A10_初始化后记账所需的分类与账户都可读到" classname="com.zhangran.app.data.local.InitialDataTest" time="0.017" />
+    <testcase name="A3_标记被重置时按name判重也不重复插入" classname="com.zhangran.app.data.local.InitialDataTest" time="0.025" />
+    <testcase name="A5_migration本身不写入初始数据" classname="com.zhangran.app.data.local.InitialDataTest" time="0.057" />
+    <testcase name="A3_已完成时再次初始化不再插入" classname="com.zhangran.app.data.local.InitialDataTest" time="0.019" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.Migration1To2Test" tests="2" failures="0" errors="0" skipped="0" time="0.086" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="迁移后 v1 五张表数据完整保留" classname="com.zhangran.app.data.local.Migration1To2Test" time="0.043" />
+    <testcase name="迁移后 v2 四张新表可写入" classname="com.zhangran.app.data.local.Migration1To2Test" time="0.043" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.Migration2To3Test" tests="1" failures="0" errors="0" skipped="0" time="0.059" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="回填最新非空原因并保留没有日志的交易" classname="com.zhangran.app.data.local.Migration2To3Test" time="0.059" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.MigrationTest" tests="5" failures="0" errors="0" skipped="0" time="0.117" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="迁移注册表与数据库版本一致" classname="com.zhangran.app.data.local.MigrationTest" time="0.003" />
+    <testcase name="用当前版本 schema 建库并通过校验" classname="com.zhangran.app.data.local.MigrationTest" time="0.019" />
+    <testcase name="真实迁移到 v2 后新旧表并存且数据保留" classname="com.zhangran.app.data.local.MigrationTest" time="0.049" />
+    <testcase name="用 v1 schema 建库并通过 MigrationTestHelper 校验" classname="com.zhangran.app.data.local.MigrationTest" time="0.010" />
+    <testcase name="MIGRATION_1_2 会创建 v2 全部新表" classname="com.zhangran.app.data.local.MigrationTest" time="0.036" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.ObserveFlowTest" tests="5" failures="0" errors="0" skipped="0" time="0.130" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="分类与账户的观察流在改名字后发射新值" classname="com.zhangran.app.data.local.ObserveFlowTest" time="0.028" />
+    <testcase name="A13_交易观察流的过滤与排序与一次性查询一致" classname="com.zhangran.app.data.local.ObserveFlowTest" time="0.009" />
+    <testcase name="A11_观察流在插入更新软删除后各发射" classname="com.zhangran.app.data.local.ObserveFlowTest" time="0.047" />
+    <testcase name="A12_改分类名后列表自动发射新名称" classname="com.zhangran.app.data.local.ObserveFlowTest" time="0.037" />
+    <testcase name="A13_分类与账户观察流的过滤与排序与一次性查询一致" classname="com.zhangran.app.data.local.ObserveFlowTest" time="0.009" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.RoomCaptureLogSinkTest" tests="8" failures="0" errors="0" skipped="0" time="0.098" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="captureId 唯一索引保证一一对应" classname="com.zhangran.app.data.local.RoomCaptureLogSinkTest" time="0.018" />
+    <testcase name="历史回灌标记落库" classname="com.zhangran.app.data.local.RoomCaptureLogSinkTest" time="0.013" />
+    <testcase name="载荷缺失时版本列仍为合法整数" classname="com.zhangran.app.data.local.RoomCaptureLogSinkTest" time="0.012" />
+    <testcase name="状态映射遵循文档取值" classname="com.zhangran.app.data.local.RoomCaptureLogSinkTest" time="0.016" />
+    <testcase name="写入后日志与证据都落库并相互关联" classname="com.zhangran.app.data.local.RoomCaptureLogSinkTest" time="0.014" />
+    <testcase name="来源枚举为文档定义的取值" classname="com.zhangran.app.data.local.RoomCaptureLogSinkTest" time="0.011" />
+    <testcase name="落库文本必须是脱敏后的内容" classname="com.zhangran.app.data.local.RoomCaptureLogSinkTest" time="0.012" />
+    <testcase name="写库失败不向外抛异常" classname="com.zhangran.app.data.local.RoomCaptureLogSinkTest" time="0.002" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.RuleDaoTest" tests="7" failures="0" errors="0" skipped="0" time="0.099" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="规则可更新与计数" classname="com.zhangran.app.data.local.RuleDaoTest" time="0.014" />
+    <testcase name="规则页列表含禁用规则" classname="com.zhangran.app.data.local.RuleDaoTest" time="0.013" />
+    <testcase name="include 可存含分隔符与正则的内容并原样取回" classname="com.zhangran.app.data.local.RuleDaoTest" time="0.013" />
+    <testcase name="存储值往返后逐字节稳定" classname="com.zhangran.app.data.local.RuleDaoTest" time="0.010" />
+    <testcase name="按 priority 升序返回启用规则" classname="com.zhangran.app.data.local.RuleDaoTest" time="0.013" />
+    <testcase name="默认空集合存为空数组且 matchMode 默认 CONTAINS" classname="com.zhangran.app.data.local.RuleDaoTest" time="0.017" />
+    <testcase name="可检测启用规则间的 priority 冲突" classname="com.zhangran.app.data.local.RuleDaoTest" time="0.019" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.local.SearchQueryTest" tests="8" failures="0" errors="0" skipped="0" time="0.104" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A1_keyword匹配商户与备注且不区分大小写" classname="com.zhangran.app.data.local.SearchQueryTest" time="0.011" />
+    <testcase name="A5_默认交易时间倒序" classname="com.zhangran.app.data.local.SearchQueryTest" time="0.010" />
+    <testcase name="A7_软删除记录不出现" classname="com.zhangran.app.data.local.SearchQueryTest" time="0.009" />
+    <testcase name="A8_多条件组合为AND" classname="com.zhangran.app.data.local.SearchQueryTest" time="0.008" />
+    <testcase name="A1_分类账户类型来源状态单维筛选" classname="com.zhangran.app.data.local.SearchQueryTest" time="0.010" />
+    <testcase name="A4_日期为半开区间" classname="com.zhangran.app.data.local.SearchQueryTest" time="0.010" />
+    <testcase name="A6_分页LIMIT_OFFSET" classname="com.zhangran.app.data.local.SearchQueryTest" time="0.035" />
+    <testcase name="A1_amount等值与区间" classname="com.zhangran.app.data.local.SearchQueryTest" time="0.011" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.repository.HomeScreenStatesTest" tests="4" failures="0" errors="0" skipped="0" time="11.321" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="内容态可渲染并显示列表项" classname="com.zhangran.app.data.repository.HomeScreenStatesTest" time="2.719" />
+    <testcase name="加载态可渲染并显示页面名" classname="com.zhangran.app.data.repository.HomeScreenStatesTest" time="3.145" />
+    <testcase name="错误态可渲染并可重试" classname="com.zhangran.app.data.repository.HomeScreenStatesTest" time="2.718" />
+    <testcase name="空态可渲染并提示无记录" classname="com.zhangran.app.data.repository.HomeScreenStatesTest" time="2.739" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.data.repository.RepositorySmokeTest" tests="6" failures="0" errors="0" skipped="0" time="0.324" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="禁用分类与账户仍可读出" classname="com.zhangran.app.data.repository.RepositorySmokeTest" time="0.107" />
+    <testcase name="分类仓储支持新增与更新且读方法保持可用" classname="com.zhangran.app.data.repository.RepositorySmokeTest" time="0.067" />
+    <testcase name="三个仓库可写入并读回" classname="com.zhangran.app.data.repository.RepositorySmokeTest" time="0.053" />
+    <testcase name="默认列表排除软删除" classname="com.zhangran.app.data.repository.RepositorySmokeTest" time="0.034" />
+    <testcase name="分类排序交换可持久化并改变读回顺序" classname="com.zhangran.app.data.repository.RepositorySmokeTest" time="0.026" />
+    <testcase name="手工记账落库后列表可见且按时间倒序" classname="com.zhangran.app.data.repository.RepositorySmokeTest" time="0.037" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.navigation.NavigationBehaviorTest" tests="6" failures="0" errors="0" skipped="0" time="16.218" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A7_二级页返回回上一页且底栏恢复" classname="com.zhangran.app.ui.navigation.NavigationBehaviorTest" time="2.290" />
+    <testcase name="A8_首页返回退出应用" classname="com.zhangran.app.ui.navigation.NavigationBehaviorTest" time="2.399" />
+    <testcase name="A5_切走再切回保留栈" classname="com.zhangran.app.ui.navigation.NavigationBehaviorTest" time="3.116" />
+    <testcase name="A1_A14_首页显示5个标签且首页已选中" classname="com.zhangran.app.ui.navigation.NavigationBehaviorTest" time="2.236" />
+    <testcase name="A6_统计页返回首页不退出" classname="com.zhangran.app.ui.navigation.NavigationBehaviorTest" time="3.484" />
+    <testcase name="A2_二级页隐藏底栏" classname="com.zhangran.app.ui.navigation.NavigationBehaviorTest" time="2.693" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.about.AboutScreenTest" tests="5" failures="0" errors="0" skipped="0" time="14.092" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A4_A5_开源摘要可展开且无网络入口" classname="com.zhangran.app.ui.screen.about.AboutScreenTest" time="2.938" />
+    <testcase name="A1_A2_展示真实版本且来自BuildConfig" classname="com.zhangran.app.ui.screen.about.AboutScreenTest" time="1.960" />
+    <testcase name="A3_隐私四条全部展示" classname="com.zhangran.app.ui.screen.about.AboutScreenTest" time="2.080" />
+    <testcase name="返回按钮可关闭页面" classname="com.zhangran.app.ui.screen.about.AboutScreenTest" time="4.075" />
+    <testcase name="A4_采集核心含来源与commit" classname="com.zhangran.app.ui.screen.about.AboutScreenTest" time="3.039" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" tests="16" failures="0" errors="0" skipped="0" time="40.722" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A6_禁用最后一个启用账户的提示就地展示" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="2.417" />
+    <testcase name="A2_添加弹层可填名称类型渠道并选择默认" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="3.522" />
+    <testcase name="A13_加载态渲染标题" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="1.337" />
+    <testcase name="A7_禁用行的无障碍描述含已禁用" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="3.233" />
+    <testcase name="A3_编辑时类型只读且银行卡可见尾号" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="2.076" />
+    <testcase name="A13_错误态可重试" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="2.464" />
+    <testcase name="A1_按类型分组展示且空分组不显示" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="2.177" />
+    <testcase name="A3_保存与上移回调可用" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="3.616" />
+    <testcase name="A2_点击添加触发回调" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="2.395" />
+    <testcase name="A4_重名错误在弹层内提示" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="2.226" />
+    <testcase name="A12_不展示本月支出" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="3.208" />
+    <testcase name="A9_页面与弹层都没有删除入口" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="1.922" />
+    <testcase name="A13_空数据提示初始化异常" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="2.980" />
+    <testcase name="点击行触发编辑回调" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="2.871" />
+    <testcase name="A1_行展示名称与副行组合" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="2.058" />
+    <testcase name="A5_真实Room上切换默认账户保持唯一" classname="com.zhangran.app.ui.screen.accounts.AccountsScreenTest" time="2.220" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.add.AddTransactionScreenTest" tests="8" failures="0" errors="0" skipped="0" time="18.444" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A1_无分类数据可渲染并提示" classname="com.zhangran.app.ui.screen.add.AddTransactionScreenTest" time="2.796" />
+    <testcase name="点击数字键金额随之更新" classname="com.zhangran.app.ui.screen.add.AddTransactionScreenTest" time="1.994" />
+    <testcase name="A1_加载失败可渲染并可重试" classname="com.zhangran.app.ui.screen.add.AddTransactionScreenTest" time="1.644" />
+    <testcase name="A1_保存失败可渲染并就地提示" classname="com.zhangran.app.ui.screen.add.AddTransactionScreenTest" time="3.101" />
+    <testcase name="正常态显示金额分类账户与键盘" classname="com.zhangran.app.ui.screen.add.AddTransactionScreenTest" time="2.016" />
+    <testcase name="A1_加载中可渲染" classname="com.zhangran.app.ui.screen.add.AddTransactionScreenTest" time="1.829" />
+    <testcase name="A11_分类来自数据而非硬编码_其他为兜底项" classname="com.zhangran.app.ui.screen.add.AddTransactionScreenTest" time="2.190" />
+    <testcase name="点击类型胶囊切换为收入" classname="com.zhangran.app.ui.screen.add.AddTransactionScreenTest" time="2.874" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.backup.BackupScreenTest" tests="7" failures="0" errors="0" skipped="0" time="17.734" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A11_成功态可关闭结果回到初始" classname="com.zhangran.app.ui.screen.backup.BackupScreenTest" time="2.907" />
+    <testcase name="A10_点击导出备份触发回调" classname="com.zhangran.app.ui.screen.backup.BackupScreenTest" time="2.547" />
+    <testcase name="A11_失败态显示原因并可重试" classname="com.zhangran.app.ui.screen.backup.BackupScreenTest" time="3.037" />
+    <testcase name="A11_导出中显示进度且入口禁用" classname="com.zhangran.app.ui.screen.backup.BackupScreenTest" time="2.673" />
+    <testcase name="A11_初始态展示说明与格式且恢复入口禁用" classname="com.zhangran.app.ui.screen.backup.BackupScreenTest" time="1.909" />
+    <testcase name="A6_页面明示不包含截图或二进制" classname="com.zhangran.app.ui.screen.backup.BackupScreenTest" time="2.697" />
+    <testcase name="A11_成功态展示文件名条目数与大小" classname="com.zhangran.app.ui.screen.backup.BackupScreenTest" time="1.964" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.budget.BudgetScreenTest" tests="16" failures="0" errors="0" skipped="0" time="42.280" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A16_加载态渲染标题" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.821" />
+    <testcase name="A21_删除需要二次确认且文案固定" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="3.868" />
+    <testcase name="A20_A21_删除按钮只在编辑弹层内" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.286" />
+    <testcase name="A21_列表态没有任何删除入口" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.064" />
+    <testcase name="保存失败错误就地提示" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.718" />
+    <testcase name="A16_Empty展示设置引导与示例预算且标注示例" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.365" />
+    <testcase name="A1_分类预算行展示已用与额度" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="1.896" />
+    <testcase name="编辑分类预算弹层显示分类名与金额" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.361" />
+    <testcase name="A16_错误态可重试" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.930" />
+    <testcase name="A1_总额卡片展示金额已用剩余与百分比" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="1.956" />
+    <testcase name="A11_超支仅视觉提示显示已超支金额" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.968" />
+    <testcase name="A11_总额超支时footer显示已超支与超过100的百分比" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="3.096" />
+    <testcase name="A12_点击分类行触发该分类编辑" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.319" />
+    <testcase name="A12_点击总额卡片触发编辑且没有顶部编辑按钮" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.691" />
+    <testcase name="添加分类预算入口可点击" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="2.653" />
+    <testcase name="新增分类预算时可选择分类" classname="com.zhangran.app.ui.screen.budget.BudgetScreenTest" time="3.288" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" tests="14" failures="0" errors="0" skipped="0" time="32.788" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A5_其他分类不可改名与禁用并说明原因" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="1.822" />
+    <testcase name="A1_点击分类项触发编辑回调" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="3.108" />
+    <testcase name="A13_空数据提示初始化异常而不是暂无分类" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="2.548" />
+    <testcase name="A2_点击添加触发添加回调" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="2.113" />
+    <testcase name="A6_页面与弹层都没有删除入口" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="1.672" />
+    <testcase name="A14_分类规则入口可跳转" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="2.773" />
+    <testcase name="A13_加载态渲染标题" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="1.857" />
+    <testcase name="A13_错误态可重试" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="2.355" />
+    <testcase name="A7_禁用分类仍显示且无障碍读作已禁用" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="1.425" />
+    <testcase name="A3_编辑弹层类型只读且提供名称图标启用排序" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="1.910" />
+    <testcase name="A3_保存与上移回调可用" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="3.246" />
+    <testcase name="A2_添加弹层可选类型与图标" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="2.351" />
+    <testcase name="A4_重名错误在弹层内提示" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="2.554" />
+    <testcase name="A1_两组网格按sortOrder展示" classname="com.zhangran.app.ui.screen.categories.CategoriesScreenTest" time="3.054" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" tests="16" failures="0" errors="0" skipped="0" time="40.262" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A4_点击时间打开日期时间编辑器" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.595" />
+    <testcase name="A2_有证据时显示置信度与证据卡片" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.095" />
+    <testcase name="加载态渲染页面标题" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.789" />
+    <testcase name="转账交易只读展示且行不可编辑" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="1.714" />
+    <testcase name="A4_点击商户行打开商户编辑器" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.738" />
+    <testcase name="A3_使用引擎版本标签且不出现ParserVersion" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.302" />
+    <testcase name="A1_支付方式行显示账户名" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.923" />
+    <testcase name="A1_展示支付方式且不存在并存的账户行" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.157" />
+    <testcase name="A4_点击备注卡打开备注编辑器" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.726" />
+    <testcase name="A6_类型编辑器只放开支出收入并提示转账退款不支持" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.264" />
+    <testcase name="A4_点击金额打开金额编辑器并复用数字键盘" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="3.167" />
+    <testcase name="A14_提交中不能再次打开删除确认" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="1.281" />
+    <testcase name="A11_删除确认文案不承诺恢复路径也不写无法恢复" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="3.412" />
+    <testcase name="A2_空字段隐藏且证据卡片不显示" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.440" />
+    <testcase name="A4_点击分类行打开分类编辑器并复用分类网格" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.920" />
+    <testcase name="A14_错误态可重试" classname="com.zhangran.app.ui.screen.detail.TransactionDetailScreenTest" time="2.739" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.home.HomeScreenTest" tests="13" failures="0" errors="0" skipped="0" time="32.390" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="空态显示说明与两个引导" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="2.450" />
+    <testcase name="余额卡片有整句无障碍描述" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="2.923" />
+    <testcase name="自动记账状态入口可点且不显示正常运行" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="2.615" />
+    <testcase name="待确认数量超过99显示99加" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="2.843" />
+    <testcase name="空态的检查自动记账引导跳转自动记账页" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="2.817" />
+    <testcase name="内容态不显示RECORDS指标" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="2.605" />
+    <testcase name="顶栏搜索与待确认入口可点且带数量语义" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="1.985" />
+    <testcase name="内容态显示余额卡片分组标题与交易行" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="1.852" />
+    <testcase name="点击交易行导航到详情并带交易id" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="1.650" />
+    <testcase name="错误态显示信息并可重试" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="3.247" />
+    <testcase name="加载态显示骨架屏与顶栏" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="2.766" />
+    <testcase name="无待确认时红点不显示" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="2.683" />
+    <testcase name="待确认行有标签且点击进入该笔待确认已确认行仍进详情" classname="com.zhangran.app.ui.screen.home.HomeScreenTest" time="1.954" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.mine.MineScreenTest" tests="10" failures="0" errors="0" skipped="0" time="30.194" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A4_选择深色触发主题切换" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="2.801" />
+    <testcase name="A5_规则备份日志标注即将支持" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="1.701" />
+    <testcase name="A4_当前主题高亮且文案随状态变化" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="2.745" />
+    <testcase name="A1_展示设置分组与全部入口" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="2.730" />
+    <testcase name="A5_待确认与关于入口可跳转" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="3.884" />
+    <testcase name="A2_错误态显示原因并可重试" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="2.642" />
+    <testcase name="A5_数据管理入口跳转到既有路由" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="5.323" />
+    <testcase name="A2_页头不伪装已连接" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="3.007" />
+    <testcase name="A10_加载态只显示页头" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="2.627" />
+    <testcase name="A2_采集未接入项禁用但可见且说明原因" classname="com.zhangran.app.ui.screen.mine.MineScreenTest" time="2.734" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.pending.PendingScreenTest" tests="2" failures="0" errors="0" skipped="0" time="4.966" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="聚焦普通待确认可见确认且疑似重复不得直接确认" classname="com.zhangran.app.ui.screen.pending.PendingScreenTest" time="3.093" />
+    <testcase name="待确认行同时展示金额商户和原因" classname="com.zhangran.app.ui.screen.pending.PendingScreenTest" time="1.873" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.search.SearchScreenTest" tests="9" failures="0" errors="0" skipped="0" time="22.689" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A9_分类chip打开筛选弹层" classname="com.zhangran.app.ui.screen.search.SearchScreenTest" time="2.386" />
+    <testcase name="A12_输入关键字触发回调" classname="com.zhangran.app.ui.screen.search.SearchScreenTest" time="2.392" />
+    <testcase name="全部chip清空筛选" classname="com.zhangran.app.ui.screen.search.SearchScreenTest" time="2.719" />
+    <testcase name="A18_Error显示重试" classname="com.zhangran.app.ui.screen.search.SearchScreenTest" time="2.857" />
+    <testcase name="A9_类型chip在已选中时显示值" classname="com.zhangran.app.ui.screen.search.SearchScreenTest" time="2.015" />
+    <testcase name="A18_Content显示条数与结果行" classname="com.zhangran.app.ui.screen.search.SearchScreenTest" time="3.183" />
+    <testcase name="返回按钮回调" classname="com.zhangran.app.ui.screen.search.SearchScreenTest" time="2.361" />
+    <testcase name="A18_Empty显示清空筛选并可点击" classname="com.zhangran.app.ui.screen.search.SearchScreenTest" time="2.894" />
+    <testcase name="A11_首次进入为Idle且不显示结果" classname="com.zhangran.app.ui.screen.search.SearchScreenTest" time="1.882" />
+  </testsuite>
+  <testsuite name="com.zhangran.app.ui.screen.stats.StatsScreenTest" tests="13" failures="0" errors="0" skipped="0" time="33.015" timestamp="2026-11-28T17:14:15" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="A10_月份胶囊显示当前月并可打开选择器" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="3.586" />
+    <testcase name="A8_历史周可以点击下一周" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="2.895" />
+    <testcase name="A13_最大值为0时图表仍渲染空环" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="3.040" />
+    <testcase name="A7_趋势展示7个周标签" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="1.843" />
+    <testcase name="A1_概览展示消费与三项指标" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="2.091" />
+    <testcase name="A19_概览与趋势有整句读屏语义" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="2.262" />
+    <testcase name="A15_Empty引导去记一笔" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="2.384" />
+    <testcase name="A12_不出现预算使用情况" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="2.169" />
+    <testcase name="A15_错误态可重试" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="2.122" />
+    <testcase name="A5_环形图与图例展示四项占比" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="3.040" />
+    <testcase name="A15_加载态渲染标题" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="2.568" />
+    <testcase name="A11_历史月可展示且胶囊文案来自状态" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="1.945" />
+    <testcase name="A8_点击上一周触发切周下一周在当前周禁用" classname="com.zhangran.app.ui.screen.stats.StatsScreenTest" time="3.070" />
+  </testsuite>
+</testsuites>

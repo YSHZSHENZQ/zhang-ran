@@ -18,6 +18,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.zhangran.app.BuildConfig
 import com.zhangran.app.MainActivity
+import com.zhangran.app.clickHomePendingButton
+import com.zhangran.app.grantAccessibilityForTest
+import com.zhangran.app.resetOnboardAndAccessibilityForTest
 import com.zhangran.app.debug.DebugCaptureHealthReceiver
 import com.zhangran.app.domain.model.PendingReason
 import com.zhangran.app.domain.model.TransactionState
@@ -51,6 +54,10 @@ class M64StatusProofTest {
         check(java.time.ZoneId.systemDefault().id == "Asia/Shanghai") {
             "设备时区不是 Asia/Shanghai：${java.time.ZoneId.systemDefault()}"
         }
+        // M6-4 AC-2：完成一次后冷启动不再弹引导。前面的用例可能已经点过完成，Fx1 也会打开无障碍。
+        // 全量里别的用例可能已经打开总开关。本用例要先看到「当前已关闭」，再自己打开。
+        resetOnboardAndAccessibilityForTest()
+        runBlocking { entry().setAutoLedgerEnabledUseCase().invoke(false) }
         awaitText("权限引导")
         awaitText("无障碍未授权")
         shot("ac2-onboard-before")
@@ -62,6 +69,7 @@ class M64StatusProofTest {
         composeRule.onNodeWithText("前往授权").performClick()
         Thread.sleep(1_500)
         shot("ac2-app-settings")
+        grantAccessibilityForTest()
         systemBack()
         awaitText("无障碍已授权")
         shot("ac2-onboard-refreshed")
@@ -99,6 +107,10 @@ class M64StatusProofTest {
         assertFalse(ac8.toString().contains("\"state\":\"CONFIRMED\""))
         assertFalse(ac8.toString().contains("\"state\":\"DUPLICATE\""))
         writeLogs("ac3-logs")
+        // 回放 fixture 的 capturedAt 固定在 2025-11-11，健康度把它当作上次捕获。
+        // 距运行日已超过 24 小时时，总开关一开就是疑似失效。拨回 1 分钟后再断言「可用」。
+        // 后面的广播再拨到 25 小时。捕获日志里的 11 月 11 日不变。
+        markLastCaptureRecent()
 
         openMine()
         composeRule.onNodeWithContentDescription("自动记账，当前已关闭").performClick()
@@ -340,7 +352,7 @@ class M64StatusProofTest {
 
     private fun openPending() {
         openHome()
-        composeRule.onNodeWithContentDescription("待确认", substring = true).performClick()
+        composeRule.clickHomePendingButton()
         awaitText("待确认")
     }
 
@@ -411,6 +423,17 @@ class M64StatusProofTest {
             if (file == null) Thread.sleep(200)
         }
         return checkNotNull(file) { "没有导出文件" }
+    }
+
+    /** debug 接收器只改健康度时间，不改捕获日志。 */
+    private fun markLastCaptureRecent() {
+        val fresh = shell(
+            "am broadcast -a ${DebugCaptureHealthReceiver.ACTION} " +
+                "--el ${DebugCaptureHealthReceiver.EXTRA_AGE_MILLIS} 60000 " +
+                "-n com.zhangran.app/.debug.DebugCaptureHealthReceiver",
+        )
+        check(fresh.contains("result=0")) { fresh }
+        runBlocking { entry().autoLedgerStatusSource().refreshPermissions() }
     }
 
     private fun shell(command: String): String {

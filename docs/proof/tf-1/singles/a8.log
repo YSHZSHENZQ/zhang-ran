@@ -1,0 +1,102 @@
+> Task :preBuild UP-TO-DATE
+> Task :preDebugBuild UP-TO-DATE
+> Task :generateDebugBuildConfig UP-TO-DATE
+> Task :generateDebugResources UP-TO-DATE
+> Task :packageDebugResources UP-TO-DATE
+> Task :processDebugNavigationResources UP-TO-DATE
+> Task :parseDebugLocalResources UP-TO-DATE
+> Task :generateDebugRFile UP-TO-DATE
+> Task :kspDebugKotlin UP-TO-DATE
+> Task :compileDebugKotlin UP-TO-DATE
+> Task :javaPreCompileDebug UP-TO-DATE
+> Task :compileDebugJavaWithJavac UP-TO-DATE
+> Task :generateDebugAssets UP-TO-DATE
+> Task :mergeDebugAssets UP-TO-DATE
+> Task :compressDebugAssets UP-TO-DATE
+> Task :generateDebugGlobalSynthetics UP-TO-DATE
+> Task :processDebugJavaRes UP-TO-DATE
+> Task :mergeDebugJavaResource UP-TO-DATE
+> Task :checkDebugDuplicateClasses UP-TO-DATE
+> Task :desugarDebugFileDependencies UP-TO-DATE
+> Task :mergeExtDexDebug UP-TO-DATE
+> Task :mergeLibDexDebug UP-TO-DATE
+> Task :hiltCollectClassesDebug UP-TO-DATE
+> Task :hiltAggregateDepsDebug UP-TO-DATE
+> Task :hiltJavaCompileDebug UP-TO-DATE
+> Task :checkDebugAarMetadata UP-TO-DATE
+> Task :mapDebugSourceSetPaths UP-TO-DATE
+> Task :compileDebugNavigationResources UP-TO-DATE
+> Task :mergeDebugResources UP-TO-DATE
+> Task :createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :extractDeepLinksDebug UP-TO-DATE
+> Task :processDebugMainManifest UP-TO-DATE
+> Task :processDebugManifest UP-TO-DATE
+> Task :processDebugManifestForPackage UP-TO-DATE
+> Task :processDebugResources UP-TO-DATE
+> Task :transformDebugClassesWithAsm UP-TO-DATE
+> Task :dexBuilderDebug UP-TO-DATE
+> Task :mergeProjectDexDebug UP-TO-DATE
+> Task :mergeDebugJniLibFolders UP-TO-DATE
+> Task :mergeDebugNativeLibs UP-TO-DATE
+> Task :stripDebugDebugSymbols UP-TO-DATE
+> Task :validateSigningDebug UP-TO-DATE
+> Task :writeDebugAppMetadata UP-TO-DATE
+> Task :writeDebugSigningConfigVersions UP-TO-DATE
+> Task :packageDebug UP-TO-DATE
+> Task :createDebugApkListingFileRedirect UP-TO-DATE
+> Task :bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :preDebugAndroidTestBuild SKIPPED
+> Task :mergeDebugAndroidTestManifest UP-TO-DATE
+> Task :processDebugAndroidTestManifest UP-TO-DATE
+> Task :generateDebugAndroidTestBuildConfig UP-TO-DATE
+> Task :generateDebugAndroidTestResources UP-TO-DATE
+> Task :packageDebugAndroidTestResources UP-TO-DATE
+> Task :processDebugAndroidTestNavigationResources UP-TO-DATE
+> Task :parseDebugAndroidTestLocalResources UP-TO-DATE
+> Task :generateDebugAndroidTestRFile UP-TO-DATE
+> Task :kspDebugAndroidTestKotlin UP-TO-DATE
+> Task :compileDebugAndroidTestKotlin UP-TO-DATE
+> Task :javaPreCompileDebugAndroidTest UP-TO-DATE
+> Task :compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+> Task :generateDebugAndroidTestAssets UP-TO-DATE
+> Task :mergeDebugAndroidTestAssets UP-TO-DATE
+> Task :compressDebugAndroidTestAssets UP-TO-DATE
+> Task :generateDebugAndroidTestGlobalSynthetics UP-TO-DATE
+> Task :processDebugAndroidTestJavaRes UP-TO-DATE
+> Task :mergeDebugAndroidTestJavaResource UP-TO-DATE
+> Task :checkDebugAndroidTestDuplicateClasses UP-TO-DATE
+> Task :desugarDebugAndroidTestFileDependencies UP-TO-DATE
+> Task :mergeExtDexDebugAndroidTest UP-TO-DATE
+> Task :mergeLibDexDebugAndroidTest UP-TO-DATE
+> Task :hiltCollectClassesDebugAndroidTest UP-TO-DATE
+> Task :hiltAggregateDepsDebugAndroidTest UP-TO-DATE
+> Task :hiltJavaCompileDebugAndroidTest NO-SOURCE
+> Task :checkDebugAndroidTestAarMetadata UP-TO-DATE
+> Task :mapDebugAndroidTestSourceSetPaths UP-TO-DATE
+> Task :compileDebugAndroidTestNavigationResources UP-TO-DATE
+> Task :mergeDebugAndroidTestResources UP-TO-DATE
+> Task :processDebugAndroidTestResources UP-TO-DATE
+> Task :transformDebugAndroidTestClassesWithAsm UP-TO-DATE
+> Task :dexBuilderDebugAndroidTest UP-TO-DATE
+> Task :mergeProjectDexDebugAndroidTest UP-TO-DATE
+> Task :mergeDebugAndroidTestJniLibFolders UP-TO-DATE
+> Task :mergeDebugAndroidTestNativeLibs NO-SOURCE
+> Task :stripDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :validateSigningDebugAndroidTest UP-TO-DATE
+> Task :writeDebugAndroidTestSigningConfigVersions UP-TO-DATE
+> Task :packageDebugAndroidTest UP-TO-DATE
+> Task :createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+
+> Task :connectedDebugAndroidTest
+Running tests on devices: tf1(AVD) - 16
+
+[Incubating] Problems report is available at: file:///agent/repos/zhang-ran/app/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.8.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 13s
+79 actionable tasks: 1 executed, 78 up-to-date
