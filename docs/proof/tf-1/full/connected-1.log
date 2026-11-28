@@ -1,91 +1,167 @@
-> Task :preBuild UP-TO-DATE
+RUNTIME_HEAD=83035e73ac24fec0f38747f89575189e3b4bef4e
+SHOT_HOST_PID=4000
+DATE_HOST=2026-11-28T17:00:19+00:00
+DATE_DEVICE=Sun Nov 29 01:00:19 CST 2026
+TZ_DEVICE=Asia/Shanghai
+FINGERPRINT=google/sdk_gphone64_x86_64/emu64xa:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys
+SDK=36
+SHOT_HOST_ALIVE=yes pid=4000
+Starting a Gradle Daemon (subsequent builds will be faster)
+Checking the license for package Android SDK Build-Tools 36 in /home/ubuntu/android-sdk/licenses
+License for package Android SDK Build-Tools 36 accepted.
+Preparing "Install Android SDK Build-Tools 36 v.36.0.0".
+"Install Android SDK Build-Tools 36 v.36.0.0" ready.
+Installing Android SDK Build-Tools 36 in /home/ubuntu/android-sdk/build-tools/36.0.0
+"Install Android SDK Build-Tools 36 v.36.0.0" complete.
+"Install Android SDK Build-Tools 36 v.36.0.0" finished.
+[=========                              ] 25%                                   > Task :preBuild UP-TO-DATE
 > Task :preDebugBuild UP-TO-DATE
-> Task :generateDebugBuildConfig UP-TO-DATE
-> Task :generateDebugResources UP-TO-DATE
-> Task :packageDebugResources UP-TO-DATE
-> Task :processDebugNavigationResources UP-TO-DATE
-> Task :parseDebugLocalResources UP-TO-DATE
-> Task :generateDebugRFile UP-TO-DATE
-> Task :kspDebugKotlin UP-TO-DATE
-> Task :compileDebugKotlin UP-TO-DATE
-> Task :javaPreCompileDebug UP-TO-DATE
-> Task :compileDebugJavaWithJavac UP-TO-DATE
+> Task :generateDebugBuildConfig
+> Task :generateDebugResources
+> Task :packageDebugResources
+> Task :processDebugNavigationResources
+> Task :parseDebugLocalResources
 > Task :generateDebugAssets UP-TO-DATE
-> Task :mergeDebugAssets UP-TO-DATE
-> Task :compressDebugAssets UP-TO-DATE
-> Task :generateDebugGlobalSynthetics UP-TO-DATE
-> Task :processDebugJavaRes UP-TO-DATE
-> Task :mergeDebugJavaResource UP-TO-DATE
-> Task :checkDebugDuplicateClasses UP-TO-DATE
-> Task :desugarDebugFileDependencies UP-TO-DATE
-> Task :mergeExtDexDebug UP-TO-DATE
-> Task :mergeLibDexDebug UP-TO-DATE
-> Task :hiltCollectClassesDebug UP-TO-DATE
-> Task :hiltAggregateDepsDebug UP-TO-DATE
-> Task :hiltJavaCompileDebug UP-TO-DATE
-> Task :checkDebugAarMetadata UP-TO-DATE
-> Task :mapDebugSourceSetPaths UP-TO-DATE
-> Task :compileDebugNavigationResources UP-TO-DATE
-> Task :mergeDebugResources UP-TO-DATE
-> Task :createDebugCompatibleScreenManifests UP-TO-DATE
-> Task :extractDeepLinksDebug UP-TO-DATE
-> Task :processDebugMainManifest UP-TO-DATE
-> Task :processDebugManifest UP-TO-DATE
-> Task :processDebugManifestForPackage UP-TO-DATE
-> Task :processDebugResources UP-TO-DATE
-> Task :transformDebugClassesWithAsm UP-TO-DATE
-> Task :dexBuilderDebug UP-TO-DATE
-> Task :mergeProjectDexDebug UP-TO-DATE
-> Task :mergeDebugJniLibFolders UP-TO-DATE
-> Task :mergeDebugNativeLibs UP-TO-DATE
-> Task :stripDebugDebugSymbols UP-TO-DATE
-> Task :validateSigningDebug UP-TO-DATE
-> Task :writeDebugAppMetadata UP-TO-DATE
-> Task :writeDebugSigningConfigVersions UP-TO-DATE
-> Task :packageDebug UP-TO-DATE
-> Task :createDebugApkListingFileRedirect UP-TO-DATE
-> Task :bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :javaPreCompileDebug
+> Task :generateDebugRFile
+> Task :mergeDebugAssets
+> Task :compressDebugAssets
+> Task :generateDebugGlobalSynthetics
+> Task :desugarDebugFileDependencies
+> Task :checkDebugDuplicateClasses
+> Task :checkDebugAarMetadata
+> Task :kspDebugKotlin
+> Task :mergeExtDexDebug
+> Task :mapDebugSourceSetPaths
+> Task :mergeLibDexDebug
+> Task :compileDebugNavigationResources
+> Task :createDebugCompatibleScreenManifests
+> Task :extractDeepLinksDebug
+> Task :processDebugMainManifest
+> Task :processDebugManifest
+> Task :mergeDebugJniLibFolders
+> Task :processDebugManifestForPackage
+> Task :mergeDebugNativeLibs
+> Task :mergeDebugResources
+> Task :validateSigningDebug
+> Task :writeDebugAppMetadata
+> Task :writeDebugSigningConfigVersions
 > Task :preDebugAndroidTestBuild SKIPPED
-> Task :mergeDebugAndroidTestManifest UP-TO-DATE
-> Task :processDebugAndroidTestManifest UP-TO-DATE
-> Task :generateDebugAndroidTestBuildConfig UP-TO-DATE
-> Task :generateDebugAndroidTestResources UP-TO-DATE
-> Task :packageDebugAndroidTestResources UP-TO-DATE
-> Task :processDebugAndroidTestNavigationResources UP-TO-DATE
-> Task :parseDebugAndroidTestLocalResources UP-TO-DATE
-> Task :generateDebugAndroidTestRFile UP-TO-DATE
-> Task :kspDebugAndroidTestKotlin UP-TO-DATE
-> Task :compileDebugAndroidTestKotlin UP-TO-DATE
-> Task :javaPreCompileDebugAndroidTest UP-TO-DATE
-> Task :compileDebugAndroidTestJavaWithJavac UP-TO-DATE
+
+> Task :stripDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :mergeDebugAndroidTestManifest
+> Task :processDebugAndroidTestManifest
+> Task :generateDebugAndroidTestBuildConfig
+> Task :generateDebugAndroidTestResources
+> Task :packageDebugAndroidTestResources
+> Task :processDebugAndroidTestNavigationResources
+> Task :javaPreCompileDebugAndroidTest
 > Task :generateDebugAndroidTestAssets UP-TO-DATE
-> Task :mergeDebugAndroidTestAssets UP-TO-DATE
-> Task :compressDebugAndroidTestAssets UP-TO-DATE
-> Task :generateDebugAndroidTestGlobalSynthetics UP-TO-DATE
-> Task :processDebugAndroidTestJavaRes UP-TO-DATE
-> Task :mergeDebugAndroidTestJavaResource UP-TO-DATE
-> Task :checkDebugAndroidTestDuplicateClasses UP-TO-DATE
-> Task :desugarDebugAndroidTestFileDependencies UP-TO-DATE
-> Task :mergeExtDexDebugAndroidTest UP-TO-DATE
-> Task :mergeLibDexDebugAndroidTest UP-TO-DATE
-> Task :hiltCollectClassesDebugAndroidTest UP-TO-DATE
-> Task :hiltAggregateDepsDebugAndroidTest UP-TO-DATE
-> Task :hiltJavaCompileDebugAndroidTest NO-SOURCE
-> Task :checkDebugAndroidTestAarMetadata UP-TO-DATE
-> Task :mapDebugAndroidTestSourceSetPaths UP-TO-DATE
-> Task :compileDebugAndroidTestNavigationResources UP-TO-DATE
-> Task :mergeDebugAndroidTestResources UP-TO-DATE
-> Task :processDebugAndroidTestResources UP-TO-DATE
-> Task :transformDebugAndroidTestClassesWithAsm UP-TO-DATE
-> Task :dexBuilderDebugAndroidTest UP-TO-DATE
-> Task :mergeProjectDexDebugAndroidTest UP-TO-DATE
-> Task :mergeDebugAndroidTestJniLibFolders UP-TO-DATE
+> Task :parseDebugAndroidTestLocalResources
+> Task :mergeDebugAndroidTestAssets
+> Task :generateDebugAndroidTestRFile
+> Task :compressDebugAndroidTestAssets
+> Task :generateDebugAndroidTestGlobalSynthetics FROM-CACHE
+> Task :checkDebugAndroidTestDuplicateClasses
+> Task :desugarDebugAndroidTestFileDependencies FROM-CACHE
+> Task :checkDebugAndroidTestAarMetadata
+> Task :processDebugResources
+> Task :mergeLibDexDebugAndroidTest FROM-CACHE
+> Task :mapDebugAndroidTestSourceSetPaths
+> Task :compileDebugAndroidTestNavigationResources FROM-CACHE
+> Task :mergeDebugAndroidTestJniLibFolders
 > Task :mergeDebugAndroidTestNativeLibs NO-SOURCE
 > Task :stripDebugAndroidTestDebugSymbols NO-SOURCE
-> Task :validateSigningDebugAndroidTest UP-TO-DATE
-> Task :writeDebugAndroidTestSigningConfigVersions UP-TO-DATE
-> Task :packageDebugAndroidTest UP-TO-DATE
-> Task :createDebugAndroidTestApkListingFileRedirect UP-TO-DATE
+> Task :validateSigningDebugAndroidTest
+> Task :writeDebugAndroidTestSigningConfigVersions
+> Task :mergeDebugAndroidTestResources
+> Task :processDebugAndroidTestResources
+> Task :mergeExtDexDebugAndroidTest
+> Task :compileDebugKotlin
+w: file:///agent/repos/zhang-ran/app/src/main/java/com/zhangran/app/capture/CaptureSubmitter.kt:31:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///agent/repos/zhang-ran/app/src/main/java/com/zhangran/app/data/autoledger/AutoLedgerStaleFlipMonitor.kt:70:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///agent/repos/zhang-ran/app/src/main/java/com/zhangran/app/data/device/DevicePermissionProbe.kt:24:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///agent/repos/zhang-ran/app/src/main/java/com/zhangran/app/data/export/CaptureLogExportWriter.kt:16:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///agent/repos/zhang-ran/app/src/main/java/com/zhangran/app/domain/usecase/RestoreBackupUseCase.kt:51:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///agent/repos/zhang-ran/app/src/main/java/com/zhangran/app/log/RoomCaptureLogSink.kt:127:54 'val SUPPORTED_PAYLOAD_VERSION: Int' is deprecated. 改用 COLLECTOR_INTERFACE_VERSION：语义已是采集核心与领域层的接口版本.
+w: file:///agent/repos/zhang-ran/app/src/main/java/com/zhangran/app/ui/screen/backup/BackupViewModel.kt:41:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///agent/repos/zhang-ran/app/src/main/java/com/zhangran/app/ui/theme/Glass.kt:144:15 'fun asFrameworkPaint(): Paint' is deprecated. Use platform-specific extension to get platform reference.
+
+> Task :compileDebugJavaWithJavac
+> Task :processDebugJavaRes
+> Task :hiltCollectClassesDebug
+> Task :hiltAggregateDepsDebug
+> Task :mergeDebugJavaResource
+> Task :hiltJavaCompileDebug
+> Task :bundleDebugClassesToCompileJar
+> Task :transformDebugClassesWithAsm
+> Task :kspDebugAndroidTestKotlin
+> Task :dexBuilderDebug
+> Task :mergeProjectDexDebug
+> Task :packageDebug
+> Task :createDebugApkListingFileRedirect
+
+> Task :compileDebugAndroidTestKotlin
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ScreensSmokeTest.kt:46:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/capture/accessibility/Fx1ProofTest.kt:48:23 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/capture/accessibility/M3aAcceptanceProofTest.kt:47:23 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/capture/accessibility/M3bReplayProofTest.kt:46:9 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/capture/accessibility/M62PendingProofTest.kt:34:23 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/capture/accessibility/M63Ac2Ac3ProofTest.kt:45:23 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/capture/accessibility/M63ReplayProofTest.kt:42:23 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/capture/accessibility/M64StatusProofTest.kt:50:23 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/data/repository/RepositorySmokeTest.kt:362:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/navigation/NavigationBehaviorTest.kt:35:23 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/about/AboutScreenTest.kt:33:23 'fun <reified A : ComponentActivity> createAndroidComposeRule(effectContext: CoroutineContext = ...): AndroidComposeTestRule<ActivityScenarioRule<A>, A>' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/accounts/AccountsScreenTest.kt:47:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/add/AddTransactionScreenTest.kt:29:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/backup/BackupScreenTest.kt:34:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/budget/BudgetScreenTest.kt:34:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/categories/CategoriesScreenTest.kt:33:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/detail/TransactionDetailScreenTest.kt:45:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/home/HomeScreenTest.kt:45:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/mine/MineScreenTest.kt:38:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/pending/PendingScreenTest.kt:23:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/search/SearchScreenTest.kt:30:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+w: file:///agent/repos/zhang-ran/app/src/androidTest/java/com/zhangran/app/ui/screen/stats/StatsScreenTest.kt:37:23 'fun createComposeRule(effectContext: CoroutineContext = ...): ComposeContentTestRule' is deprecated. Use `androidx.compose.ui.test.junit4.v2.createComposeRule` instead. The v2 APIs use StandardTestDispatcher instead of UnconfinedTestDispatcher, which aligns with standard coroutine behavior by queuing tasks rather than executing them immediately. Tests relying on immediate execution may require explicit synchronization. Please refer to the migration guide for more details.
+
+> Task :compileDebugAndroidTestJavaWithJavac
+> Task :processDebugAndroidTestJavaRes
+> Task :hiltCollectClassesDebugAndroidTest
+> Task :mergeDebugAndroidTestJavaResource
+> Task :hiltAggregateDepsDebugAndroidTest
+> Task :hiltJavaCompileDebugAndroidTest NO-SOURCE
+> Task :transformDebugAndroidTestClassesWithAsm
+> Task :dexBuilderDebugAndroidTest
+> Task :mergeProjectDexDebugAndroidTest
+> Task :packageDebugAndroidTest
+> Task :createDebugAndroidTestApkListingFileRedirect
 
 > Task :connectedDebugAndroidTest
 Running tests on devices: tf1(AVD) - 16
@@ -98,5 +174,7 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/9.8.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD SUCCESSFUL in 11m 14s
-79 actionable tasks: 1 executed, 78 up-to-date
+BUILD SUCCESSFUL in 13m 57s
+79 actionable tasks: 75 executed, 4 from cache
+GRADLE_EXIT:0
+SCRIPT_EXIT:0

@@ -1,10 +1,10 @@
 # TF-1 仪器测试
 
-CR-1（2026-11-25）要求在将交付的 PR head 上重跑两次全量。这次没有新的 270/0 日志。主机 KVM 在创建 vCPU 时触发内核错误，模拟器只能用软件 CPU；在该环境下单跑 M3a 失败。下面的 270/0 数字仍是 2026-11-24、运行时 HEAD `61c18ba` 的结果，不是 CR-1 的复跑。说明见 `cr1/README.md`。
+TF-1 CR-3 Round 1（2026-11-28）在运行时 HEAD `83035e73ac24fec0f38747f89575189e3b4bef4e` 上连续跑了两次全量 `connectedDebugAndroidTest`。两次 XML 都是 tests=270、failures=0、errors=0、skipped=0，各 270 个 `testcase`，控制台都是 BUILD SUCCESSFUL。CPU 加速是 KVM：`emulator -accel-check` 报告 KVM (version 12) is installed and usable；QEMU 以 `-accel on` 启动，进程持有 `/dev/kvm`。系统时区 `Asia/Shanghai`。两次之间没有手动清数据。CR-1 当时没有交付新的 270/0 全量，记录仍在 `cr1/README.md`，不是这次 `full/` 的结果。
 
-运行时 HEAD：`61c18bafecb52709dba4211a545d027d6ea9c3c4`（最后一个改测试代码的提交）。其后的提交只补 `docs/proof/tf-1/` 和 `AGENTS.md` 的基线行，不再改测试。
+运行时 HEAD：`83035e73ac24fec0f38747f89575189e3b4bef4e`（H0，本轮全量的运行时提交）。
 
-模拟器：`system-images;android-36;google_apis;x86_64`，指纹 `google/sdk_gphone64_x86_64/emu64xa:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys`，API 36，系统时区 `Asia/Shanghai`（设备日期 Tue Nov 24 20:08:49 CST 2026）。Gradle 在 `app/` 执行。环境原文见 `env.txt`。
+模拟器：`system-images;android-36;google_apis;x86_64`，指纹 `google/sdk_gphone64_x86_64/emu64xa:16/BE2A.250530.026.F3/13894323:userdebug/dev-keys`，API 36，屏幕 1080×2400 @ 420 dpi，系统时区 `Asia/Shanghai`（设备日期 Sun Nov 29 01:00:19 CST 2026），加速 KVM。Gradle 在 `app/` 执行。环境原文见 `env.txt`。
 
 两次全量中间没有手动清数据。
 
@@ -22,7 +22,7 @@ CR-1（2026-11-25）要求在将交付的 PR head 上重跑两次全量。这次
 | `NavigationBehaviorTest.A8_首页返回退出应用` | 这次单跑通过，没有失败堆栈。`waitForIdle` 之后 `isFinishing` 已是 true | 测试时序。产品风险已排除，见 AC-2：返回后前台是桌面 | 先断言首页 `hasEnabledCallbacks() == false`，再用 `waitUntil(5_000)` 等 `isFinishing \|\| isDestroyed` | `docs/06` §6.3，无新切口 | `singles/a8.xml` 1/0/0/0 |
 | `MineScreenTest.A5_待确认与关于入口可跳转` | `java.lang.AssertionError: Action performScrollTo() failed.` 期望 1 个「自动记账状态」，找到 2 个 | 测试定位过期。页头胶囊不可点，入口行可点 | 定位改为可点击且描述含「自动记账状态」 | `docs/cuts/cut-2026-11-11-M6-4.md` 页头胶囊 | `singles/mine.xml` 1/0/0/0 |
 
-单跑命令都是 `app/` 下 `./gradlew connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=…#方法"`。`Fx1` 的日志是运行时 HEAD 上重跑的。`M64` 的日志在 `94a9d31`（该文件之后没有再改）。其余四条的日志在 `3aa1832`（那些文件之后没有再改）。两次全量是在最终测试提交 `61c18ba` 上跑的，7 条都包含在内。
+单跑命令都是 `app/` 下 `./gradlew connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=…#方法"`。`Fx1` 的单跑日志是在 `61c18bafecb52709dba4211a545d027d6ea9c3c4` 上重跑的。`M64` 的日志在 `94a9d31`（该文件之后没有再改）。其余四条的日志在 `3aa1832`（那些文件之后没有再改）。这些单跑不是 CR-3 Round 1。两次全量在 `full/`，运行时 HEAD 是 `83035e73ac24fec0f38747f89575189e3b4bef4e`，7 条都包含在内。
 
 `m62-home.log` 与 `m62-pending.log` 的 Gradle 控制台输出相同（任务图 up-to-date，日志里不打印用例名）。区分以同目录 XML 的 `testcase name` 为准。
 
@@ -49,10 +49,10 @@ CR-1（2026-11-25）要求在将交付的 PR head 上重跑两次全量。这次
 
 | 次数 | tests | failures | errors | skipped | 控制台 | sha256 |
 |---|---:|---:|---:|---:|---|---|
-| 1 | 270 | 0 | 0 | 0 | `full/connected-1.log`（BUILD SUCCESSFUL in 11m 14s） | `c64c90a4d2c07ec5b12ece9827eb92174021ce45a9828ca08492a3a47b09b3a2` |
-| 2 | 270 | 0 | 0 | 0 | `full/connected-2.log`（BUILD SUCCESSFUL in 10m 57s） | `1caae7a172040994905439487c5bac51904f7d1fd2f70a6eaf51ec1eec04f558` |
+| 1 | 270 | 0 | 0 | 0 | `full/connected-1.log`（BUILD SUCCESSFUL in 13m 57s） | `e04c059753988ca37bd4ac91b23c76c4ebc8368d748eb2766520a6661e9ad0c8` |
+| 2 | 270 | 0 | 0 | 0 | `full/connected-2.log`（BUILD SUCCESSFUL in 10m 38s） | `9c8bda6ee2db677336a9991f239a1efea7c7994d7fb487f7172c87ea5a9727dc` |
 
-XML：`full/connected-1.xml`、`full/connected-2.xml`。各 270 个 `testcase`。
+XML：`full/connected-1.xml`（sha256 `ad4d7a3b6806c693c66bad5d0c4c72c09dcd9b6f50f9c78ee7b07790f7999f2a`）、`full/connected-2.xml`（sha256 `3e6da57e2ce5691c9a304bb0feb692d91cd513f33e357e153fb28c749d02d317`）。各 270 个 `testcase`。运行时 HEAD `83035e73ac24fec0f38747f89575189e3b4bef4e`，KVM，`Asia/Shanghai`。
 
 ## AC-4
 
